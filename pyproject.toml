@@ -3,3 +3,20 @@ members = ["app-base"]
 
 [tool.rye.workspace]
 members = ["app-base"]
+
+[tool.ruff]
+exclude = [".git", ".venv", "migrations"]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/tests/**/*.py" = ["F403", "E402"]
+"__init__.py" = ["F403"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
