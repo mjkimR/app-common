@@ -9,7 +9,7 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "app-common",
+    "app-base",
 ]
 
 [[package]]
@@ -210,7 +210,7 @@ wheels = [
 ]
 
 [[package]]
-name = "app-common"
+name = "app-base"
 version = "0.1.0"
 source = { virtual = "app-base" }
 dependencies = [

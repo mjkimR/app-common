@@ -1,8 +1,8 @@
 [tool.uv.workspace]
-members = ["app-base"]
+members = ["app-base", "app-tools"]
 
 [tool.rye.workspace]
-members = ["app-base"]
+members = ["app-base", "app-tools"]
 
 [tool.ruff]
 exclude = [".git", ".venv", "migrations"]

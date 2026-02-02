@@ -13,7 +13,6 @@ from .file_storage import (
 from .util import (
     get_app_path,
     get_env_filename,
-    get_repo_path,
     load_env,
 )
 from .vector_db import (
@@ -35,6 +34,5 @@ __all__ = [
     "get_file_storage_settings",
     # util functions,
     "get_app_path",
-    "get_repo_path",
     "get_env_filename",
 ]
