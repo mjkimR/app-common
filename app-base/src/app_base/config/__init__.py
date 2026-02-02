@@ -1,3 +1,7 @@
+from .util import (
+    get_app_home,
+    get_env_filename,
+)
 from .auth import (
     AuthSettings,
     get_auth_settings,
@@ -10,19 +14,15 @@ from .file_storage import (
     FileStorageSettings,
     get_file_storage_settings,
 )
-from .util import (
-    get_app_path,
-    get_env_filename,
-    load_env,
-)
 from .vector_db import (
     VectorDBSettings,
     get_vector_db_settings,
 )
 
-load_env()
-
 __all__ = [
+    # util functions,
+    "get_app_home",
+    "get_env_filename",
     # settings classes,
     "AppSettings",
     "get_app_settings",
@@ -32,7 +32,4 @@ __all__ = [
     "get_vector_db_settings",
     "FileStorageSettings",
     "get_file_storage_settings",
-    # util functions,
-    "get_app_path",
-    "get_env_filename",
 ]

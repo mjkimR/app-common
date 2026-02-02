@@ -15,7 +15,7 @@ from app_base.ai.models.schemas import (
     AIModelItem,
     AIModelType,
 )
-from app_base.config import get_app_path
+from app_base.config import get_app_home
 from app_base.core.log import logger
 
 if TYPE_CHECKING:
@@ -47,7 +47,7 @@ class ConfigLoader:
 class AIModelFactory:
     _instance = None
     _lock = Lock()
-    DEFAULT_PATH = os.path.join(get_app_path(), "catalog.yml")
+    DEFAULT_PATH = os.path.join(get_app_home(), "catalog.yml")
 
     def __new__(cls, config_path: str = DEFAULT_PATH):
         if not cls._instance:

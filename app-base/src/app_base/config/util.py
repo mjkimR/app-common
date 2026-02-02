@@ -1,18 +1,14 @@
 import os
-import pathlib
 
 
-def get_app_path():
-    """Get the path to the app_base."""
-    if os.getenv("APP_HOME"):
-        return str(pathlib.Path(os.getenv("APP_HOME")))
-    else:
-        return str(os.getcwd)
+def get_app_home():
+    """Get the path to the app home directory"""
+    return os.environ.get("APP_HOME", os.getcwd())
 
 
 def get_env_filename():
     runtime_env = os.getenv("ENV")
-    home = get_app_path()
+    home = get_app_home()
 
     return f"{home}/.env.{runtime_env}" if runtime_env else f"{home}/.env"
 
