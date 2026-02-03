@@ -4,7 +4,7 @@ import os.path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app_base.config.util import get_project_root, get_env_file_path
+from app_base.config.util import get_env_file_path, get_project_root
 
 
 class AppSettings(BaseSettings):

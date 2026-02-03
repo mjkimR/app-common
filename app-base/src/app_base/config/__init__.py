@@ -1,7 +1,3 @@
-from .util import (
-    get_project_root,
-    get_env_filename,
-)
 from .auth import (
     AuthSettings,
     get_auth_settings,
@@ -13,6 +9,10 @@ from .config import (
 from .file_storage import (
     FileStorageSettings,
     get_file_storage_settings,
+)
+from .util import (
+    get_env_filename,
+    get_project_root,
 )
 from .vector_db import (
     VectorDBSettings,

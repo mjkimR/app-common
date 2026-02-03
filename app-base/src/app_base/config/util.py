@@ -1,7 +1,7 @@
 import os
 from functools import lru_cache
 
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 
 def get_env_filename() -> str:
