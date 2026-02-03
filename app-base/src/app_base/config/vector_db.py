@@ -15,7 +15,11 @@ class VectorDBProviderConfigs(BaseSettings):
     pass
 
 
-TVectorDBProviderConfigs = TypeVar("TVectorDBProviderConfigs", bound=VectorDBProviderConfigs | None)
+TVectorDBProviderConfigs = TypeVar("TVectorDBProviderConfigs", bound=VectorDBProviderConfigs)
+
+
+class NoneVectorDBSettings(VectorDBProviderConfigs):
+    pass
 
 
 class QdrantSettings(VectorDBProviderConfigs):
@@ -32,7 +36,7 @@ class MilvusSettings(VectorDBProviderConfigs):
 
 class VectorDBSettings(BaseSettings, Generic[TVectorDBProviderConfigs]):
     provider: VectorDBProviderType = Field(default="qdrant", alias="VECTOR_DB_PROVIDER")
-    config: TVectorDBProviderConfigs = Field(default=None)
+    config: TVectorDBProviderConfigs
     model_config = SettingsConfigDict(
         env_file=get_env_file_path(),
         env_nested_delimiter="__",
@@ -46,14 +50,14 @@ class VectorDBSettings(BaseSettings, Generic[TVectorDBProviderConfigs]):
         provider = data.get("provider", "none") or os.getenv("VECTOR_DB_PROVIDER", "none")
         data["provider"] = provider
         if not provider or provider == "none":
-            data["config"] = None
+            data["config"] = NoneVectorDBSettings()
         if provider == "qdrant":
-            data["config"] = QdrantSettings()  # type: ignore
+            data["config"] = QdrantSettings(**{})
         elif provider == "milvus":
-            data["config"] = MilvusSettings()  # type: ignore
+            data["config"] = MilvusSettings(**{})
         return data
 
 
 @functools.lru_cache
 def get_vector_db_settings() -> VectorDBSettings:
-    return VectorDBSettings()
+    return VectorDBSettings(**{})

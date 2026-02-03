@@ -4,10 +4,10 @@ from typing import Any, AsyncIterator
 
 import aiofiles
 import aiofiles.os
-from app_base.config import FileStorageSettings
-from app_base.config.file_storage import LocalFileStorageSettings
 
 from app_base.adapter.file_storage.interface import FileStorageClient
+from app_base.config import FileStorageSettings
+from app_base.config.file_storage import LocalFileStorageSettings
 
 
 class LocalStorageProvider(FileStorageClient):

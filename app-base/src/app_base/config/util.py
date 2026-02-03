@@ -1,5 +1,6 @@
 import os
 from functools import lru_cache
+from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
 
@@ -11,12 +12,12 @@ def get_env_filename() -> str:
 
 
 @lru_cache
-def get_env_file_path() -> str | None:
+def get_env_file_path() -> Path | None:
     """Get the path to the appropriate .env file based on ENV variable"""
     env_file = get_env_filename()
     env_path = find_dotenv(env_file)
     if env_path:
-        return env_path
+        return Path(env_path)
     else:
         return None
 
@@ -38,5 +39,6 @@ def get_project_root() -> str:
 
 def load_env():
     """Load environment variables from the .env file"""
-    if os.path.exists(get_env_file_path()):
-        load_dotenv(get_env_file_path())
+    path = get_env_file_path()
+    if path and os.path.exists(path):
+        load_dotenv(path)

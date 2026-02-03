@@ -4,7 +4,6 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-
 from app_base.base.schemas.paginated import PaginatedList
 
 

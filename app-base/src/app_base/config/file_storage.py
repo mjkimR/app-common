@@ -13,8 +13,12 @@ class FileProviderConfigs(BaseSettings):
     pass
 
 
-TFileProviderConfigs = TypeVar("TFileProviderConfigs", bound=FileProviderConfigs | None)
+TFileProviderConfigs = TypeVar("TFileProviderConfigs", bound=FileProviderConfigs)
 FileProviderType = Literal["none", "local", "s3"]
+
+
+class NoneFileStorageSettings(FileProviderConfigs):
+    pass
 
 
 class LocalFileStorageSettings(FileProviderConfigs):
@@ -28,8 +32,8 @@ class S3FileStorageSettings(FileProviderConfigs):
     """Settings for when the file storage provider is 's3'."""
 
     endpoint_url: str = "http://localhost:9000"
-    access_key: SecretStr = Field(default="minioadmin")
-    secret_key: SecretStr = Field(default="minioadmin")
+    access_key: SecretStr = Field(default=SecretStr("minioadmin"))
+    secret_key: SecretStr = Field(default=SecretStr("minioadmin"))
     bucket_name: str = "my-bucket"
     region_name: str | None = None
 
@@ -45,7 +49,7 @@ class FileStorageSettings(BaseSettings, Generic[TFileProviderConfigs]):
     provider: str = Field(default="none", alias="FS_PROVIDER")
 
     # Nested settings for provider
-    config: TFileProviderConfigs = Field(default=None)
+    config: TFileProviderConfigs
     model_config = SettingsConfigDict(
         env_file=get_env_file_path(),
         env_nested_delimiter="__",
@@ -59,15 +63,15 @@ class FileStorageSettings(BaseSettings, Generic[TFileProviderConfigs]):
         provider = data.get("provider", "none") or os.getenv("FS_PROVIDER", "none")
         data["provider"] = provider
         if not provider or provider == "none":
-            data["config"] = None
+            data["config"] = NoneFileStorageSettings()
         if provider == "s3":
-            data["config"] = S3FileStorageSettings()
+            data["config"] = S3FileStorageSettings(**{})
         elif provider == "local":
-            data["config"] = LocalFileStorageSettings()
+            data["config"] = LocalFileStorageSettings(**{})
         return data
 
 
 @functools.lru_cache
 def get_file_storage_settings() -> FileStorageSettings:
     """Returns a cached instance of the file storage settings."""
-    return FileStorageSettings()
+    return FileStorageSettings(**{})

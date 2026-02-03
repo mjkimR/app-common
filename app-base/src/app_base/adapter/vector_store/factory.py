@@ -1,9 +1,9 @@
-import app_base.core.vector_store.providers  # noqa: F401 to register providers
 from cachetools import LRUCache
-from app_base.config import get_vector_db_settings
 from langchain_core.vectorstores import VectorStore
 
+import app_base.adapter.vector_store.providers  # noqa: F401 to register providers
 from app_base.adapter.vector_store.interface import VectorStoreProvider
+from app_base.config import get_vector_db_settings
 
 vector_store_cache = LRUCache(maxsize=16)
 
@@ -19,7 +19,7 @@ class VectorStoreFactory:
         TODO: More detailed configuration (index settings, etc.) / multi vector search / ...
         """
         settings = get_vector_db_settings()
-        cache_key = (settings.KIND, collection_name, model_name)
+        cache_key = (settings.provider, collection_name, model_name)
         if cache_key in vector_store_cache:
             return vector_store_cache[cache_key]
         store = self.provider.create_vector_store(collection_name, model_name)

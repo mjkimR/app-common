@@ -3,17 +3,17 @@ from typing import Any, AsyncIterator
 import aiobotocore.session
 from aiobotocore.client import AioBaseClient
 from botocore.exceptions import ClientError
-from app_base.config import FileStorageSettings
-from app_base.config.file_storage import S3FileStorageSettings
 
 from app_base.adapter.file_storage.interface import FileStorageClient
+from app_base.config import FileStorageSettings
+from app_base.config.file_storage import S3FileStorageSettings
 
 
 class S3StorageProvider(FileStorageClient):
     """Manages file operations with an S3-compatible storage service."""
 
     def __init__(self, client: AioBaseClient, bucket_name: str):
-        self.client = client
+        self.client: Any = client
         self.bucket_name = bucket_name
 
     @classmethod
@@ -25,13 +25,14 @@ class S3StorageProvider(FileStorageClient):
             raise ValueError("S3 storage settings are not configured.")
         config: S3FileStorageSettings = settings.config
         session = aiobotocore.session.get_session()
-        client = await session.create_client(
+        context = session.create_client(
             "s3",
             aws_access_key_id=config.access_key.get_secret_value(),
             aws_secret_access_key=config.secret_key.get_secret_value(),
             region_name=config.region_name,
             endpoint_url=config.endpoint_url,
         )
+        client = await context.__aenter__()
         return cls(client, config.bucket_name)
 
     async def close(self) -> None:

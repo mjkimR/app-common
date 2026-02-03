@@ -22,4 +22,4 @@ class AppSettings(BaseSettings):
 
 @functools.lru_cache
 def get_app_settings():
-    return AppSettings()  # type: ignore
+    return AppSettings(**{})

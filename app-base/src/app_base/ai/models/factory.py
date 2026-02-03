@@ -169,7 +169,7 @@ class AIModelFactory:
         if conflicts:
             raise ValueError(f"Configuration Error: Model names must be unique. Conflicts found: {conflicts}")
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=32)  # noqa: B019 (Singleton)
     def _get_llm(self, name: str) -> "BaseChatModel":
         """Return a cached LLM instance resolved from the catalog."""
         config = self._resolve_config(name, AIModelType.LLM)
@@ -222,7 +222,7 @@ class AIModelFactory:
 
         return fallback_models
 
-    @lru_cache(maxsize=8)
+    @lru_cache(maxsize=8)  # noqa: B019 (Singleton)
     def _get_embedding(self, name: str) -> "Embeddings":
         """Return a cached embedding instance resolved from the catalog."""
         config = self._resolve_config(name, AIModelType.EMBEDDING)

@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Any
 
-from app_base.config import VectorDBSettings
 from langchain_core.vectorstores import VectorStore
+
+from app_base.config import VectorDBSettings
 
 
 class VectorStoreProvider(ABC):

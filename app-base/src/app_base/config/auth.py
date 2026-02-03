@@ -21,4 +21,4 @@ class AuthSettings(BaseSettings):
 
 @functools.lru_cache
 def get_auth_settings():
-    return AuthSettings()  # type: ignore
+    return AuthSettings(**{})

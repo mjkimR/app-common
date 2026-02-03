@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from app_base.config import FileStorageSettings, get_file_storage_settings
 from fastapi.params import Depends
 
 from app_base.adapter.file_storage.interface import FileStorageClient
 from app_base.adapter.file_storage.providers import LocalStorageProvider, S3StorageProvider
+from app_base.config import FileStorageSettings, get_file_storage_settings
 
 
 class FileStorageFactory:

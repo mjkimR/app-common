@@ -9,12 +9,11 @@ from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from app_base.base.models.mixin import Base, SoftDeleteMixin, TimestampMixin, UUIDMixin
+from app_base.base.repos.base import BaseRepository
 from pydantic import BaseModel
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
-
-from app_base.base.models.mixin import Base, SoftDeleteMixin, TimestampMixin, UUIDMixin
-from app_base.base.repos.base import BaseRepository
 
 # =============================================================================
 # Mock Models

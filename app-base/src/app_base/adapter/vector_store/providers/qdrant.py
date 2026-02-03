@@ -1,11 +1,10 @@
 from typing import Any
 
-from app_base.config import VectorDBSettings
-from app_base.config.vector_db import QdrantSettings
-
 from app_base.adapter.vector_store.interface import VectorStoreProvider, import_error_handler
 from app_base.adapter.vector_store.registry import register_vector_store
 from app_base.ai.models import AIModelFactory
+from app_base.config import VectorDBSettings
+from app_base.config.vector_db import QdrantSettings
 
 
 @register_vector_store("qdrant")

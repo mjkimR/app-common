@@ -22,7 +22,7 @@ class FileStorageClient(ABC):
         pass
 
     @abstractmethod
-    async def download_file_stream(self, file_path: str) -> AsyncIterator[bytes]:
+    def download_file_stream(self, file_path: str) -> AsyncIterator[bytes]:
         """Downloads a file as a stream of bytes."""
         pass
 

@@ -1,9 +1,9 @@
 from contextlib import asynccontextmanager
 
-from app_base.config import get_file_storage_settings
 from fastapi import FastAPI
 
 from app_base.adapter.file_storage.factory import FileStorageFactory
+from app_base.config import get_file_storage_settings
 from app_base.core.log import logger
 
 
@@ -11,7 +11,7 @@ from app_base.core.log import logger
 async def lifespan_file_storage(app: FastAPI):
     """Lifespan context manager to initialize and cleanup the file storage client."""
     settings = get_file_storage_settings()
-    logger.info(f"Initializing file storage client of kind: {settings.KIND}")
+    logger.info(f"Initializing file storage client of provider: {settings.provider}")
     provider = await FileStorageFactory.create_client(config=settings)
     if hasattr(app, "state"):
         app.state.file_storage = provider
