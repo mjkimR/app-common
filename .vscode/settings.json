@@ -1,10 +1,12 @@
 {
     "python-envs.pythonProjects": [],
     "python.analysis.extraPaths": [
-        "./src"
+        "./src/app-base",
+        "./src/app-tools"
     ],
     "python.testing.pytestArgs": [
-        "tests"
+        "./src/app-base/tests",
+        "./src/app-tools/tests"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
