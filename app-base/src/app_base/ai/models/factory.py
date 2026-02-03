@@ -34,6 +34,7 @@ class ConfigLoader:
             value = os.environ.get(env_var)
             if value is None:
                 logger.warning(f"Environment variable '{env_var}' is not set but required in config.")
+                return ""
             return value
 
         if not os.path.exists(path):
