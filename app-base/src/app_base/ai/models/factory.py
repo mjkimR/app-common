@@ -15,7 +15,7 @@ from app_base.ai.models.schemas import (
     AIModelItem,
     AIModelType,
 )
-from app_base.config import get_app_home
+from app_base.config import get_project_root
 from app_base.core.log import logger
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 class ConfigLoader:
     @staticmethod
     def load_yaml_with_env(path: str) -> dict[str, Any]:
+        """Load a YAML file and substitute ${ENV_VAR} placeholders from the environment."""
         pattern = re.compile(r"\$\{(\w+)}")
 
         def replace_env(match):
@@ -47,9 +48,10 @@ class ConfigLoader:
 class AIModelFactory:
     _instance = None
     _lock = Lock()
-    DEFAULT_PATH = os.path.join(get_app_home(), "catalog.yml")
+    DEFAULT_PATH = os.path.join(get_project_root(), "catalog.yml")
 
     def __new__(cls, config_path: str = DEFAULT_PATH):
+        """Create or return the singleton instance of the factory."""
         if not cls._instance:
             with cls._lock:
                 if not cls._instance:
@@ -58,6 +60,7 @@ class AIModelFactory:
         return cls._instance
 
     def __init__(self, config_path: str = DEFAULT_PATH):
+        """Initialize the singleton by loading and validating the model catalog."""
         if getattr(self, "_initialized", False):
             return
 
@@ -79,6 +82,7 @@ class AIModelFactory:
         self._initialized = True
 
     def _initial_dictionaries(self, raw_config: dict[str, Any]):
+        """Parse raw catalog data into models, aliases, and groups dictionaries."""
         for item in raw_config.get("models", []):
             if "name" not in item:
                 raise ValueError("Each models item must have a 'name' field.")
@@ -167,6 +171,7 @@ class AIModelFactory:
 
     @lru_cache(maxsize=32)
     def _get_llm(self, name: str) -> "BaseChatModel":
+        """Return a cached LLM instance resolved from the catalog."""
         config = self._resolve_config(name, AIModelType.LLM)
         return self.llm_factory.create_model(config)
 
@@ -219,17 +224,17 @@ class AIModelFactory:
 
     @lru_cache(maxsize=8)
     def _get_embedding(self, name: str) -> "Embeddings":
+        """Return a cached embedding instance resolved from the catalog."""
         config = self._resolve_config(name, AIModelType.EMBEDDING)
         return self.embedding_factory.create_model(config)
 
     def get_embedding(self, name: str) -> "Embeddings":
+        """Return the embedding model instance for the given name."""
         model = self._get_embedding(name)
         return model
 
     def get_embedding_dimension(self, name: str) -> int:
-        """
-        Returns the dimension of the embedding model.
-        """
+        """Returns the dimension of the embedding model."""
         config = self._resolve_config(name, AIModelType.EMBEDDING)
         if config.dimension:
             return config.dimension
@@ -269,6 +274,7 @@ class AIModelFactory:
         self.__init__(self._config_path)
 
     def get_catalog(self, model_type: AIModelType | str) -> list[AICatalogItem]:
+        """Return a sorted list of catalog items filtered by model type."""
         target_type = AIModelType(model_type) if isinstance(model_type, str) else model_type
         results: list[AICatalogItem] = []
 
@@ -285,6 +291,7 @@ class AIModelFactory:
         return sorted(results, key=lambda x: (x.kind == "alias", x.provider, x.name))
 
     def get_group(self, name: str) -> AIModelGroupItem:
+        """Return a model group by name from the loaded catalog."""
         if name not in self.groups:
             raise ValueError(f"Model group '{name}' not found.")
         return self.groups[name]

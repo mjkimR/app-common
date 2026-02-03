@@ -1,20 +1,42 @@
 import os
+from functools import lru_cache
+
+from dotenv import load_dotenv, find_dotenv
 
 
-def get_app_home():
-    """Get the path to the app home directory"""
-    return os.environ.get("APP_HOME", os.getcwd())
+def get_env_filename() -> str:
+    """Get the name of the appropriate .env file based on ENV variable"""
+    env = os.getenv("ENV")
+    return f".env.{env}" if env else ".env"
 
 
-def get_env_filename():
-    runtime_env = os.getenv("ENV")
-    home = get_app_home()
+@lru_cache
+def get_env_file_path() -> str | None:
+    """Get the path to the appropriate .env file based on ENV variable"""
+    env_file = get_env_filename()
+    env_path = find_dotenv(env_file)
+    if env_path:
+        return env_path
+    else:
+        return None
 
-    return f"{home}/.env.{runtime_env}" if runtime_env else f"{home}/.env"
+
+@lru_cache
+def get_project_root() -> str:
+    """Get the project home directory from APP_HOME env variable or default to .env file location"""
+    root = os.environ.get("APP_HOME")
+    if root:
+        return root
+
+    env_path = get_env_file_path()
+    if env_path:
+        # If .env file is found, return its directory as project root
+        return os.path.dirname(env_path)
+
+    return os.getcwd()
 
 
 def load_env():
-    if os.path.exists(get_env_filename()):
-        from dotenv import load_dotenv
-
-        load_dotenv(get_env_filename())
+    """Load environment variables from the .env file"""
+    if os.path.exists(get_env_file_path()):
+        load_dotenv(get_env_file_path())

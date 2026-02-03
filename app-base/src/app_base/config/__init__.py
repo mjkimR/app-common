@@ -1,5 +1,5 @@
 from .util import (
-    get_app_home,
+    get_project_root,
     get_env_filename,
 )
 from .auth import (
@@ -21,7 +21,7 @@ from .vector_db import (
 
 __all__ = [
     # util functions,
-    "get_app_home",
+    "get_project_root",
     "get_env_filename",
     # settings classes,
     "AppSettings",

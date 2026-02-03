@@ -50,7 +50,7 @@ class TestBaseRepositorySelect:
 
     def test_select_with_single_where_condition(self, mock_repository):
         """Should app_kitly single where condition."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockModel
+        from tests.unit.test_base.conftest import MockModel
 
         condition = MockModel.name == "test"
         stmt = mock_repository._select(where=condition)
@@ -58,7 +58,7 @@ class TestBaseRepositorySelect:
 
     def test_select_with_sequence_where_conditions(self, mock_repository):
         """Should app_kitly multiple where conditions from sequence."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockModel
+        from tests.unit.test_base.conftest import MockModel
 
         conditions = [MockModel.name == "test", MockModel.description == "desc"]
         stmt = mock_repository._select(where=conditions)
@@ -71,7 +71,7 @@ class TestBaseRepositorySelect:
 
     def test_select_with_order_by(self, mock_repository):
         """Should app_kitly order_by conditions."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockModel
+        from tests.unit.test_base.conftest import MockModel
 
         stmt = mock_repository._select(order_by=[MockModel.name.asc()])
         assert stmt is not None
@@ -136,7 +136,7 @@ class TestBaseRepositoryExists:
     @pytest.mark.asyncio
     async def test_exists_returns_true_when_found(self, mock_repository, mock_async_session):
         """Should return True when record exists."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockModel
+        from tests.unit.test_base.conftest import MockModel
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = 1
@@ -150,7 +150,7 @@ class TestBaseRepositoryExists:
     @pytest.mark.asyncio
     async def test_exists_returns_false_when_not_found(self, mock_repository, mock_async_session):
         """Should return False when record doesn't exist."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockModel
+        from tests.unit.test_base.conftest import MockModel
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
@@ -261,7 +261,7 @@ class TestBaseRepositoryUpdate:
     @pytest.mark.asyncio
     async def test_update_by_pk_with_schema(self, mock_repository, mock_async_session, mock_model, sample_uuid):
         """Should update model with schema data."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockUpdateSchema
+        from tests.unit.test_base.conftest import MockUpdateSchema
 
         mock_result = MagicMock()
         mock_result.rowcount = 1
@@ -296,7 +296,7 @@ class TestBaseRepositoryUpdate:
     @pytest.mark.asyncio
     async def test_update_by_pk_empty_data_raises_error(self, mock_repository, mock_async_session, sample_uuid):
         """Should raise error when update data is empty."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockUpdateSchema
+        from tests.unit.test_base.conftest import MockUpdateSchema
 
         # Schema with no fields set
         update_schema = MockUpdateSchema()
@@ -313,7 +313,7 @@ class TestBaseRepositoryUpdate:
     @pytest.mark.asyncio
     async def test_update_by_pk_returns_none_when_not_found(self, mock_repository, mock_async_session, sample_uuid):
         """Should return None when record not found."""
-        from src.tests.test_app_base.unit.test_base.conftest import MockUpdateSchema
+        from tests.unit.test_base.conftest import MockUpdateSchema
 
         mock_result = MagicMock()
         mock_result.rowcount = 0

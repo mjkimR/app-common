@@ -6,6 +6,8 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import TypeVar
 
+from app_base.config.util import get_env_file_path
+
 
 class FileProviderConfigs(BaseSettings):
     pass
@@ -45,6 +47,7 @@ class FileStorageSettings(BaseSettings, Generic[TFileProviderConfigs]):
     # Nested settings for provider
     config: TFileProviderConfigs = Field(default=None)
     model_config = SettingsConfigDict(
+        env_file=get_env_file_path(),
         env_nested_delimiter="__",
         validate_assignment=True,
         extra="ignore",

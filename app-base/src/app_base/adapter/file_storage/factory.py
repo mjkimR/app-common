@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from config import FileStorageSettings, get_file_storage_settings
+from app_base.config import FileStorageSettings, get_file_storage_settings
 from fastapi.params import Depends
 
 from app_base.adapter.file_storage.interface import FileStorageClient

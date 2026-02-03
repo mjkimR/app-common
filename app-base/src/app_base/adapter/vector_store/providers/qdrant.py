@@ -1,7 +1,7 @@
 from typing import Any
 
-from config import VectorDBSettings
-from config.vector_db import QdrantSettings
+from app_base.config import VectorDBSettings
+from app_base.config.vector_db import QdrantSettings
 
 from app_base.adapter.vector_store.interface import VectorStoreProvider, import_error_handler
 from app_base.adapter.vector_store.registry import register_vector_store

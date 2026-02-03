@@ -29,10 +29,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# file storage
 s3 = [
     "aiobotocore>=3.1.1",
 ]
+file_storage_all = ["app-base[s3]"]
+# vector databases
 qdrant = ["qdrant-client>=1.16.2", "langchain-qdrant>=1.1.0"]
+vector_db_all = ["app-base[qdrant]"]
+# feature set
 ai = [
     "langchain-core>=1.2.7",
     "langgraph>=1.0.7",

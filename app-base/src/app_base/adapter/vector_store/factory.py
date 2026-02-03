@@ -1,6 +1,6 @@
 import app_base.core.vector_store.providers  # noqa: F401 to register providers
 from cachetools import LRUCache
-from config import get_vector_db_settings
+from app_base.config import get_vector_db_settings
 from langchain_core.vectorstores import VectorStore
 
 from app_base.adapter.vector_store.interface import VectorStoreProvider

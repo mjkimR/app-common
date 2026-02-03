@@ -3,8 +3,8 @@ from typing import Any, AsyncIterator
 import aiobotocore.session
 from aiobotocore.client import AioBaseClient
 from botocore.exceptions import ClientError
-from config import FileStorageSettings
-from config.file_storage import S3FileStorageSettings
+from app_base.config import FileStorageSettings
+from app_base.config.file_storage import S3FileStorageSettings
 
 from app_base.adapter.file_storage.interface import FileStorageClient
 
@@ -35,9 +35,7 @@ class S3StorageProvider(FileStorageClient):
         return cls(client, config.bucket_name)
 
     async def close(self) -> None:
-        """
-        Closes the S3 client.
-        """
+        """Closes the S3 client."""
         await self.client.close()
 
     async def download_file(self, file_path: str) -> bytes:

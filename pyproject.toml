@@ -14,7 +14,7 @@ select = ["E", "F", "I", "B"]
 ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/tests/**/*.py" = ["F403", "E402"]
+"**/tests/**/*.py" = ["F403", "E402"]
 "__init__.py" = ["F403"]
 
 [tool.ruff.format]

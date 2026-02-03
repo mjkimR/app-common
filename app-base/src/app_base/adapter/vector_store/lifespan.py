@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from config import get_vector_db_settings
+from app_base.config import get_vector_db_settings
 from fastapi import FastAPI
 
 from app_base.adapter.vector_store.factory import vector_store_cache
