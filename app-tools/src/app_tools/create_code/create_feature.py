@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-import argparse
 import re
 from pathlib import Path
 
@@ -19,11 +17,11 @@ def to_snake_case(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-def update_router(plural_name: str):
+def update_router(plural_name: str, base_dir: Path):
     """
-    Updates backend/app/router.py to include the new module's router.
+    Updates backend/app/router.py to include the new feature's router.
     """
-    router_path = Path("backend/app/router.py")
+    router_path = base_dir / "app/router.py"
     try:
         lines = router_path.read_text().splitlines()
         if not lines:
@@ -79,24 +77,28 @@ def update_router(plural_name: str):
         print(f"An error occurred while updating {router_path}: {e}")
 
 
-def create_module(base_dir: str, name: str, plural: str | None):
+def create_feature(name: str, plural: str | None, base_dir: Path | None = None):
     """
-    Generates a new CRUD module.
+    Generates a new CRUD feature.
 
-    :param name: The name of the module in CamelCase (e.g., "Article").
-    :param plural: The plural name of the module in snake_case.
+    :param name: The name of the feature in CamelCase (e.g., "Article").
+    :param plural: The plural name of the feature in snake_case.
+    :param base_dir: The base directory of the project.
     """
+    if base_dir is None:
+        base_dir = Path.cwd()
+
     class_name = name
     singular_name = to_snake_case(class_name)
     plural_name = plural if plural else pluralize(singular_name)
 
-    base_dir = Path(__file__).parent.parent / f"src/app/features/{plural_name}"
+    feature_dir = base_dir / f"app/features/{plural_name}"
 
-    if base_dir.exists():
-        print(f"Error: Module '{plural_name}' already exists.")
+    if feature_dir.exists():
+        print(f"Error: Feature '{plural_name}' already exists at {feature_dir}.")
         return
 
-    print(f"Creating module '{class_name}' in '{base_dir}'...")
+    print(f"Creating feature '{class_name}' in '{feature_dir}'...")
 
     # Define file structure and content templates
     files_to_create = {
@@ -294,31 +296,14 @@ async def delete_{singular_name}(
 
     # Create directories and files
     for file_path, content in files_to_create.items():
-        path = base_dir / file_path
+        path = feature_dir / file_path
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content.strip())
         print(f"  - Created {path}")
 
-    print(f"\nModule '{class_name}' created successfully!")
-    update_router(plural_name)
+    print(f"\nFeature '{class_name}' created successfully!")
+    update_router(plural_name, base_dir)
 
     print("\nNext steps:")
-    print(f"1. Review the generated files in '{base_dir}'.")
+    print(f"1. Review the generated files in '{feature_dir}'.")
     print("2. Add the new model to 'alembic' and run migrations.")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create a new FastAPI CRUD module.")
-    parser.add_argument(
-        "--name",
-        type=str,
-        required=True,
-        help="The name of the module in CamelCase (e.g., 'Article').",
-    )
-    parser.add_argument(
-        "--plural",
-        type=str,
-        help="The plural name of the module in snake_case (e.g., 'articles'). If not provided, it will be auto-generated.",
-    )
-    args = parser.parse_args()
-    create_module(args.name, args.plural)

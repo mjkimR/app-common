@@ -9,6 +9,9 @@ dependencies = [
     "questionary>=2.1.1",
 ]
 
+[project.scripts]
+app-tools = "app_tools.cli:cli"
+
 [dependency-groups]
 dev = [
     "polyfactory>=3.2.0",
