@@ -1,6 +1,6 @@
 import click
 
-from app_tools.create_module import create_code
+from app_tools.create_code import create_code
 
 
 @click.group()
