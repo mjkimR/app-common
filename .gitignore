@@ -7,20 +7,18 @@ wheels/
 *.egg-info
 
 # IDE
-.idea
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.favorites.json
-.ruff_cache
 
 # Virtual environments
 .venv
 
 # Others
-.env
-.test*
 **/logs
-.references
+.*
+!.gitignore
+!.env.example
+!.python-version
