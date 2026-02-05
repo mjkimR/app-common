@@ -19,17 +19,17 @@ class DomainEvent(BaseModel):
     Attributes:
         id: Unique event identifier
         source: Event origin source (e.g., "/orders/service", "urn:myapp:orders")
-        event_type: Event type (e.g., "order.created", "user.registered")
-        payload: Event data
+        type: Event type (e.g., "order.created", "user.registered")
+        data: Event data
         meta: Additional metadata (aggregate_type, aggregate_id, correlation_id, etc.)
-        occurred_at: Event occurrence time (UTC)
+        time: Event occurrence time (UTC)
 
     Example:
         ```python
         event = DomainEvent(
             source="/orders/service",
-            event_type="order.created",
-            payload={"order_id": "123", "total": 100.0},
+            type="order.created",
+            data={"order_id": "123", "total": 100.0},
             meta={"correlation_id": "abc-123"},
         )
         ```
@@ -40,26 +40,22 @@ class DomainEvent(BaseModel):
         default="",
         description="Event origin source (e.g., '/orders/service')",
     )
-    event_type: str = Field(..., description="Event type (e.g., 'order.created')")
-    payload: dict[str, Any] = Field(default_factory=dict, description="Event data")
+    type: str = Field(..., description="Event type (e.g., 'order.created')")
+    data: dict[str, Any] = Field(default_factory=dict, description="Event data")
     meta: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
-    occurred_at: datetime = Field(
+    time: datetime = Field(
         default_factory=get_current_utc_time,
         description="Event occurrence time (UTC)",
     )
 
-    def parse_payload(self, schema: type[TPayload]) -> TPayload:
-        """Parses the payload into the specified schema."""
-        return schema.model_validate(self.payload)
-
-    def to_cloudevents_dict(self) -> dict[str, Any]:
+    def to_message(self) -> dict[str, Any]:
         """Converts to CloudEvents 1.0 compatible format."""
         return {
             "specversion": "1.0",
             "id": str(self.id),
             "source": self.source,
-            "type": self.event_type,
-            "time": self.occurred_at.isoformat(),
-            "data": self.payload,
+            "type": self.type,
+            "time": self.time.isoformat(),
+            "data": self.data,
             **{f"x-meta-{k}": v for k, v in self.meta.items()},
         }

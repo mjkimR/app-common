@@ -6,6 +6,10 @@ from .config import (
     AppSettings,
     get_app_settings,
 )
+from .event_broker import (
+    EventBrokerSettings,
+    get_event_broker_settings,
+)
 from .file_storage import (
     FileStorageSettings,
     get_file_storage_settings,
@@ -32,4 +36,6 @@ __all__ = [
     "get_vector_db_settings",
     "FileStorageSettings",
     "get_file_storage_settings",
+    "EventBrokerSettings",
+    "get_event_broker_settings",
 ]
