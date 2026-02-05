@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app_base.adapter.vector_store.factory import vector_store_cache
-from app_base.adapter.vector_store.instance import setup_vector_store_provider, close_vector_store
+from app_base.adapter.vector_store.instance import close_vector_store, setup_vector_store_provider
 from app_base.config import get_vector_db_settings
 
 

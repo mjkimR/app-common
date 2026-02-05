@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app_base.adapter.file_storage.instance import setup_storage_client, close_storage_client
+from app_base.adapter.file_storage.instance import close_storage_client, setup_storage_client
 from app_base.config import get_file_storage_settings
 
 
