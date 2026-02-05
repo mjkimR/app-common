@@ -24,3 +24,6 @@ indent-style = "space"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+extraPaths = ["./app-base/src", "./app-tools/src"]

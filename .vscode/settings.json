@@ -1,17 +1,11 @@
 {
     "python-envs.pythonProjects": [],
-    "python.analysis.extraPaths": [
-        "./src/app-base",
-        "./src/app-tools"
-    ],
     "python.testing.pytestArgs": [
-        "./src/app-base/tests",
-        "./src/app-tools/tests"
+        "./app-base/src/tests",
+        "./app-tools/src/tests"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.analysis.typeCheckingMode": "basic",
-    "python.languageServer": "Pylance",
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.insertSpaces": true,
