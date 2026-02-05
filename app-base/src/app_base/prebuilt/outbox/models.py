@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 class EventStatus(str, enum.Enum):
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
-    COMPLETED = "COMPLETED"
+    PUBLISHED = "PUBLISHED"
     FAILED = "FAILED"
 
 

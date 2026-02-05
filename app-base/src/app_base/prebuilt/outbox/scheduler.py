@@ -12,6 +12,8 @@ from .models import EventStatus
 from .repos import OutboxRepository
 
 logger = logging.getLogger(__name__)
+_ZOMBIE_MAX_RETRIES = 3
+_ZOMBIE_TIMEOUT = 60 * 60  # 1 hour
 
 
 async def dispatch_event(event_type: str, event: DomainEvent) -> None:
@@ -72,7 +74,7 @@ async def process_outbox_events_job():
                             },
                         ),
                     )
-                    event.status = EventStatus.COMPLETED
+                    event.status = EventStatus.PUBLISHED
                     event.processed_at = datetime.datetime.now(datetime.timezone.utc)
                 except Exception as e:
                     logger.error(f"Failed to process event {event.id}: {e}")
@@ -90,9 +92,57 @@ async def process_outbox_events_job():
 
 async def resolve_zombie_events():
     """
-    Resolves zombie events. (1 hour timeout)
+    Resolves zombie events that have been stuck in PROCESSING state for too long.
+
+    These are events that were picked up for processing but never completed,
+    likely due to a crash or network issue. This function resets them to PENDING
+    so they can be retried, or marks them as FAILED if max retries exceeded (DLQ).
     """
-    raise NotImplementedError
+    logger.info("Running zombie event resolver...")
+
+    async with AsyncTransaction() as session:
+        try:
+            repo = OutboxRepository()
+
+            # Find events stuck in PROCESSING for more than the timeout
+            timeout_threshold = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+                seconds=_ZOMBIE_TIMEOUT
+            )
+
+            zombie_events = await repo.get_zombie_events(session, timeout_threshold)
+
+            if not zombie_events:
+                logger.info("No zombie events found.")
+                return
+
+            logger.warning(f"Found {len(zombie_events)} zombie events.")
+
+            pending_count = 0
+            failed_count = 0
+
+            for event in zombie_events:
+                event.retry_count += 1
+
+                if event.retry_count >= _ZOMBIE_MAX_RETRIES:
+                    # Dead Letter Queue: exceeded max retries
+                    event.status = EventStatus.FAILED
+                    failed_count += 1
+                    logger.error(
+                        f"Event {event.id} exceeded max retries ({_ZOMBIE_MAX_RETRIES}). Marking as FAILED (DLQ)."
+                    )
+                else:
+                    # Reset to PENDING for retry
+                    event.status = EventStatus.PENDING
+                    pending_count += 1
+
+                session.add(event)
+
+            await session.commit()
+            logger.info(f"Zombie resolution complete: {pending_count} reset to PENDING, {failed_count} moved to DLQ.")
+
+        except Exception as e:
+            logger.error(f"Error during zombie event resolution: {e}")
+            await session.rollback()
 
 
 @asynccontextmanager
@@ -101,8 +151,15 @@ async def scheduler_lifespan(app: FastAPI):
     scheduler.add_job(
         process_outbox_events_job,
         "interval",
-        seconds=10,
+        seconds=5,
         id="process_outbox",
+        max_instances=1,
+    )
+    scheduler.add_job(
+        resolve_zombie_events,
+        "interval",
+        seconds=60 * 10,
+        id="resolve_zombies",
         max_instances=1,
     )
     scheduler.start()

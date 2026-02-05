@@ -41,7 +41,7 @@ class OutboxService:
         Updates the status of an outbox event. Used by the event publisher worker.
         """
         update_data = OutboxUpdate(status=status)
-        if status == EventStatus.COMPLETED:
+        if status == EventStatus.PUBLISHED:
             update_data.processed_at = datetime.datetime.now(datetime.timezone.utc)
 
         if retry_count is not None:
