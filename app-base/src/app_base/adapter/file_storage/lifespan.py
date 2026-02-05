@@ -2,24 +2,17 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app_base.adapter.file_storage.factory import FileStorageFactory
+from app_base.adapter.file_storage.instance import setup_storage_client, close_storage_client
 from app_base.config import get_file_storage_settings
-from app_base.core.log import logger
 
 
 @asynccontextmanager
 async def lifespan_file_storage(app: FastAPI):
     """Lifespan context manager to initialize and cleanup the file storage client."""
     settings = get_file_storage_settings()
-    logger.info(f"Initializing file storage client of provider: {settings.provider}")
-    provider = await FileStorageFactory.create_client(config=settings)
-    if hasattr(app, "state"):
-        app.state.file_storage = provider
-    else:
-        raise RuntimeError("FastAPI app does not have 'state' attribute.")
-    logger.info("File storage client initialized successfully.")
+    await setup_storage_client(settings)
 
     yield
 
     # Cleanup on shutdown
-    await provider.close()
+    await close_storage_client()

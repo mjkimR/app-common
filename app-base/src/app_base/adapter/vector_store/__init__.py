@@ -1,11 +1,17 @@
-from app_base.adapter.vector_store.deps import (
-    get_vector_store_dependency,
+from .interface import VectorStoreProvider
+from .factory import VectorStoreFactory
+from .instance import (
+    get_vector_store_provider,
     get_vector_store_factory,
+    get_vector_store,
 )
-from app_base.adapter.vector_store.lifespan import lifespan_vector_store_client
+from .lifespan import lifespan_vector_store
 
 __all__ = [
+    "VectorStoreProvider",
+    "VectorStoreFactory",
+    "get_vector_store_provider",
     "get_vector_store_factory",
-    "get_vector_store_dependency",
-    "lifespan_vector_store_client",
+    "get_vector_store",
+    "lifespan_vector_store",
 ]

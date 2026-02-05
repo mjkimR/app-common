@@ -59,7 +59,7 @@ class AIModelItem(BaseModel):
         for key, value in self.args.items():
             if key in self.param_spec.exclude:
                 continue
-            mapped_key = self.param_spec.map.get(key)
+            mapped_key = self.param_spec.map.get(key, key)
             mapped_args[mapped_key] = value
         return mapped_args
 

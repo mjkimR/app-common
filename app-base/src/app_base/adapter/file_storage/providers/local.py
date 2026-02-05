@@ -34,7 +34,8 @@ class LocalStorageProvider(FileStorageClient):
     def _get_full_path(self, file_path: str) -> Path:
         """Resolves the full, absolute path for a file, ensuring it's within the root."""
         full_path = self.root_path.joinpath(file_path).resolve()
-        if self.root_path.resolve() not in full_path.parents:
+        # Ensure the resolved path is within or is the root_path itself
+        if full_path != self.root_path.resolve() and self.root_path.resolve() not in full_path.parents:
             raise ValueError("File path is outside the allowed storage directory.")
         return full_path
 

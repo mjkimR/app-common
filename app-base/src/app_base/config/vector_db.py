@@ -44,17 +44,23 @@ class VectorDBSettings(BaseSettings, Generic[TVectorDBProviderConfigs]):
         extra="ignore",
     )
 
+    @classmethod
+    def _get_config_class(cls, provider: str) -> type[VectorDBProviderConfigs]:
+        """Get the appropriate config class for the provider."""
+        config_map = {
+            "none": NoneVectorDBSettings,
+            "qdrant": QdrantSettings,
+            "milvus": MilvusSettings,
+        }
+        return config_map.get(provider, NoneVectorDBSettings)
+
     @model_validator(mode="before")
     @classmethod
     def check_provider_requirements(cls, data: dict) -> dict:
         provider = data.get("provider", "none") or os.getenv("VECTOR_DB_PROVIDER", "none")
         data["provider"] = provider
-        if not provider or provider == "none":
-            data["config"] = NoneVectorDBSettings()
-        if provider == "qdrant":
-            data["config"] = QdrantSettings(**{})
-        elif provider == "milvus":
-            data["config"] = MilvusSettings(**{})
+        config_class = cls._get_config_class(provider)
+        data["config"] = config_class(**{})
         return data
 
 

@@ -57,17 +57,23 @@ class FileStorageSettings(BaseSettings, Generic[TFileProviderConfigs]):
         extra="ignore",
     )
 
+    @classmethod
+    def _get_config_class(cls, provider: str) -> type[FileProviderConfigs]:
+        """Get the appropriate config class for the provider."""
+        config_map = {
+            "none": NoneFileStorageSettings,
+            "local": LocalFileStorageSettings,
+            "s3": S3FileStorageSettings,
+        }
+        return config_map.get(provider, NoneFileStorageSettings)
+
     @model_validator(mode="before")
     @classmethod
     def check_provider_requirements(cls, data: dict) -> dict:
         provider = data.get("provider", "none") or os.getenv("FS_PROVIDER", "none")
         data["provider"] = provider
-        if not provider or provider == "none":
-            data["config"] = NoneFileStorageSettings()
-        if provider == "s3":
-            data["config"] = S3FileStorageSettings(**{})
-        elif provider == "local":
-            data["config"] = LocalFileStorageSettings(**{})
+        config_class = cls._get_config_class(provider)
+        data["config"] = config_class(**{})
         return data
 
 

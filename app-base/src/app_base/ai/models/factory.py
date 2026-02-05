@@ -27,14 +27,19 @@ class ConfigLoader:
     @staticmethod
     def load_yaml_with_env(path: str) -> dict[str, Any]:
         """Load a YAML file and substitute ${ENV_VAR} placeholders from the environment."""
-        pattern = re.compile(r"\$\{(\w+)}")
+        pattern = re.compile(r"\$\{(\w+)(?::-(.*?))?\}")
 
         def replace_env(match):
             env_var = match.group(1)
+            default_value = match.group(2)
             value = os.environ.get(env_var)
+
             if value is None:
-                logger.warning(f"Environment variable '{env_var}' is not set but required in config.")
-                return ""
+                if default_value is not None:
+                    return default_value
+                else:
+                    logger.warning(f"Environment variable '{env_var}' is not set but required in config.")
+                    return "''"  # Return explicit empty string literal for YAML
             return value
 
         if not os.path.exists(path):
