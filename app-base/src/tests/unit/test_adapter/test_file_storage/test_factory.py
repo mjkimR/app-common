@@ -1,19 +1,17 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from app_base.adapter.file_storage.factory import FileStorageFactory
 from app_base.adapter.file_storage.interface import FileStorageClient
-from app_base.adapter.file_storage.providers.local import LocalStorageProvider
-from app_base.adapter.file_storage.providers.s3 import S3StorageProvider
 from app_base.config import FileStorageSettings
-from app_base.config.file_storage import LocalFileStorageSettings, S3FileStorageSettings, NoneFileStorageSettings
+from app_base.config.file_storage import LocalFileStorageSettings, NoneFileStorageSettings, S3FileStorageSettings
 from pydantic import SecretStr
 
 
 @pytest.fixture
 def mock_local_settings():
     return FileStorageSettings(
-        provider="local",
+        FS_PROVIDER="local",
         config=LocalFileStorageSettings(bucket_name="/tmp/test_local_storage"),
     )
 

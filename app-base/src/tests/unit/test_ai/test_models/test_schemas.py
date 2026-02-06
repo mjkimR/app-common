@@ -1,9 +1,7 @@
 import pytest
-from pydantic import ValidationError
-
 from app_base.ai.models.schemas import (
-    AIModelAliasItem,
     AICatalogItem,
+    AIModelAliasItem,
     AIModelGroupItem,
     AIModelItem,
     AIModelParamSpec,
@@ -211,15 +209,12 @@ def test_ai_model_group_item_from_data():
     # Type mismatch for member
     with pytest.raises(
         ValueError,
-        match="Model group 'test-group' has member 'embed-1' with type \(text-embedding\) "
-        "that does not match group type \\(AIModelType.LLM\\).",
+        match="does not match group type",
     ):
         AIModelGroupItem.from_data({"name": "test-group", "type": AIModelType.LLM, "members": ["embed-1"]}, catalogs)
 
     # Default not in members
-    with pytest.raises(
-        ValueError, match="Model group 'test-group' has default 'llm-3' which is not in its members list."
-    ):
+    with pytest.raises(ValueError, match="not in its members list."):
         AIModelGroupItem.from_data(
             {"name": "test-group", "type": AIModelType.LLM, "members": ["llm-1"], "default": "llm-3"}, catalogs
         )

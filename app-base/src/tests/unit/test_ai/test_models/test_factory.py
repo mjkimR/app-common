@@ -1,11 +1,10 @@
 import os
-import pytest
-from unittest.mock import MagicMock, patch, call
-from threading import Thread
-import yaml
+from unittest.mock import MagicMock, patch
 
+import pytest
+import yaml
 from app_base.ai.models.factory import AIModelFactory, ConfigLoader
-from app_base.ai.models.schemas import AIModelType, AIModelItem, AIModelAliasItem, AICatalogItem, AIModelGroupItem
+from app_base.ai.models.schemas import AIModelType
 
 
 # Mock logger to prevent actual logging during tests
@@ -19,10 +18,8 @@ def mock_logger():
 def cleanup_singleton():
     """Ensure a clean AIModelFactory singleton instance for each test."""
     AIModelFactory._instance = None
-    AIModelFactory._initialized = False
     yield
     AIModelFactory._instance = None
-    AIModelFactory._initialized = False
 
 
 class TestConfigLoader:

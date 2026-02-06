@@ -1,8 +1,8 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from app_base.ai.models.factory_embedding import EmbeddingFactory
-from app_base.ai.models.schemas import AIModelItem, AIModelType
+from app_base.ai.models.schemas import AIModelItem
 
 
 class TestEmbeddingFactory:

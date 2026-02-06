@@ -1,11 +1,9 @@
-import pytest
+import sys
 from unittest.mock import MagicMock, patch
 
-from langchain_core.vectorstores import VectorStore
-
+import pytest
 from app_base.adapter.vector_store.factory import VectorStoreFactory
 from app_base.adapter.vector_store.instance import (
-    _vector_store_provider,
     close_vector_store,
     get_vector_store,
     get_vector_store_factory,
@@ -15,17 +13,16 @@ from app_base.adapter.vector_store.instance import (
 )
 from app_base.adapter.vector_store.interface import VectorStoreProvider
 from app_base.config import VectorDBSettings
-
-import sys
+from langchain_core.vectorstores import VectorStore
 
 
 @pytest.fixture(autouse=True)
 def reset_module_global_vector_store():
     try:
         instance_module = sys.modules["app_base.adapter.vector_store.instance"]
-        instance_module._vector_store_provider = None
+        instance_module._vector_store_provider = None  # pyright: ignore[reportAttributeAccessIssue]
         yield
-        instance_module._vector_store_provider = None  # Ensure it's None after the test
+        instance_module._vector_store_provider = None  # pyright: ignore[reportAttributeAccessIssue]
     except KeyError:
         yield
 
@@ -102,8 +99,8 @@ async def test_get_vector_store():
 
 
 @pytest.mark.asyncio
-async def test_setup_vector_store_provider():
-    mock_settings = VectorDBSettings(provider="qdrant")
+async def test_setup_vector_store_provider(mock_qdrant_settings):
+    mock_settings = mock_qdrant_settings
     with patch(
         "app_base.adapter.vector_store.instance.get_provider_cls", return_value=MockVectorStoreProvider
     ) as mock_get_provider_cls:
@@ -113,10 +110,10 @@ async def test_setup_vector_store_provider():
 
 
 @pytest.mark.asyncio
-async def test_setup_vector_store_provider_already_initialized():
+async def test_setup_vector_store_provider_already_initialized(mock_qdrant_settings):
     mock_provider = MockVectorStoreProvider(MagicMock())
     set_vector_store_provider(mock_provider)
-    mock_settings = VectorDBSettings(provider="qdrant")
+    mock_settings = mock_qdrant_settings
     with patch("app_base.adapter.vector_store.registry.get_provider_cls") as mock_get_provider_cls:
         await setup_vector_store_provider(mock_settings)
         mock_get_provider_cls.assert_not_called()

@@ -1,8 +1,8 @@
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import pytest
 from app_base.ai.models.factory_llm import LLMFactory
-from app_base.ai.models.schemas import AIModelItem, AIModelType
+from app_base.ai.models.schemas import AIModelItem
 
 
 class TestLLMFactory:

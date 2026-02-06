@@ -1,10 +1,8 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from fastapi import FastAPI
-
-from app_base.adapter.vector_store.factory import vector_store_cache
+import pytest
 from app_base.adapter.vector_store.lifespan import lifespan_vector_store
+from fastapi import FastAPI
 
 
 @pytest.mark.asyncio

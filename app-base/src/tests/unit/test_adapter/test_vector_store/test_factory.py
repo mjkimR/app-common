@@ -1,12 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
-from cachetools import LRUCache
-from langchain_core.vectorstores import VectorStore
-
+import pytest
 from app_base.adapter.vector_store.factory import VectorStoreFactory, vector_store_cache
 from app_base.adapter.vector_store.interface import VectorStoreProvider
 from app_base.config import VectorDBSettings
+from langchain_core.vectorstores import VectorStore
 
 
 class MockVectorStore(VectorStore):

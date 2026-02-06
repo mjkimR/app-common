@@ -1,6 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
 from app_base.adapter.vector_store.interface import VectorStoreProvider
 from app_base.adapter.vector_store.registry import _VECTOR_STORE_REGISTRY, get_provider_cls, register_vector_store
 from app_base.config import VectorDBSettings
@@ -11,13 +11,13 @@ class MockVectorStoreProvider1(VectorStoreProvider):
         super().__init__(client)
 
     @classmethod
-    def from_config(cls, settings: VectorDBSettings) -> "MockVectorStoreProvider1":
+    def from_config(cls, settings: VectorDBSettings):
         pass
 
     def close(self) -> None:
         pass
 
-    def create_vector_store(self, collection_name: str, model_name: str) -> MagicMock:
+    def create_vector_store(self, collection_name: str, model_name: str):
         pass
 
 
@@ -26,13 +26,13 @@ class MockVectorStoreProvider2(VectorStoreProvider):
         super().__init__(client)
 
     @classmethod
-    def from_config(cls, settings: VectorDBSettings) -> "MockVectorStoreProvider2":
+    def from_config(cls, settings: VectorDBSettings):
         pass
 
     def close(self) -> None:
         pass
 
-    def create_vector_store(self, collection_name: str, model_name: str) -> MagicMock:
+    def create_vector_store(self, collection_name: str, model_name: str):
         pass
 
 

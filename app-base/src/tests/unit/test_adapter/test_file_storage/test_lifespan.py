@@ -1,16 +1,15 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from fastapi import FastAPI
-
+import pytest
 from app_base.adapter.file_storage.lifespan import lifespan_file_storage
 from app_base.config import FileStorageSettings
+from fastapi import FastAPI
 
 
 @pytest.mark.asyncio
 async def test_lifespan_file_storage_initializes_and_cleans_up():
     mock_app = FastAPI()  # FastAPI app is not actually used, but passed for type hint
-    mock_settings = FileStorageSettings(provider="local")
+    mock_settings = FileStorageSettings(FS_PROVIDER="local", **{})
 
     with (
         patch(

@@ -1,10 +1,10 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from botocore.exceptions import ClientError
-from pydantic import SecretStr
 
+import pytest
 from app_base.adapter.file_storage.providers.s3 import S3StorageProvider
 from app_base.config.file_storage import FileStorageSettings, S3FileStorageSettings
+from botocore.exceptions import ClientError
+from pydantic import SecretStr
 
 
 @pytest.fixture
@@ -27,8 +27,8 @@ def mock_s3_settings_no_api_key():
     mock_settings.provider = "s3"
     mock_settings.config = S3FileStorageSettings(
         bucket_name="test-bucket",
-        access_key=None,
-        secret_key=None,
+        access_key=None,  # type: ignore
+        secret_key=None,  # type: ignore
         region_name="us-east-1",
         endpoint_url="http://localhost:9000",
     )
