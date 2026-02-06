@@ -7,7 +7,7 @@ Personal app development helper tools and utilities.
 To add this tool to your project, install it via `uv` from the GitHub repository:
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-tools"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-tools" --dev
 ```
 
 ## Usage

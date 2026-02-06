@@ -212,6 +212,47 @@ Hooks are the primary way to add business logic. Simply add the mixin to your se
     embedding_model = factory.get_embedding("text-embedding-3-small")
     ```
 
+## Managing Application Configuration (Environment Variables)
+
+The `app-base` project leverages Pydantic's `BaseSettings` for managing application configuration through environment variables. Configuration for different components (e.g., authentication, file storage, event broker) is defined in separate settings classes within the `src/app_base/config/` directory.
+
+To dynamically inspect the environment variables required for a specific configuration type, use the bundled `get_env_spec.py` script. This script will list the environment variables, their types, and default values based on the Pydantic settings definitions.
+
+**Prerequisite**: The `app-base` package must be installed in your Python environment (e.g., via `pip install app-base`) for this script to function correctly.
+
+**Usage:**
+
+```bash
+python skill/app-base-developer-skill/scripts/get_env_spec.py --type <config_type>
+```
+
+Replace `<config_type>` with one of the following:
+
+*   **`auth`**: For general application settings (e.g., `AuthSettings`).
+*   **`app`**: For application-wide settings (e.g., `AppSettings`).
+*   **`file_storage`**: For File Storage settings (lists `FS_PROVIDER`).
+    *   **`file_storage_none`**: For File Storage when provider is 'none'.
+    *   **`file_storage_local`**: For File Storage when provider is 'local'.
+    *   **`file_storage_s3`**: For File Storage when provider is 's3'.
+*   **`event_broker`**: For Event Broker settings (lists `EVENT_BROKER_PROVIDER`).
+    *   **`event_broker_none`**: For Event Broker when provider is 'none'.
+    *   **`event_broker_in_memory`**: For Event Broker when provider is 'in_memory'.
+    *   **`event_broker_rabbitmq`**: For Event Broker when provider is 'rabbitmq'.
+    *   **`event_broker_redis`**: For Event Broker when provider is 'redis'.
+*   **`vector_db`**: For Vector DB settings (lists `VECTOR_DB_PROVIDER`).
+    *   **`vector_db_none`**: For Vector DB when provider is 'none'.
+    *   **`vector_db_qdrant`**: For Vector DB when provider is 'qdrant'.
+    *   **`vector_db_milvus`**: For Vector DB when provider is 'milvus'.
+
+**Example:**
+
+```bash
+python skill/app-base-developer-skill/scripts/get_env_spec.py --type file_storage_s3
+```
+
+This command will output the environment variables and their specifications needed for configuring S3 file storage.
+```
+
 ## Available Resources
 
 When performing tasks, refer to these key files to understand the underlying patterns and base implementations.

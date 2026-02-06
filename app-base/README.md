@@ -17,12 +17,12 @@ Common module package for personal app development (FastAPI-based)
 
 ```bash
 # Basic installation
-uv add "git+https://github.com/mjkimR/app-common.git@main#app-base"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-base"
 
 # Optional dependencies
-uv add "git+https://github.com/mjkimR/app-common.git@main#app-base[s3]"      # S3 storage
-uv add "git+https://github.com/mjkimR/app-common.git@main#app-base[qdrant]"  # Qdrant vector DB
-uv add "git+https://github.com/mjkimR/app-common.git@main#app-base[ai]"      # LangChain AI
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-base[s3]"      # S3 storage
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-base[qdrant]"  # Qdrant vector DB
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-base[ai]"      # LangChain AI
 ```
 
 ## Requirements
