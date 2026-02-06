@@ -106,7 +106,7 @@ def create_feature(name: str, plural: str | None, base_dir: Path | None = None):
         "models.py": f"""
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.base.models.mixin import Base, TimestampMixin, UUIDMixin
+from app_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
 
 
 class {class_name}(Base, UUIDMixin, TimestampMixin):
@@ -116,7 +116,7 @@ class {class_name}(Base, UUIDMixin, TimestampMixin):
         "schemas.py": f"""
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
+from app_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
 
 
 class {class_name}Create(BaseModel):
@@ -132,7 +132,7 @@ class {class_name}Read(UUIDSchemaMixin, TimestampSchemaMixin, BaseModel):
     model_config = ConfigDict(from_attributes=True)
 """,
         "repos.py": f"""
-from app.base.repos.base import BaseRepository
+from app_base.base.repos.base import BaseRepository
 from app.features.{plural_name}.models import {class_name}
 from app.features.{plural_name}.schemas import {class_name}Create, {class_name}Update
 
@@ -145,7 +145,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.base.services.base import (
+from app_base.base.services.base import (
     BaseContextKwargs,
     BaseCreateServiceMixin,
     BaseDeleteServiceMixin,
@@ -182,7 +182,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.base.usecases.crud import (
+from app_base.base.usecases.crud import (
     BaseCreateUseCase,
     BaseDeleteUseCase,
     BaseGetMultiUseCase,
@@ -229,10 +229,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from app.base.deps.params.page import PaginationParam
-from app.base.exceptions.basic import NotFoundException
-from app.base.schemas.delete_resp import DeleteResponse
-from app.base.schemas.paginated import PaginatedList
+from app_base.base.deps.params.page import PaginationParam
+from app_base.base.exceptions.basic import NotFoundException
+from app_base.base.schemas.delete_resp import DeleteResponse
+from app_base.base.schemas.paginated import PaginatedList
 from app.features.{plural_name}.schemas import {class_name}Create, {class_name}Read, {class_name}Update
 from app.features.{plural_name}.usecases.crud import (
     Create{class_name}UseCase,
@@ -241,9 +241,8 @@ from app.features.{plural_name}.usecases.crud import (
     GetMulti{class_name}UseCase,
     Update{class_name}UseCase,
 )
-from app.features.auth.deps import get_current_user
 
-router = APIRouter(prefix="/{plural_name}", tags=["{class_name}s"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/{plural_name}", tags=["{class_name}s"], dependencies=[])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model={class_name}Read)
