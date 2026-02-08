@@ -166,12 +166,16 @@ from {import_prefix}.{plural_name}.repos import {class_name}Repository
 from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Update
 
 
+class {class_name}ContextKwargs(BaseContextKwargs):
+    pass
+
+
 class {class_name}Service(
-    BaseCreateServiceMixin[{class_name}Repository, {class_name}, {class_name}Create, BaseContextKwargs],
-    BaseGetMultiServiceMixin[{class_name}Repository, {class_name}, BaseContextKwargs],
-    BaseGetServiceMixin[{class_name}Repository, {class_name}, BaseContextKwargs],
-    BaseUpdateServiceMixin[{class_name}Repository, {class_name}, {class_name}Update, BaseContextKwargs],
-    BaseDeleteServiceMixin[{class_name}Repository, {class_name}, BaseContextKwargs],
+    BaseCreateServiceMixin[{class_name}Repository, {class_name}, {class_name}Create, {class_name}ContextKwargs],
+    BaseGetMultiServiceMixin[{class_name}Repository, {class_name}, {class_name}ContextKwargs],
+    BaseGetServiceMixin[{class_name}Repository, {class_name}, {class_name}ContextKwargs],
+    BaseUpdateServiceMixin[{class_name}Repository, {class_name}, {class_name}Update, {class_name}ContextKwargs],
+    BaseDeleteServiceMixin[{class_name}Repository, {class_name}, {class_name}ContextKwargs],
 ):
     def __init__(self, repo: Annotated[{class_name}Repository, Depends()]):
         self._repo = repo
@@ -182,7 +186,7 @@ class {class_name}Service(
 
     @property
     def context_model(self):
-        return BaseContextKwargs
+        return {class_name}ContextKwargs
 """,
         "usecases/__init__.py": "",
         "usecases/crud.py": f"""
@@ -199,30 +203,30 @@ from app_base.base.usecases.crud import (
 )
 from {import_prefix}.{plural_name}.models import {class_name}
 from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Update
-from {import_prefix}.{plural_name}.services import {class_name}Service, BaseContextKwargs
+from {import_prefix}.{plural_name}.services import {class_name}Service, {class_name}ContextKwargs
 
 
-class Get{class_name}UseCase(BaseGetUseCase[{class_name}Service, {class_name}, BaseContextKwargs]):
+class Get{class_name}UseCase(BaseGetUseCase[{class_name}Service, {class_name}, {class_name}ContextKwargs]):
     def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
         super().__init__(service)
 
 
-class GetMulti{class_name}UseCase(BaseGetMultiUseCase[{class_name}Service, {class_name}, BaseContextKwargs]):
+class GetMulti{class_name}UseCase(BaseGetMultiUseCase[{class_name}Service, {class_name}, {class_name}ContextKwargs]):
     def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
         super().__init__(service)
 
 
-class Create{class_name}UseCase(BaseCreateUseCase[{class_name}Service, {class_name}, {class_name}Create, BaseContextKwargs]):
+class Create{class_name}UseCase(BaseCreateUseCase[{class_name}Service, {class_name}, {class_name}Create, {class_name}ContextKwargs]):
     def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
         super().__init__(service)
 
 
-class Update{class_name}UseCase(BaseUpdateUseCase[{class_name}Service, {class_name}, {class_name}Update, BaseContextKwargs]):
+class Update{class_name}UseCase(BaseUpdateUseCase[{class_name}Service, {class_name}, {class_name}Update, {class_name}ContextKwargs]):
     def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
         super().__init__(service)
 
 
-class Delete{class_name}UseCase(BaseDeleteUseCase[{class_name}Service, {class_name}, BaseContextKwargs]):
+class Delete{class_name}UseCase(BaseDeleteUseCase[{class_name}Service, {class_name}, {class_name}ContextKwargs]):
     def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
         super().__init__(service)
 """,
