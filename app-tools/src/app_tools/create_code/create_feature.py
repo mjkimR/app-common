@@ -17,7 +17,7 @@ def to_snake_case(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-def update_router(plural_name: str, base_dir: Path):
+def update_router(plural_name: str, base_dir: Path, import_prefix: str):
     """
     Updates backend/app/router.py to include the new feature's router.
     """
@@ -31,10 +31,10 @@ def update_router(plural_name: str, base_dir: Path):
         # Add import
         last_feature_import_index = -1
         for i, line in enumerate(lines):
-            if line.startswith("from app.features."):
+            if line.startswith(f"from {import_prefix}."):
                 last_feature_import_index = i
 
-        import_statement = f"from app.features.{plural_name}.api.v1 import router as v1_{plural_name}_router"
+        import_statement = f"from {import_prefix}.{plural_name}.api.v1 import router as v1_{plural_name}_router"
         if any(import_statement in line for line in lines):
             print(f"  - Import statement already exists in {router_path}")
         elif last_feature_import_index != -1:
@@ -98,6 +98,7 @@ def create_feature(
     singular_name = to_snake_case(class_name)
     plural_name = plural if plural else pluralize(singular_name)
     prefix = feature_prefix if feature_prefix else "app/features"
+    import_prefix = prefix.replace("/", ".")
 
     feature_dir = base_dir / f"{prefix}/{plural_name}"
 
@@ -140,8 +141,8 @@ class {class_name}Read(UUIDSchemaMixin, TimestampSchemaMixin, BaseModel):
 """,
         "repos.py": f"""
 from app_base.base.repos.base import BaseRepository
-from app.features.{plural_name}.models import {class_name}
-from app.features.{plural_name}.schemas import {class_name}Create, {class_name}Update
+from {import_prefix}.{plural_name}.models import {class_name}
+from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Update
 
 
 class {class_name}Repository(BaseRepository[{class_name}, {class_name}Create, {class_name}Update]):
@@ -160,9 +161,9 @@ from app_base.base.services.base import (
     BaseGetServiceMixin,
     BaseUpdateServiceMixin,
 )
-from app.features.{plural_name}.models import {class_name}
-from app.features.{plural_name}.repos import {class_name}Repository
-from app.features.{plural_name}.schemas import {class_name}Create, {class_name}Update
+from {import_prefix}.{plural_name}.models import {class_name}
+from {import_prefix}.{plural_name}.repos import {class_name}Repository
+from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Update
 
 
 class {class_name}Service(
@@ -196,9 +197,9 @@ from app_base.base.usecases.crud import (
     BaseGetUseCase,
     BaseUpdateUseCase,
 )
-from app.features.{plural_name}.models import {class_name}
-from app.features.{plural_name}.schemas import {class_name}Create, {class_name}Update
-from app.features.{plural_name}.services import {class_name}Service, BaseContextKwargs
+from {import_prefix}.{plural_name}.models import {class_name}
+from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Update
+from {import_prefix}.{plural_name}.services import {class_name}Service, BaseContextKwargs
 
 
 class Get{class_name}UseCase(BaseGetUseCase[{class_name}Service, {class_name}, BaseContextKwargs]):
@@ -240,8 +241,8 @@ from app_base.base.deps.params.page import PaginationParam
 from app_base.base.exceptions.basic import NotFoundException
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
-from app.features.{plural_name}.schemas import {class_name}Create, {class_name}Read, {class_name}Update
-from app.features.{plural_name}.usecases.crud import (
+from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Read, {class_name}Update
+from {import_prefix}.{plural_name}.usecases.crud import (
     Create{class_name}UseCase,
     Delete{class_name}UseCase,
     Get{class_name}UseCase,
@@ -308,7 +309,7 @@ async def delete_{singular_name}(
         print(f"  - Created {path}")
 
     print(f"\nFeature '{class_name}' created successfully!")
-    update_router(plural_name, base_dir)
+    update_router(plural_name, base_dir, import_prefix)
 
     print("\nNext steps:")
     print(f"1. Review the generated files in '{feature_dir}'.")
