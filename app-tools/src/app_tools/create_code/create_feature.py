@@ -77,13 +77,19 @@ def update_router(plural_name: str, base_dir: Path):
         print(f"An error occurred while updating {router_path}: {e}")
 
 
-def create_feature(name: str, plural: str | None, base_dir: Path | None = None):
+def create_feature(
+    name: str,
+    plural: str | None,
+    base_dir: Path | None = None,
+    feature_prefix: str | None = None,
+):
     """
     Generates a new CRUD feature.
 
     :param name: The name of the feature in CamelCase (e.g., "Article").
     :param plural: The plural name of the feature in snake_case.
     :param base_dir: The base directory of the project.
+    :param feature_prefix: The prefix path for the feature directory (e.g., "app/features"). Defaults to "app/features".
     """
     if base_dir is None:
         base_dir = Path.cwd()
@@ -91,8 +97,9 @@ def create_feature(name: str, plural: str | None, base_dir: Path | None = None):
     class_name = name
     singular_name = to_snake_case(class_name)
     plural_name = plural if plural else pluralize(singular_name)
+    prefix = feature_prefix if feature_prefix else "app/features"
 
-    feature_dir = base_dir / f"app/features/{plural_name}"
+    feature_dir = base_dir / f"{prefix}/{plural_name}"
 
     if feature_dir.exists():
         print(f"Error: Feature '{plural_name}' already exists at {feature_dir}.")
