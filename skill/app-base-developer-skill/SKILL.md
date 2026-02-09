@@ -1,267 +1,60 @@
 ---
-name: app-base-developer
+name: app-base-developer-skill
 description: Expert assistant for developing FastAPI applications using the `app-base`
-  common library. Specializes in its layered architecture (UseCase -> Service -> Repository),
-  hook-based customization for services, and integrations with AI models and external
-  adapters like File Storage and Vector Stores. Use this skill to create, modify,
-  or understand CRUD endpoints, apply business logic through service hooks, and manage
-  application configuration.
+  library and `app-tools` CLI. Specializes in layered architecture, code generation,
+  and implementing business logic with service hooks.
 ---
-# app-base Developer Skill
+# App Base Developer Skill
 
-This skill provides expert guidance for developing FastAPI applications using the `app-base` package. It focuses on the package's layered architecture, dependency injection, and hook-based customization patterns.
+This skill is an expert assistant for building FastAPI applications using the `app-base` common personal library and the `app-tools` code generation CLI.
 
-## Core Philosophy & Architecture
+It can guide you through creating new features, implementing business logic, understanding the architecture, and managing your application's configuration.
 
-The `app-base` package promotes a clean, layered architecture to build scalable and maintainable FastAPI applications. The key layers are:
+## Task Router
 
-1.  **API/Router (`api/`)**: Handles HTTP requests, dependency injection, and calls UseCases.
-2.  **UseCase (`usecases/`)**: Orchestrates business logic, manages database transactions, and calls Services. Inherits from `Base...UseCase` classes.
-3.  **Service (`services/`)**: Implements the core business logic for a resource. Built with a mixin-based approach for CRUD operations and customized with hooks.
-4.  **Repository (`repos/`)**: Provides a generic data access layer for a specific SQLAlchemy model. Inherits from `BaseRepository`.
-5.  **Model (`models/`) & Schema (`schemas/`)**: Defines the database structure (SQLAlchemy) and data transfer objects (Pydantic).
+-   **If you want to create a new CRUD feature from scratch...**
+    -   Use the `app-tools` code generator. See the [Quick Reference](#quick-reference) for the command.
+    -   For a detailed walkthrough, see the [app-tools Developer Guide](./docs/app_tools_guide.md).
 
-## Primary Workflow: Creating a New CRUD Endpoint
+-   **If you want to understand the `app-base` architecture (Services, Repositories, UseCases)...**
+    -   Read the [app-base Developer Guide](./docs/app_base_guide.md#core-philosophy--architecture).
 
-Follow these steps to create a new, complete CRUD endpoint for a resource (e.g., `Book`).
+-   **If you want to add business logic (e.g., uniqueness checks, user awareness)...**
+    -   Use Service Hooks.
+    -   See the guide on [Using Service Hooks](./docs/app_base_guide.md#using-service-hooks).
 
-### 1. Define Model and Schemas
+-   **If you want to interact with File Storage (S3, local), a Vector Store, or an AI Model...**
+    -   See the guide on [Using Adapters & AI](./docs/app_base_guide.md#using-adapters--ai).
 
--   **Model (`models/book.py`)**: Create the SQLAlchemy model. Use mixins from `app_base.base.models.mixin` for common fields like `id`, `created_at`, etc.
+-   **If you need to check environment variables for configuration...**
+    -   Use the `app-tools get-env-spec` command.
+    -   See the [app-tools Developer Guide](./docs/app_tools_guide.md#utility-commands-environment-specification).
 
-    ```python
-    from app_base.base.models.mixin import Base, UUIDMixin, TimestampMixin
-    from sqlalchemy.orm import Mapped, mapped_column
+## Keyword Router
 
-    class Book(Base, UUIDMixin, TimestampMixin):
-        __tablename__ = "books"
-        title: Mapped[str] = mapped_column(index=True)
-        author: Mapped[str]
-    ```
+-   **`app-base`**: Refers to the core application library. See the [app-base Developer Guide](./docs/app_base_guide.md).
+-   **`app-tools`**: Refers to the CLI for code generation. See the [app-tools Developer Guide](./docs/app_tools_guide.md).
+-   **Code Generation, Boilerplate, Scaffolding**: See the guide for [Creating a New Feature](./docs/app_tools_guide.md#primary-workflow-creating-a-new-feature).
+-   **CRUD**: Stands for Create, Read, Update, Delete. The base pattern for new features. See the [app-base guide](./docs/app_base_guide.md#primary-workflow-creating-a-new-crud-endpoint) or the [app-tools guide](./docs/app_tools_guide.md#primary-workflow-creating-a-new-feature).
+-   **Service, Repository, UseCase, Model, Schema**: These are the core layers of the `app-base` architecture. See the [app-base Developer Guide](./docs/app_base_guide.md#core-philosophy--architecture).
+-   **Hooks, Business Logic**: Refers to customizing service behavior. See [Using Service Hooks](./docs/app_base_guide.md#using-service-hooks).
+-   **Configuration, Environment Variables, Settings**: See [Managing Application Configuration](./docs/app_base_guide.md#managing-application-configuration-environment-variables).
+-   **File Storage, S3, Vector Store, AI, LLM**: See [Using Adapters & AI](./docs/app_base_guide.md#using-adapters--ai).
 
--   **Schemas (`schemas/book.py`)**: Define Pydantic schemas for `Create`, `Update`, and `Read`.
+## Quick Reference
 
-    ```python
-    from pydantic import BaseModel
-    from app_base.base.schemas.mixin import UUIDSchemaMixin, TimestampSchemaMixin
+### Code Generation
 
-    class BookBase(BaseModel):
-        title: str
-        author: str
-
-    class BookCreate(BookBase):
-        pass
-
-    class BookUpdate(BaseModel):
-        title: str | None = None
-        author: str | None = None
-
-    class BookRead(BookBase, UUIDSchemaMixin, TimestampSchemaMixin):
-        class Config:
-            from_attributes = True
-    ```
-
-### 2. Create Repository
-
--   **Repository (`repos/book.py`)**: Create a repository class that inherits from `BaseRepository` and links it to your model and schemas.
-
-    ```python
-    from app_base.base.repos.base import BaseRepository
-    from app.models.book import Book
-    from app.schemas.book import BookCreate, BookUpdate
-
-    class BookRepository(BaseRepository[Book, BookCreate, BookUpdate]):
-        model = Book
-    ```
-
-### 3. Create Service & Apply Hooks
-
--   **Service (`services/book.py`)**: This is where you compose CRUD functionality and add business logic using hooks. Inherit from the base service mixins and any desired hook mixins.
-
-    ```python
-    from app.repos.book import BookRepository
-    from app_base.base.services.base import (
-        BaseCreateServiceMixin,
-        BaseUpdateServiceMixin,
-        BaseDeleteServiceMixin,
-        BaseGetServiceMixin,
-        BaseGetMultiServiceMixin,
-    )
-    # Import desired hooks
-    from app_base.base.services.exists_check_hook import ExistsCheckHooksMixin
-    from app_base.base.services.user_aware_hook import UserAwareHooksMixin, UserContextKwargs
-
-    class BookService(
-        BaseCreateServiceMixin,
-        BaseUpdateServiceMixin,
-        BaseDeleteServiceMixin,
-        BaseGetServiceMixin,
-        BaseGetMultiServiceMixin,
-        ExistsCheckHooksMixin, # Ensures book exists on update/delete
-        UserAwareHooksMixin,  # Adds created_by/updated_by fields
-    ):
-        repo = BookRepository()
-        context_model = UserContextKwargs # Specify context requirements
-    ```
-
-### 4. Create UseCases
-
--   **UseCases (`usecases/book.py`)**: Wrap each service operation in a UseCase. This handles transactions and decouples the API layer from the service layer.
-
-    ```python
-    from app_base.base.usecases.crud import (
-        BaseCreateUseCase,
-        BaseGetUseCase,
-        # ... import other use case bases
-    )
-    from app.services.book import BookService
-
-    service = BookService()
-
-    class CreateBookUseCase(BaseCreateUseCase):
-        def __init__(self):
-            super().__init__(service=service)
-
-    class GetBookUseCase(BaseGetUseCase):
-        def __init__(self):
-            super().__init__(service=service)
-
-    # ... define other use cases (Update, Delete, GetMulti)
-    ```
-
-### 5. Create API Router
-
--   **Router (`api/v1/books.py`)**: Create the FastAPI router. Inject the UseCases and define the endpoints.
-
-    ```python
-    from fastapi import APIRouter, Depends
-    from app.usecases.book import CreateBookUseCase
-    # ... import other use cases
-
-    router = APIRouter()
-
-    @router.post("/")
-    async def create_book(
-        # DI for use case, schemas, and context
-    ):
-        # return await CreateBookUseCase().execute(...)
-        pass
-
-    # ... define other endpoints
-    ```
-
-## Using Service Hooks
-
-Hooks are the primary way to add business logic. Simply add the mixin to your service class.
-
--   **`UserAwareHooksMixin`**: Automatically adds `created_by` and `updated_by` user IDs. Requires `user_id: UUID` to be in the `context`.
--   **`ExistsCheckHooksMixin`**: Raises a `NotFoundException` if an object doesn't exist before an update or delete operation.
--   **`NestedResourceHooksMixin`**: For parent-child relationships.
-    -   You must implement the `parent_repo` property.
-    -   It automatically filters children by `parent_id` provided in the context.
-    -   It ensures a child belongs to the correct parent on get/update/delete.
--   **`UniqueConstraintHooksMixin`**: Check for uniqueness before creating/updating. Implement the `_unique_constraints` async generator.
-    ```python
-    from sqlalchemy import and_
-    
-    class MyService(UniqueConstraintHooksMixin, ...):
-        async def _unique_constraints(self, obj_data, context):
-            if obj_data.name:
-                yield (
-                    and_(
-                        self.repo.model.name == obj_data.name,
-                        self.repo.model.parent_id == context["parent_id"]
-                    ),
-                    "Name must be unique within the parent."
-                )
-    ```
-
-## Using Adapters & AI
-
-### File Storage (S3, Local)
-
--   The file storage client is initialized on application startup and can be accessed via a dependency.
--   **Dependency**: `app_base.adapter.file_storage.deps.get_file_storage_provider`
--   **Interface**: `app_base.adapter.file_storage.interface.FileStorageClient` (provides `upload_file`, `download_file`, etc.)
-
-### Vector Store (Qdrant)
-
--   Use the `VectorStoreFactory` to get `VectorStore` instances for different collections.
--   **Dependency**: `app_base.adapter.vector_store.deps.get_vector_store_factory`
--   **Usage**:
-    ```python
-    def my_endpoint(
-        vector_store_factory: Annotated[VectorStoreFactory, Depends(get_vector_store_factory)]
-    ):
-        vector_store = vector_store_factory.get_vector_store(
-            collection_name="my_documents",
-            model_name="text-embedding-ada-002"
-        )
-        # ... use vector_store
-    ```
-
-### AI Model Factory (LangChain)
-
--   A singleton `AIModelFactory` loads model configurations from `catalog.yml`.
--   **Usage**:
-    ```python
-    from app_base.ai import AIModelFactory
-
-    factory = AIModelFactory()
-    llm = factory.get_llm("gpt-4-turbo")
-    embedding_model = factory.get_embedding("text-embedding-3-small")
-    ```
-
-## Managing Application Configuration (Environment Variables)
-
-The `app-base` project leverages Pydantic's `BaseSettings` for managing application configuration through environment variables. Configuration for different components (e.g., authentication, file storage, event broker) is defined in separate settings classes within the `src/app_base/config/` directory.
-
-To dynamically inspect the environment variables required for a specific configuration type, use the bundled `get_env_spec.py` script. This script will list the environment variables, their types, and default values based on the Pydantic settings definitions.
-
-**Prerequisite**: The `app-base` package must be installed in your Python environment (e.g., via `pip install app-base`) for this script to function correctly.
-
-**Usage:**
-
+To generate a new feature (e.g., `Book`):
 ```bash
-python skill/app-base-developer-skill/scripts/get_env_spec.py --type <config_type>
+app-tools create-code feature --name Book
 ```
+> See the [app-tools Developer Guide](./docs/app_tools_guide.md) for more details.
 
-Replace `<config_type>` with one of the following:
+### Get Environment Spec
 
-*   **`auth`**: For general application settings (e.g., `AuthSettings`).
-*   **`app`**: For application-wide settings (e.g., `AppSettings`).
-*   **`file_storage`**: For File Storage settings (lists `FS_PROVIDER`).
-    *   **`file_storage_none`**: For File Storage when provider is 'none'.
-    *   **`file_storage_local`**: For File Storage when provider is 'local'.
-    *   **`file_storage_s3`**: For File Storage when provider is 's3'.
-*   **`event_broker`**: For Event Broker settings (lists `EVENT_BROKER_PROVIDER`).
-    *   **`event_broker_none`**: For Event Broker when provider is 'none'.
-    *   **`event_broker_in_memory`**: For Event Broker when provider is 'in_memory'.
-    *   **`event_broker_rabbitmq`**: For Event Broker when provider is 'rabbitmq'.
-    *   **`event_broker_redis`**: For Event Broker when provider is 'redis'.
-*   **`vector_db`**: For Vector DB settings (lists `VECTOR_DB_PROVIDER`).
-    *   **`vector_db_none`**: For Vector DB when provider is 'none'.
-    *   **`vector_db_qdrant`**: For Vector DB when provider is 'qdrant'.
-    *   **`vector_db_milvus`**: For Vector DB when provider is 'milvus'.
-
-**Example:**
-
+To list required environment variables for a specific configuration (e.g., `file_storage_s3`):
 ```bash
-python skill/app-base-developer-skill/scripts/get_env_spec.py --type file_storage_s3
+app-tools get-env-spec --type file_storage_s3
 ```
-
-This command will output the environment variables and their specifications needed for configuring S3 file storage.
-```
-
-## Available Resources
-
-When performing tasks, refer to these key files to understand the underlying patterns and base implementations.
-
--   `README.md`: High-level overview of the package.
--   `src/app_base/base/repos/base.py`: The `BaseRepository` implementation.
--   `src/app_base/base/services/base.py`: Defines all base service mixins and their hook interfaces (`_context_*`, `_prepare_*`, `_post_*`).
--   `src/app_base/base/services/*_hook.py`: Implementations for all standard service hooks. Review these to see how to add custom logic.
--   `src/app_base/base/usecases/crud.py`: The base UseCase implementations that manage transactions.
--   `src/app_base/ai/models/factory.py`: The `AIModelFactory` for creating LLM and embedding models.
--   `src/app_base/config/`: Pydantic settings management for different modules.
--   `src/app_base/adapter/`: Interfaces and implementations for file storage and vector stores.
+> See the [app-tools Developer Guide](./docs/app_tools_guide.md#utility-commands-environment-specification) for all available types.

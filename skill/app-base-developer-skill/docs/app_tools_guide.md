@@ -1,13 +1,6 @@
----
-name: app-tools-developer
-description: Expert assistant for generating boilerplate code and managing project structure
-  using the `app-tools` CLI. Specializes in automating the creation of new features
-  (models, schemas, repos, services, usecases, API endpoints) for `app-base` based
-  FastAPI projects.
----
-# app-tools Developer Skill
+# app-tools Developer Guide
 
-This skill provides expert guidance for utilizing the `app-tools` CLI to streamline development workflows, particularly for `app-base` based FastAPI applications. It focuses on generating new feature modules and understanding the conventions used by the `app-tools` CLI.
+This guide provides expert guidance for utilizing the `app-tools` CLI to streamline development workflows, particularly for `app-base` based FastAPI applications. It focuses on generating new feature modules and understanding the conventions used by the `app-tools` CLI.
 
 ## Core Philosophy & Usage
 
@@ -81,6 +74,43 @@ Next steps:
 2. Add the new model to 'alembic' and run migrations.
 ```
 
+### Utility Commands: Environment Specification
+
+The `app-tools` CLI also provides utility commands to help inspect the environment configuration for `app-base` applications.
+
+#### `app-tools get-env-spec`
+
+This command lists the environment variables and their specifications for different `app-base` configurations. It's useful for understanding what environment variables are expected and their types/defaults.
+
+**Command:**
+```bash
+app-tools get-env-spec --type <config_type>
+```
+
+**Options:**
+-   `--type`: **(Required)** The type of configuration to inspect.
+    -   Choices include: `auth`, `app`, `file_storage`, `file_storage_none`, `file_storage_local`, `file_storage_s3`, `event_broker`, `event_broker_none`, `event_broker_in_memory`, `event_broker_rabbitmq`, `event_broker_redis`, `vector_db`, `vector_db_none`, `vector_db_qdrant`, `vector_db_milvus`.
+
+**Example:**
+
+To see the environment variables for `file_storage_s3` configuration:
+
+```bash
+app-tools get-env-spec --type file_storage_s3
+```
+
+**Output Example:**
+
+```
+--- Environment Variables for File Storage S3 ---
+APP_BASE_S3_ACCESS_KEY_ID: Type: SecretStr. Default: '<hidden>'
+APP_BASE_S3_BUCKET_NAME: Type: str. Default: None
+APP_BASE_S3_ENDPOINT_URL: Type: str. Default: None
+APP_BASE_S3_REGION_NAME: Type: str. Default: None
+APP_BASE_S3_SECRET_ACCESS_KEY: Type: SecretStr. Default: '<hidden>'
+APP_BASE_FILE_STORAGE_PROVIDER: Type: str. Default: 's3'
+```
+
 ## Next Steps after Feature Generation
 
 After using `create-code feature`, you should:
@@ -99,4 +129,5 @@ When performing tasks related to `app-tools`, you may want to refer to these fil
 -   `app-tools/src/app_tools/cli.py`: The main CLI entry point.
 -   `app-tools/src/app_tools/create_code/create_feature.py`: The core logic for generating feature files.
 -   `app-tools/src/app_tools/create_code/__init__.py`: The `create-code` command definition.
+-   `app-tools/src/app_tools/commands/get_env_spec.py`: The core logic for listing environment variable specifications.
 -   `app-tools/src/app_tools/utils/config.py`: Utility functions, including how `app-tools` determines the project root.

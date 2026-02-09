@@ -1,7 +1,8 @@
-import argparse
 import os
 import sys
 from typing import Any, Dict, Type
+
+import click
 
 # Assume app_base is installed and importable
 try:
@@ -118,14 +119,12 @@ def get_env_variable_specs(settings_class: Type[Any], provider_type: str | None 
     return specs
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="List environment variable specifications for app-base configurations."
-    )
-    parser.add_argument(
-        "--type",
-        required=True,
-        choices=[
+@click.command(name="get-env-spec")
+@click.option(
+    "--type",
+    required=True,
+    type=click.Choice(
+        [
             "auth",
             "app",
             "file_storage",
@@ -141,11 +140,12 @@ def main():
             "vector_db_none",
             "vector_db_qdrant",
             "vector_db_milvus",
-        ],
-        help="The type of configuration to inspect (e.g., auth, file_storage_s3).",
-    )
-    args = parser.parse_args()
-
+        ]
+    ),
+    help="The type of configuration to inspect (e.g., auth, file_storage_s3).",
+)
+def get_env_spec(type: str):
+    """List environment variable specifications for app-base configurations."""
     settings_map = {
         "auth": (AuthSettings, None),
         "app": (AppSettings, None),
@@ -164,21 +164,18 @@ def main():
         "vector_db_milvus": (VectorDBSettings, "milvus"),
     }
 
-    settings_class, provider_type = settings_map.get(args.type, (None, None))
+    settings_class, provider_type = settings_map.get(type, (None, None))
     if not settings_class:
-        print(f"Unknown settings type: {args.type}", file=sys.stderr)
+        click.echo(f"Unknown settings type: {type}", err=True)
         sys.exit(1)
 
-    print(f"--- Environment Variables for {args.type.replace('_', ' ').title()} ---")
+    click.echo(f"--- Environment Variables for {type.replace('_', ' ').title()} ---")
     specs = get_env_variable_specs(settings_class, provider_type)
 
     if specs:
         # Sort specs alphabetically by environment variable name for consistent output
         for env_var, description in sorted(specs.items()):
-            print(f"{env_var}: {description}")
+            click.echo(f"{env_var}: {description}")
     else:
-        print("No environment variables found or an error occurred.", file=sys.stderr)
+        click.echo("No environment variables found or an error occurred.", err=True)
 
-
-if __name__ == "__main__":
-    main()

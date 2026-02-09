@@ -254,7 +254,7 @@ from {import_prefix}.{plural_name}.usecases.crud import (
     Update{class_name}UseCase,
 )
 
-router = APIRouter(prefix="/{plural_name}", tags=["{class_name}s"], dependencies=[])
+router = APIRouter(prefix="/{plural_name}", tags=["{class_name}"], dependencies=[])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model={class_name}Read)
