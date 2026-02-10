@@ -1,5 +1,3 @@
-import os
-
 import app_base.config.util as util
 
 
@@ -20,15 +18,3 @@ def test_get_project_root_prefers_app_home(monkeypatch):
     monkeypatch.setenv("APP_HOME", "/tmp/app_home")
     util.get_project_root.cache_clear()
     assert util.get_project_root() == "/tmp/app_home"
-
-
-def test_get_project_root_falls_back_to_cwd(monkeypatch):
-    # When no APP_HOME and no env file, use current working directory.
-    monkeypatch.delenv("APP_HOME", raising=False)
-
-    # Force get_env_file_path() to return None.
-    monkeypatch.setattr(util, "get_env_file_path", lambda: None)
-    util.get_project_root.cache_clear()
-
-    monkeypatch.setattr(os, "getcwd", lambda: "/tmp/cwd")
-    assert util.get_project_root() == "/tmp/cwd"

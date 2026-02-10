@@ -15,7 +15,7 @@ def get_env_filename() -> str:
 def get_env_file_path() -> Path | None:
     """Get the path to the appropriate .env file based on ENV variable"""
     env_file = get_env_filename()
-    env_path = find_dotenv(env_file)
+    env_path = find_dotenv(env_file, usecwd=True)
     if env_path:
         return Path(env_path)
     else:
@@ -34,7 +34,10 @@ def get_project_root() -> str:
         # If .env file is found, return its directory as project root
         return os.path.dirname(env_path)
 
-    return os.getcwd()
+    # If neither is found, raise an error
+    raise RuntimeError(
+        "Cannot determine project root. Please set APP_HOME environment variable or ensure .env file exists."
+    )
 
 
 def load_env():
