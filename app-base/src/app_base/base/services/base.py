@@ -88,9 +88,11 @@ class BaseCreateHooks(BaseHooksInterface):
         """Hook executed within a context before create (validation, cascade handling, etc.)."""
         yield
 
-    def _prepare_create_fields(self, obj_data: BaseModel, context: TContextKwargs) -> dict[str, Any]:
+    def _prepare_create_fields(
+        self, obj_data: BaseModel, context: TContextKwargs, **update_fields: Any
+    ) -> dict[str, Any]:
         """Hook to prepare additional fields before create."""
-        return {}
+        return update_fields
 
     async def _post_create(self, session: AsyncSession, obj: ModelType, context: TContextKwargs) -> ModelType:
         """Hook executed after create."""
@@ -115,10 +117,11 @@ class BaseCreateServiceMixin(
         session: AsyncSession,
         obj_data: CreateSchemaType,
         context: Optional[TContextKwargs] = None,
+        **update_fields: Any,
     ) -> ModelType:
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_create(session, obj_data, context=ctx):
-            extra_fields = self._prepare_create_fields(obj_data, context=ctx)
+            extra_fields = self._prepare_create_fields(obj_data, context=ctx, **update_fields)
             obj = await self.repo.create(session, obj_in=obj_data, **extra_fields)
             return await self._post_create(session, obj, context=ctx)
 
@@ -142,9 +145,11 @@ class BaseUpdateHooks(BaseHooksInterface):
         """Hook executed within a context before update (validation, cascade handling, etc.)."""
         yield
 
-    def _prepare_update_fields(self, obj_data: BaseModel, context: TContextKwargs) -> dict[str, Any]:
+    def _prepare_update_fields(
+        self, obj_data: BaseModel, context: TContextKwargs, **update_fields: Any
+    ) -> dict[str, Any]:
         """Hook to prepare additional fields before update."""
-        return {}
+        return update_fields
 
     async def _post_update(self, session: AsyncSession, obj: ModelType, context: TContextKwargs) -> ModelType:
         """Hook executed after update."""
@@ -170,10 +175,11 @@ class BaseUpdateServiceMixin(
         obj_id: uuid.UUID,
         obj_data: UpdateSchemaType,
         context: Optional[TContextKwargs] = None,
+        **update_fields: Any,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_update(session, obj_id, obj_data, context=ctx):
-            extra_fields = self._prepare_update_fields(obj_data, context=ctx)
+            extra_fields = self._prepare_update_fields(obj_data, context=ctx, **update_fields)
             obj = await self.repo.update_by_pk(session, pk=obj_id, obj_in=obj_data, **extra_fields)
             return await self._post_update(session, obj, context=ctx)
 

@@ -1,10 +1,9 @@
-from typing import Optional
 from datetime import datetime
-
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import JSON, Index, String
+from typing import Optional
 
 from app_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
+from sqlalchemy import JSON, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class User(Base, UUIDMixin, TimestampMixin):
@@ -30,15 +29,13 @@ class User(Base, UUIDMixin, TimestampMixin):
     last_login_at: Mapped[Optional[datetime]] = mapped_column(
         nullable=True, comment="Timestamp of the user's last successful login."
     )
-    profile_image_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True, comment="URL to the user's profile image.")
+    profile_image_url: Mapped[Optional[str]] = mapped_column(
+        String(2048), nullable=True, comment="URL to the user's profile image."
+    )
     phone_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="The user's phone number.")
     locale: Mapped[Optional[str]] = mapped_column(
         String(20), nullable=True, comment="The user's preferred locale (e.g., 'en_US', 'ko_KR')."
     )
     timezone: Mapped[Optional[str]] = mapped_column(
         String(100), nullable=True, comment="The user's preferred timezone (e.g., 'Asia/Seoul')."
-    )
-
-    __table_args__ = (
-        Index("uq_user_is_superadmin", is_superadmin, unique=True, postgresql_where=(is_superadmin == True)),
     )

@@ -15,17 +15,19 @@ from sqlalchemy import (
 )
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.elements import ColumnElement, UnaryExpression
 from sqlalchemy.sql.selectable import Select
 
 from app_base.base.schemas.paginated import PaginatedList
+from app_base.utils.type_hint import SeqOrOneOrNone, to_sequence
 
 ModelType = TypeVar("ModelType", bound=Any)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 PrimaryKeyType = Union[Sequence[Union[str, int, uuid.UUID]], Union[str, int, uuid.UUID]]
-WhereClause = ColumnElement[bool] | Sequence[ColumnElement[bool]]
+WhereClause = SeqOrOneOrNone[ColumnElement[bool]]
 
 
 class BaseRepository(
@@ -93,16 +95,14 @@ class BaseRepository(
 
         return [pk_col == value for pk_col, value in zip(self._primary_keys, pk_values, strict=False)]
 
-    def _select(self, where: WhereClause = (), order_by: Sequence[UnaryExpression] = ()) -> Select:
+    def _select(self, where: WhereClause = (), order_by: SeqOrOneOrNone[UnaryExpression] = ()) -> Select:
         stmt = select(self.model)
         if where is not None:
-            if isinstance(where, Sequence):
-                if where:
-                    stmt = stmt.where(*where)
-            else:
-                stmt = stmt.where(where)
+            where = to_sequence(where)
+            stmt = stmt.where(*where)
 
-        if order_by is not None and order_by != ():
+        if order_by is not None:
+            order_by = to_sequence(order_by)
             stmt = stmt.order_by(*order_by)
         else:
             if self.default_order_by_col:
@@ -115,7 +115,7 @@ class BaseRepository(
         self,
         session: AsyncSession,
         where: WhereClause = (),
-        order_by: Sequence[UnaryExpression] = (),
+        order_by: SeqOrOneOrNone[UnaryExpression] = (),
     ) -> Optional[ModelType]:
         stmt = self._select(where, order_by)
         stmt = stmt.limit(1)
@@ -157,7 +157,7 @@ class BaseRepository(
         stmt = select(literal(1))  # select 1
         stmt = stmt.select_from(self.model)
         if where is not None:
-            where = where if isinstance(where, Sequence) else (where,)
+            where = to_sequence(where)
             stmt = stmt.where(*where)
         stmt = stmt.limit(1)
 
@@ -207,7 +207,8 @@ class BaseRepository(
         offset: int = 0,
         limit: Optional[int] = 100,
         where: WhereClause = (),
-        order_by: Sequence[UnaryExpression] = (),
+        order_by: SeqOrOneOrNone[UnaryExpression] = (),
+        select_options: SeqOrOneOrNone[ExecutableOption] = (),
     ) -> PaginatedList[ModelType]:
         if limit is not None and limit < 0:
             raise ValueError("Limit must be non-negative.")
@@ -217,6 +218,7 @@ class BaseRepository(
         # Total count
         count_stmt = select(func.count()).select_from(self.model)
         if where is not None:
+            where = to_sequence(where)
             count_stmt = count_stmt.where(*where)
         total_count_result = await session.execute(count_stmt)
         total_count = total_count_result.scalar_one()
@@ -226,6 +228,9 @@ class BaseRepository(
         stmt = stmt.offset(offset)
         if limit is not None:
             stmt = stmt.limit(limit)
+        if select_options:
+            select_options = to_sequence(select_options)
+            stmt = stmt.options(*select_options)
 
         result = await session.execute(stmt)
         data = result.scalars().all()
@@ -241,7 +246,7 @@ class BaseRepository(
         self,
         session: AsyncSession,
         where: WhereClause = (),
-        order_by: Sequence[UnaryExpression] = (),
+        order_by: SeqOrOneOrNone[UnaryExpression] = (),
     ) -> Sequence[ModelType]:
         res = await self.get_multi(
             session,

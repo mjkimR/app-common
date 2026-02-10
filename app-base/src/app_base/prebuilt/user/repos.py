@@ -1,6 +1,7 @@
+from app_base.base.repos.base import BaseRepository
+
 from .models import User
 from .schemas import UserDbCreate, UserDbUpdate
-from app_base.base.repos.base import BaseRepository
 
 
 class UserRepository(BaseRepository[User, UserDbCreate, UserDbUpdate]):

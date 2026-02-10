@@ -236,7 +236,7 @@ from .v1 import router as v1_{plural_name}_router
 __all__ = ["v1_{plural_name}_router"]
 """,
         "api/v1.py": f"""
-import uuid
+from uuid import UUID
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -276,7 +276,7 @@ async def get_{plural_name}(
 @router.get("/{{{singular_name}_id}}", response_model={class_name}Read)
 async def get_{singular_name}(
     use_case: Annotated[Get{class_name}UseCase, Depends()],
-    {singular_name}_id: uuid.UUID,
+    {singular_name}_id: UUID,
 ):
     {singular_name} = await use_case.execute({singular_name}_id)
     if not {singular_name}:
@@ -287,7 +287,7 @@ async def get_{singular_name}(
 @router.put("/{{{singular_name}_id}}", response_model={class_name}Read)
 async def update_{singular_name}(
     use_case: Annotated[Update{class_name}UseCase, Depends()],
-    {singular_name}_id: uuid.UUID,
+    {singular_name}_id: UUID,
     {singular_name}_in: {class_name}Update,
 ):
     {singular_name} = await use_case.execute({singular_name}_id, {singular_name}_in)
@@ -299,7 +299,7 @@ async def update_{singular_name}(
 @router.delete("/{{{singular_name}_id}}", response_model=DeleteResponse)
 async def delete_{singular_name}(
     use_case: Annotated[Delete{class_name}UseCase, Depends()],
-    {singular_name}_id: uuid.UUID,
+    {singular_name}_id: UUID,
 ):
     return await use_case.execute({singular_name}_id)
 """,

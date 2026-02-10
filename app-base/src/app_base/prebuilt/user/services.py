@@ -3,6 +3,13 @@ from typing import Annotated, Union
 from uuid import UUID, uuid4
 
 import jwt
+from app_base.base.services.base import (
+    BaseContextKwargs,
+    BaseDeleteServiceMixin,
+    BaseGetMultiServiceMixin,
+    BaseGetServiceMixin,
+)
+from app_base.config import AuthSettings, get_auth_settings
 from fastapi import Depends
 from passlib.context import CryptContext
 from pydantic import EmailStr
@@ -12,13 +19,6 @@ from .exceptions import UserAlreadyExistsException
 from .models import User
 from .repos import UserRepository
 from .schemas import UserCreate, UserDbCreate, UserDbUpdate, UserUpdate
-from app_base.base.services.base import (
-    BaseContextKwargs,
-    BaseDeleteServiceMixin,
-    BaseGetMultiServiceMixin,
-    BaseGetServiceMixin,
-)
-from app_base.config import AuthSettings, get_auth_settings
 
 
 class UserService(

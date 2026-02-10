@@ -82,9 +82,11 @@ class NestedResourceHooksMixin(
             await self._check_parent_exists(session, parent_id)
             yield
 
-    def _prepare_create_fields(self, obj_data: BaseModel, context: TContextKwargs) -> dict[str, Any]:
+    def _prepare_create_fields(
+        self, obj_data: BaseModel, context: TContextKwargs, **update_fields: Any
+    ) -> dict[str, Any]:
         """Inject parent_id into the creation data."""
-        data = super()._prepare_create_fields(obj_data, context)
+        data = super()._prepare_create_fields(obj_data, context, **update_fields)
         data[self.fk_name] = context["parent_id"]
         return data
 

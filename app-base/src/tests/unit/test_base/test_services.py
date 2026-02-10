@@ -150,7 +150,7 @@ class TestBaseCreateServiceMixin:
             def context_model(self):
                 return BaseContextKwargs
 
-            def _prepare_create_fields(self, obj_data, context):
+            def _prepare_create_fields(self, obj_data, context, **update_fields):
                 return {"extra_field": "extra_value"}
 
         service = TestService()
@@ -223,7 +223,7 @@ class TestBaseUpdateServiceMixin:
             def context_model(self):
                 return BaseContextKwargs
 
-            def _prepare_update_fields(self, obj_data, context):
+            def _prepare_update_fields(self, obj_data, context, **update_fields):
                 return {"updated_by": uuid.uuid4()}
 
         service = TestService()

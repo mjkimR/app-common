@@ -1,6 +1,7 @@
 from typing import Annotated
 
 import jwt
+from app_base.core.database.deps import get_session
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +14,6 @@ from .exceptions import (
 from .models import User
 from .services import UserService
 from .token_schemas import TokenPayload
-from app_base.core.database.deps import get_session
 
 oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
 
