@@ -1,24 +1,33 @@
 import asyncio
 
-from fastapi import FastAPI, Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi import FastAPI
+from starlette.responses import PlainTextResponse
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app_base.core.log import logger
 
 
-class TimeoutMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, timeout: int = 60):
-        super().__init__(app)
+class TimeoutMiddleware:
+    """Pure ASGI Middleware to enforce request timeout"""
+
+    def __init__(self, app: ASGIApp, timeout: int = 60):
+        self.app = app
         self.timeout = timeout
 
-    async def dispatch(self, request: Request, call_next):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
         try:
-            return await asyncio.wait_for(call_next(request), timeout=self.timeout)
+            await asyncio.wait_for(self.app(scope, receive, send), timeout=self.timeout)
         except asyncio.TimeoutError:
-            logger.error(f"Request timeout: {request.url.path}")
-            return Response("Request processing time exceeded limit", status_code=504)
+            path = scope.get("path", "")
+            logger.error(f"Request timeout: {path}")
+            response = PlainTextResponse("Request processing time exceeded limit", status_code=504)
+            await response(scope, receive, send)
 
 
-def add_middleware(app: FastAPI):
+def add_middleware(app: FastAPI, timeout: int = 60):
     """Add timeout middleware to FastAPI app"""
-    app.add_middleware(TimeoutMiddleware)
+    app.add_middleware(TimeoutMiddleware, timeout=timeout)

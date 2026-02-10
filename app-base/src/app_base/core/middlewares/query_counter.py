@@ -1,11 +1,9 @@
 from contextvars import ContextVar
-from typing import Callable
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app_base.core.log import logger
 
@@ -22,34 +20,53 @@ def _before_cursor_execute(conn, cursor, statement, parameters, context, execute
         pass
 
 
-class QueryCounterMiddleware(BaseHTTPMiddleware):
+class QueryCounterMiddleware:
+    """Pure ASGI Middleware to count SQL queries per request"""
+
     QUERY_COUNT_WARNING_THRESHOLD: int = 20
 
     def __init__(self, app: ASGIApp):
-        super().__init__(app)
+        self.app = app
         event.listen(Engine, "before_cursor_execute", _before_cursor_execute)
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
         # 1. Initialize counter (starts at 0)
         token = query_count_ctx.set(0)
 
-        # 2. Process request (DB queries that occur here are counted)
-        response = await call_next(request)
+        method = scope.get("method", "")
+        path = scope.get("path", "")
+        query_count = 0
 
-        # 3. Get the result
-        query_count = query_count_ctx.get()
+        async def send_wrapper(message: Message):
+            nonlocal query_count
 
-        # 4. Add to response headers (can be checked by frontend or client)
-        response.headers["X-Query-Count"] = str(query_count)
+            if message["type"] == "http.response.start":
+                # 3. Get the result
+                query_count = query_count_ctx.get()
 
-        # (Optional) If there are too many queries, print a warning log (for detecting N+1 problems)
-        if query_count > self.QUERY_COUNT_WARNING_THRESHOLD:
-            logger.warning(f"Too many queries ({query_count}) in request: {request.method} {request.url.path}")
+                # 4. Add to response headers
+                headers = list(message.get("headers", []))
+                headers.append((b"x-query-count", str(query_count).encode()))
+                message = {**message, "headers": headers}
 
-        # 5. Clean up context
-        query_count_ctx.reset(token)
+            await send(message)
 
-        return response
+            if message["type"] == "http.response.body":
+                if not message.get("more_body", False):
+                    # Log warning if too many queries (for detecting N+1 problems)
+                    if query_count > self.QUERY_COUNT_WARNING_THRESHOLD:
+                        logger.warning(f"Too many queries ({query_count}) in request: {method} {path}")
+
+        try:
+            # 2. Process request (DB queries that occur here are counted)
+            await self.app(scope, receive, send_wrapper)
+        finally:
+            # 5. Clean up context
+            query_count_ctx.reset(token)
 
 
 def add_middleware(app: FastAPI):
