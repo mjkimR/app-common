@@ -286,7 +286,8 @@ class BaseRepository(
             raise ValueError("Update data cannot be empty.")
 
         for field, value in update_data.items():
-            setattr(db_obj, field, value)
+            if value is not None:
+                setattr(db_obj, field, value)
 
         session.add(db_obj)
         await session.flush()
