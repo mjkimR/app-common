@@ -73,7 +73,7 @@ class UniqueConstraintHooksMixin(BaseCreateHooks, BaseUpdateHooks, metaclass=abc
 
         is_exists = await self.repo.exists(session, query_condition)
         if is_exists:
-            raise BadRequestException(message)
+            raise BadRequestException(message, status_code=409)
 
     async def _process_constraints(
         self,

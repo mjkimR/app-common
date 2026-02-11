@@ -21,6 +21,7 @@ from sqlalchemy.sql.selectable import Select
 
 from app_base.base.schemas.paginated import PaginatedList
 from app_base.utils.type_hint import SeqOrOneOrNone, to_sequence
+from app_base.core.log import logger
 
 ModelType = TypeVar("ModelType", bound=Any)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -42,7 +43,7 @@ class BaseRepository(
     model: type[ModelType]
     resource_name: str
 
-    default_order_by_col: Optional[str] = "updated_at"
+    default_order_by_col: Optional[str] = "created_at"
     is_deleted_column: Optional[str] = "is_deleted"
     deleted_at_column: Optional[str] = "deleted_at"
 
@@ -106,9 +107,15 @@ class BaseRepository(
             stmt = stmt.order_by(*order_by)
         else:
             if self.default_order_by_col:
-                default_order_by = getattr(self.model, self.default_order_by_col)
-                if default_order_by is not None:
-                    stmt = stmt.order_by(default_order_by.desc())
+                if hasattr(self.model, self.default_order_by_col):
+                    default_order_by = getattr(self.model, self.default_order_by_col)
+                    if default_order_by is not None:
+                        stmt = stmt.order_by(default_order_by.desc())
+                else:
+                    logger.warning(
+                        f"Default order by column '{self.default_order_by_col}' does not exist in model {self.model.__name__}. Skipping default ordering. "
+                        f"Please check the configuration of 'default_order_by_col' at {self.__class__.__name__} or ensure that the column exists in the model."
+                    )
         return stmt
 
     async def get(
@@ -275,12 +282,6 @@ class BaseRepository(
 
         if not update_data:
             raise ValueError("Update data cannot be empty.")
-
-        model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
-        extra_fields = set(update_data.keys()) - model_columns
-        if extra_fields:
-            raise ValueError(f"Extra fields provided that are not in the model {self.model.__name__}: {extra_fields}")
-
         stmt = update(self.model).filter(*filters).values(**update_data)
         result = await session.execute(stmt)
 
