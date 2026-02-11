@@ -20,8 +20,8 @@ from sqlalchemy.sql.elements import ColumnElement, UnaryExpression
 from sqlalchemy.sql.selectable import Select
 
 from app_base.base.schemas.paginated import PaginatedList
-from app_base.utils.type_hint import SeqOrOneOrNone, to_sequence
 from app_base.core.log import logger
+from app_base.utils.type_hint import SeqOrOneOrNone, to_sequence
 
 ModelType = TypeVar("ModelType", bound=Any)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -272,23 +272,27 @@ class BaseRepository(
         return_updated_obj: bool = True,
         **update_fields: Any,
     ) -> Optional[ModelType]:
-        filters = self._get_primary_key_filters(pk)
+        db_obj = await self.get_by_pk(session, pk)
+        if not db_obj:
+            return None
+
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            # exclude_unset=True
             update_data = obj_in.model_dump(exclude_unset=True)
         update_data.update(update_fields)
 
         if not update_data:
             raise ValueError("Update data cannot be empty.")
-        stmt = update(self.model).filter(*filters).values(**update_data)
-        result = await session.execute(stmt)
 
-        if result.rowcount == 0:
-            return None
+        for field, value in update_data.items():
+            setattr(db_obj, field, value)
+
+        session.add(db_obj)
         await session.flush()
-        return await self.get(session, where=filters) if return_updated_obj else None
+        await session.refresh(db_obj)
+
+        return db_obj if return_updated_obj else None
 
     async def delete_by_pk(
         self,
