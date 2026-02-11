@@ -24,7 +24,7 @@ def get_env_file_path() -> Path | None:
 
 @lru_cache
 def get_project_root() -> str:
-    """Get the project home directory from APP_HOME env variable or default to .env file location"""
+    """Get the project home directory from APP_HOME env variable, .env file location, or .git root"""
     root = os.environ.get("APP_HOME")
     if root:
         return root
@@ -34,9 +34,15 @@ def get_project_root() -> str:
         # If .env file is found, return its directory as project root
         return os.path.dirname(env_path)
 
+    # Check for .git directory
+    current_path = Path.cwd()
+    for parent in [current_path] + list(current_path.parents):
+        if (parent / ".git").exists():
+            return str(parent)
+
     # If neither is found, raise an error
     raise RuntimeError(
-        "Cannot determine project root. Please set APP_HOME environment variable or ensure .env file exists."
+        "Cannot determine project root. Please set APP_HOME environment variable, ensure .env file exists, or run from a git repository."
     )
 
 
