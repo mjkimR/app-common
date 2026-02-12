@@ -178,6 +178,8 @@ class BaseRepository(
         **update_fields: Any,
     ) -> ModelType:
         obj_dict = obj_in.model_dump()
+        model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
+        obj_dict = {k: v for k, v in obj_dict.items() if k in model_columns}  # Filter out non-model fields
         obj_dict.update(update_fields)
         db_obj: ModelType = self.model(**obj_dict)
         session.add(db_obj)
@@ -192,8 +194,10 @@ class BaseRepository(
         **update_fields: Any,
     ) -> Sequence[ModelType]:
         db_objs = []
+        model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
         for obj_in in objs_in:
             obj_dict = obj_in.model_dump()
+            obj_dict = {k: v for k, v in obj_dict.items() if k in model_columns}  # Filter out non-model fields
             obj_dict.update(update_fields)
             db_objs.append(self.model(**obj_dict))
 
@@ -280,7 +284,9 @@ class BaseRepository(
             update_data = obj_in
         else:
             update_data = obj_in.model_dump(exclude_unset=True)
-        update_data.update(update_fields)
+        model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
+        update_data = {k: v for k, v in update_data.items() if k in model_columns}  # Filter out non-model fields
+        update_data.update(update_fields)  # Include additional update fields
 
         if not update_data:
             raise ValueError("Update data cannot be empty.")
