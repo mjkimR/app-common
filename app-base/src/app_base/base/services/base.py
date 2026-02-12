@@ -16,6 +16,7 @@ from app_base.base.repos.base import (
 )
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
+from app_base.core.log import logger
 
 
 class BaseContextKwargs(TypedDict):
@@ -69,6 +70,12 @@ class BaseServiceMixinInterface:
         """
         _context = context if context is not None else {}
         try:
+            if cast_to == BaseContextKwargs and context:
+                logger.warning(
+                    "Context model is BaseContextKwargs but context is provided.\n"
+                    f"Consider defining a specific context model with required fields for {cls.__name__}."
+                )
+
             adapter = cls._get_adapter(cast_to)
             return adapter.validate_python(_context)
         except ValidationError as e:
@@ -324,7 +331,7 @@ class BaseGetMultiServiceMixin(
         self,
         session: AsyncSession,
         offset: int = 0,
-        limit: int = 100,
+        limit: Optional[int] = 100,
         order_by=(),
         where=(),
         context: Optional[TContextKwargs] = None,

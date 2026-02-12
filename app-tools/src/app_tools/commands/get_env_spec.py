@@ -178,4 +178,3 @@ def get_env_spec(type: str):
             click.echo(f"{env_var}: {description}")
     else:
         click.echo("No environment variables found or an error occurred.", err=True)
-
