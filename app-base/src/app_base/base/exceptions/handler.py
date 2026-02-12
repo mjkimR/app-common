@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app_base.base.exceptions.base import CustomException
 from app_base.base.exceptions.db import database_exception_handler
 from app_base.core.log import logger
+from app_base.core.traceback import get_exception_traceback_str
 
 
 # Helper to get request_id, returns None if not available
@@ -19,7 +20,8 @@ def _get_request_id(request: Request) -> str | None:
 
 def _process_custom_exception(request: Request, exc: CustomException):
     if exc.trace:
-        logger.exception(f"Error: {exc.log_message}")
+        tb_log = get_exception_traceback_str(exc)
+        logger.error(f"Error: {exc.log_message}\n{tb_log}")
     else:
         logger.error(f"Error: {exc.log_message}")
 
@@ -38,7 +40,8 @@ def _process_custom_exception(request: Request, exc: CustomException):
 
 
 def _process_general_exception(request: Request, exc: Exception):
-    logger.exception(f"Unknown Error: {exc}")
+    tb_log = get_exception_traceback_str(exc)
+    logger.error(f"Unknown Error: {exc}\n{tb_log}")
     status_code = HTTPStatus.INTERNAL_SERVER_ERROR
     title = status_code.phrase
     detail = "An unexpected internal server error occurred."
@@ -62,7 +65,8 @@ def set_exception_handler(app: FastAPI):
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
-        logger.exception(f"Error: {exc.detail}")
+        tb_log = get_exception_traceback_str(exc)
+        logger.error(f"Error: {exc.detail}\n{tb_log}")
         try:
             # Get the standard title for the HTTP status code
             title = HTTPStatus(exc.status_code).phrase
@@ -101,7 +105,8 @@ def set_exception_handler(app: FastAPI):
 
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError):
-        logger.exception(f"ValueError: {exc}")
+        tb_log = get_exception_traceback_str(exc)
+        logger.error(f"ValueError: {exc}\n{tb_log}")
         status_code = HTTPStatus.BAD_REQUEST
         title = status_code.phrase
         detail = "Invalid input provided."
