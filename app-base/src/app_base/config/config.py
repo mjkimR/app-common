@@ -1,8 +1,7 @@
 import functools
 import os.path
-from typing import Any
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app_base.config.util import get_env_file_path, get_project_root
@@ -21,17 +20,6 @@ class AppSettings(BaseSettings):
         env_file=get_env_file_path(),
         extra="ignore",
     )
-
-    @field_validator("LOG_TRACEBACK_WHITELIST", mode="before")
-    @classmethod
-    def parse_list_from_str(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            if not v.strip():
-                return []
-            if v.strip().startswith("["):
-                return v
-            return [item.strip() for item in v.split(",") if item.strip()]
-        return v
 
 
 @functools.lru_cache
