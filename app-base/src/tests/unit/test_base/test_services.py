@@ -173,7 +173,7 @@ class TestBaseUpdateServiceMixin:
     def update_service(self):
         """Create a service with mocked repository."""
 
-        class TestUpdateService(BaseUpdateServiceMixin):
+        class TestUpdateService(BaseUpdateServiceMixin[AsyncMock, MagicMock, MagicMock, MagicMock, BaseContextKwargs]):
             def __init__(self):
                 self._repo = AsyncMock()
 
@@ -188,7 +188,7 @@ class TestBaseUpdateServiceMixin:
         return TestUpdateService()
 
     @pytest.mark.asyncio
-    async def test_update_calls_repo_update(
+    async def test_put_calls_repo_update_with_partial_false(
         self,
         update_service,
         mock_async_session,
@@ -196,41 +196,34 @@ class TestBaseUpdateServiceMixin:
         mock_model,
         sample_uuid,
     ):
-        """Should call repository update_by_pk method."""
+        """Should call repository update_by_pk method with partial=False."""
         update_service.repo.update_by_pk.return_value = mock_model
 
-        result = await update_service.update(mock_async_session, sample_uuid, mock_update_schema)
+        result = await update_service.put(mock_async_session, sample_uuid, mock_update_schema)
 
         assert result == mock_model
-        update_service.repo.update_by_pk.assert_called_once()
+        update_service.repo.update_by_pk.assert_called_once_with(
+            mock_async_session, pk=sample_uuid, obj_in=mock_update_schema, partial=False
+        )
 
     @pytest.mark.asyncio
-    async def test_update_with_prepare_fields_hook(
-        self, mock_async_session, mock_update_schema, mock_model, sample_uuid
+    async def test_patch_calls_repo_update_with_partial_true(
+        self,
+        update_service,
+        mock_async_session,
+        mock_update_schema,
+        mock_model,
+        sample_uuid,
     ):
-        """Should call _prepare_update_fields hook."""
+        """Should call repository update_by_pk method with partial=True."""
+        update_service.repo.update_by_pk.return_value = mock_model
 
-        class TestService(BaseUpdateServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.repo.update_by_pk.return_value = mock_model
+        result = await update_service.patch(mock_async_session, sample_uuid, mock_update_schema)
 
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            def _prepare_update_fields(self, obj_data, context, **update_fields):
-                return {"updated_by": uuid.uuid4()}
-
-        service = TestService()
-        await service.update(mock_async_session, sample_uuid, mock_update_schema)
-
-        call_kwargs = service.repo.update_by_pk.call_args
-        assert "updated_by" in call_kwargs.kwargs
+        assert result == mock_model
+        update_service.repo.update_by_pk.assert_called_once_with(
+            mock_async_session, pk=sample_uuid, obj_in=mock_update_schema, partial=True
+        )
 
 
 # =============================================================================

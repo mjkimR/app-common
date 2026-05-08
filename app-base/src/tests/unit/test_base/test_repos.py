@@ -304,19 +304,26 @@ class TestBaseRepositoryUpdate:
             await mock_repository.update_by_pk(mock_async_session, sample_uuid, update_schema)
 
     @pytest.mark.asyncio
-    async def test_update_by_pk_extra_fields_raises_error(self, mock_repository, mock_async_session, sample_uuid):
-        """Should raise error when extra fields not in model are provided."""
-        with pytest.raises(ValueError, match="Extra fields provided"):
-            await mock_repository.update_by_pk(mock_async_session, sample_uuid, {"nonexistent_field": "value"})
+    async def test_update_by_pk_extra_fields_are_filtered(
+        self, mock_repository, mock_async_session, mock_model, sample_uuid
+    ):
+        """Should silently filter out extra fields not in the model."""
+        mock_async_session.get.return_value = mock_model
+
+        result = await mock_repository.update_by_pk(
+            mock_async_session, sample_uuid, {"name": "Updated", "nonexistent_field": "value"}
+        )
+
+        assert result is not None
+        assert result.name == "Updated"
+        assert not hasattr(result, "nonexistent_field")
 
     @pytest.mark.asyncio
     async def test_update_by_pk_returns_none_when_not_found(self, mock_repository, mock_async_session, sample_uuid):
         """Should return None when record not found."""
         from tests.unit.test_base.conftest import MockUpdateSchema
 
-        mock_result = MagicMock()
-        mock_result.rowcount = 0
-        mock_async_session.execute.return_value = mock_result
+        mock_async_session.get.return_value = None
 
         update_schema = MockUpdateSchema(name="Updated")
         result = await mock_repository.update_by_pk(mock_async_session, sample_uuid, update_schema)

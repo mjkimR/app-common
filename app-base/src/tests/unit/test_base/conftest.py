@@ -61,13 +61,15 @@ class MockUpdateSchema(BaseModel):
 # =============================================================================
 
 
-class MockRepository(BaseRepository[MockModel, MockCreateSchema, MockUpdateSchema]):
+class MockRepository(BaseRepository[MockModel, MockCreateSchema, MockUpdateSchema, MockUpdateSchema]):
     """Mock repository for testing."""
 
     model = MockModel
 
 
-class MockSoftDeleteRepository(BaseRepository[MockSoftDeleteModel, MockCreateSchema, MockUpdateSchema]):
+class MockSoftDeleteRepository(
+    BaseRepository[MockSoftDeleteModel, MockCreateSchema, MockUpdateSchema, MockUpdateSchema]
+):
     """Mock repository with soft delete model."""
 
     model = MockSoftDeleteModel
