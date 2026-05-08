@@ -14,6 +14,10 @@ from .file_storage import (
     FileStorageSettings,
     get_file_storage_settings,
 )
+from .nosql_db import (
+    NoSQLDBSettings,
+    get_nosql_db_settings,
+)
 from .util import (
     get_env_filename,
     get_project_root,
@@ -36,6 +40,8 @@ __all__ = [
     "get_vector_db_settings",
     "FileStorageSettings",
     "get_file_storage_settings",
+    "NoSQLDBSettings",
+    "get_nosql_db_settings",
     "EventBrokerSettings",
     "get_event_broker_settings",
 ]
