@@ -49,11 +49,13 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
 
         return obj
 
-    async def _post_update(self, session: AsyncSession, obj: ModelType, context: TContextKwargs) -> ModelType:
+    async def _post_update(
+        self, session: AsyncSession, obj: ModelType, context: TContextKwargs, partial: bool = True
+    ) -> ModelType:
         """
         Publish a domain event after an object is updated.
         """
-        obj = await super()._post_update(session, obj, context)
+        obj = await super()._post_update(session, obj, context, partial=partial)
 
         topic = f"{self.repo.model_name()}.updated"
         payload = self._get_event_payload("updated", obj.id, obj)

@@ -17,8 +17,10 @@ class UserAwareHooksMixin(BaseCreateHooks, BaseUpdateHooks):
             return {**base, "created_by": user_id, "updated_by": user_id}
         return base
 
-    def _prepare_update_fields(self, obj_data, context: UserContextKwargs, **update_fields: Any) -> dict[str, Any]:
-        base = super()._prepare_update_fields(obj_data, context, **update_fields)
+    def _prepare_update_fields(
+        self, obj_data, context: UserContextKwargs, partial: bool = True, **update_fields: Any
+    ) -> dict[str, Any]:
+        base = super()._prepare_update_fields(obj_data, context, partial=partial, **update_fields)
         if user_id := context.get("user_id"):
             return {**base, "updated_by": user_id}
         return base

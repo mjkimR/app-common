@@ -1,10 +1,16 @@
+from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from typing import Any, Generic, Optional, TypeVar, Union
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app_base.base.repos.base import CreateSchemaType, ModelType, UpdateSchemaType
+from app_base.base.repos.base import (
+    CreateSchemaType,
+    ModelType,
+    PatchSchemaType,
+    PutSchemaType,
+)
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
 from app_base.base.services.base import (
@@ -122,8 +128,9 @@ class BaseCreateUseCase(
 
 
 class BaseUpdateUseCase(
+    ABC,
     BaseUseCase,
-    Generic[TBaseUpdateService, ModelType, UpdateSchemaType, TContextKwargs],
+    Generic[TBaseUpdateService, ModelType, PutSchemaType, PatchSchemaType, TContextKwargs],
 ):
     def __init__(self, service: TBaseUpdateService):
         self.service = service
@@ -132,25 +139,26 @@ class BaseUpdateUseCase(
     async def _context_execute(
         self,
         session: AsyncSession,
-        obj_data: UpdateSchemaType,
+        obj_data: Union[PutSchemaType, PatchSchemaType],
         context: Optional[TContextKwargs],
     ):
         yield
 
+    @abstractmethod
     async def _execute(
         self,
         session: AsyncSession,
         obj_id: UUID,
-        obj_data: UpdateSchemaType,
+        obj_data: Union[PutSchemaType, PatchSchemaType],
         context: Optional[TContextKwargs],
     ) -> ModelType | None:
-        return await self.service.update(session, obj_id, obj_data, context=context)
+        pass
 
     async def _post_execute(
         self,
         session: AsyncSession,
         obj: ModelType | None,
-        obj_data: UpdateSchemaType,
+        obj_data: Union[PutSchemaType, PatchSchemaType],
         context: Optional[TContextKwargs],
     ) -> ModelType | None:
         return obj
@@ -158,7 +166,7 @@ class BaseUpdateUseCase(
     async def execute(
         self,
         obj_id: UUID,
-        obj_data: UpdateSchemaType,
+        obj_data: Union[PutSchemaType, PatchSchemaType],
         context: Optional[TContextKwargs] = None,
     ) -> ModelType | None:
         async with AsyncTransaction() as session:
@@ -166,6 +174,46 @@ class BaseUpdateUseCase(
                 obj = await self._execute(session, obj_id, obj_data, context=context)
                 obj = await self._post_execute(session, obj, obj_data, context)
                 return obj
+
+
+class BasePatchUseCase(
+    BaseUpdateUseCase[TBaseUpdateService, ModelType, PutSchemaType, PatchSchemaType, TContextKwargs]
+):
+    async def _execute(
+        self,
+        session: AsyncSession,
+        obj_id: UUID,
+        obj_data: PatchSchemaType,
+        context: Optional[TContextKwargs],
+    ) -> ModelType | None:
+        return await self.service.patch(session, obj_id, obj_data, context=context)
+
+    async def execute(
+        self,
+        obj_id: UUID,
+        obj_data: PatchSchemaType,
+        context: Optional[TContextKwargs] = None,
+    ) -> ModelType | None:
+        return await super().execute(obj_id, obj_data, context=context)
+
+
+class BasePutUseCase(BaseUpdateUseCase[TBaseUpdateService, ModelType, PutSchemaType, PatchSchemaType, TContextKwargs]):
+    async def _execute(
+        self,
+        session: AsyncSession,
+        obj_id: UUID,
+        obj_data: PutSchemaType,
+        context: Optional[TContextKwargs],
+    ) -> ModelType | None:
+        return await self.service.put(session, obj_id, obj_data, context=context)
+
+    async def execute(
+        self,
+        obj_id: UUID,
+        obj_data: PutSchemaType,
+        context: Optional[TContextKwargs] = None,
+    ) -> ModelType | None:
+        return await super().execute(obj_id, obj_data, context=context)
 
 
 class BaseDeleteUseCase(BaseUseCase, Generic[TBaseDeleteService, ModelType, TContextKwargs]):

@@ -133,9 +133,10 @@ class NestedResourceHooksMixin(
         obj_id: uuid.UUID,
         obj_data: BaseModel,
         context: TContextKwargs,
+        partial: bool = True,
     ):
         """Ensure the object being updated belongs to the parent context."""
-        async with super()._context_update(session, obj_id, obj_data, context):
+        async with super()._context_update(session, obj_id, obj_data, context, partial=partial):
             await self._ensure_ownership(session, obj_id, context["parent_id"])
             yield
 

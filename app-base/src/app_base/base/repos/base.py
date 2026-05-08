@@ -25,7 +25,8 @@ from app_base.utils.type_hint import SeqOrOneOrNone, to_sequence
 
 ModelType = TypeVar("ModelType", bound=Any)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+PutSchemaType = TypeVar("PutSchemaType", bound=BaseModel)
+PatchSchemaType = TypeVar("PatchSchemaType", bound=BaseModel)
 
 PrimaryKeyType = Union[Sequence[Union[str, int, uuid.UUID]], Union[str, int, uuid.UUID]]
 WhereClause = SeqOrOneOrNone[ColumnElement[bool]]
@@ -35,7 +36,8 @@ class BaseRepository(
     Generic[
         ModelType,
         CreateSchemaType,
-        UpdateSchemaType,
+        PutSchemaType,
+        PatchSchemaType,
     ]
 ):
     BATCH_SIZE = 1000
@@ -272,8 +274,9 @@ class BaseRepository(
         self,
         session: AsyncSession,
         pk: PrimaryKeyType,
-        obj_in: Union[UpdateSchemaType, dict[str, Any]],
+        obj_in: Union[PutSchemaType, PatchSchemaType, dict[str, Any]],
         return_updated_obj: bool = True,
+        partial: bool = True,
         **update_fields: Any,
     ) -> Optional[ModelType]:
         db_obj = await self.get_by_pk(session, pk)
@@ -281,19 +284,19 @@ class BaseRepository(
             return None
 
         if isinstance(obj_in, dict):
-            update_data = obj_in
+            update_data = obj_in.copy()
         else:
-            update_data = obj_in.model_dump(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=partial)
+
         model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
         update_data = {k: v for k, v in update_data.items() if k in model_columns}  # Filter out non-model fields
         update_data.update(update_fields)  # Include additional update fields
 
-        if not update_data:
+        if not update_data and partial:
             raise ValueError("Update data cannot be empty.")
 
         for field, value in update_data.items():
-            if value is not None:
-                setattr(db_obj, field, value)
+            setattr(db_obj, field, value)
 
         session.add(db_obj)
         await session.flush()

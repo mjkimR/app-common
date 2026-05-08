@@ -2,7 +2,7 @@ import uuid
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import Any, Generic, Optional, Sequence, TypedDict
+from typing import Any, Generic, Optional, Sequence, TypedDict, Union
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,8 @@ from app_base.base.repos.base import (
     BaseRepository,
     CreateSchemaType,
     ModelType,
-    UpdateSchemaType,
+    PatchSchemaType,
+    PutSchemaType,
 )
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
@@ -148,17 +149,20 @@ class BaseUpdateHooks(BaseHooksInterface):
         obj_id: uuid.UUID,
         obj_data: BaseModel,
         context: TContextKwargs,
+        partial: bool = True,
     ):
         """Hook executed within a context before update (validation, cascade handling, etc.)."""
         yield
 
     def _prepare_update_fields(
-        self, obj_data: BaseModel, context: TContextKwargs, **update_fields: Any
+        self, obj_data: BaseModel, context: TContextKwargs, partial: bool = True, **update_fields: Any
     ) -> dict[str, Any]:
         """Hook to prepare additional fields before update."""
         return update_fields
 
-    async def _post_update(self, session: AsyncSession, obj: ModelType, context: TContextKwargs) -> ModelType:
+    async def _post_update(
+        self, session: AsyncSession, obj: ModelType, context: TContextKwargs, partial: bool = True
+    ) -> ModelType:
         """Hook executed after update."""
         return obj
 
@@ -167,7 +171,7 @@ class BaseUpdateServiceMixin(
     ABC,
     BaseUpdateHooks,
     BaseServiceMixinInterface,
-    Generic[TRepo, ModelType, UpdateSchemaType, TContextKwargs],
+    Generic[TRepo, ModelType, PutSchemaType, PatchSchemaType, TContextKwargs],
 ):
     """
     Update operation Mixin with hooks.
@@ -176,19 +180,42 @@ class BaseUpdateServiceMixin(
         await service.update(session, obj_id, obj_data, context={})
     """
 
-    async def update(
+    async def put(
         self,
         session: AsyncSession,
         obj_id: uuid.UUID,
-        obj_data: UpdateSchemaType,
+        obj_data: PutSchemaType,
+        context: Optional[TContextKwargs] = None,
+        **update_fields: Any,
+    ) -> ModelType | None:
+        """Full update (PUT) of an object."""
+        return await self._update_internal(session, obj_id, obj_data, partial=False, context=context, **update_fields)
+
+    async def patch(
+        self,
+        session: AsyncSession,
+        obj_id: uuid.UUID,
+        obj_data: PatchSchemaType,
+        context: Optional[TContextKwargs] = None,
+        **update_fields: Any,
+    ) -> ModelType | None:
+        """Partial update (PATCH) of an object."""
+        return await self._update_internal(session, obj_id, obj_data, partial=True, context=context, **update_fields)
+
+    async def _update_internal(
+        self,
+        session: AsyncSession,
+        obj_id: uuid.UUID,
+        obj_data: Union[PutSchemaType, PatchSchemaType],
+        partial: bool,
         context: Optional[TContextKwargs] = None,
         **update_fields: Any,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
-        async with self._context_update(session, obj_id, obj_data, context=ctx):
-            extra_fields = self._prepare_update_fields(obj_data, context=ctx, **update_fields)
-            obj = await self.repo.update_by_pk(session, pk=obj_id, obj_in=obj_data, **extra_fields)
-            return await self._post_update(session, obj, context=ctx)
+        async with self._context_update(session, obj_id, obj_data, context=ctx, partial=partial):
+            extra_fields = self._prepare_update_fields(obj_data, context=ctx, partial=partial, **update_fields)
+            obj = await self.repo.update_by_pk(session, pk=obj_id, obj_in=obj_data, partial=partial, **extra_fields)
+            return await self._post_update(session, obj, context=ctx, partial=partial)
 
 
 # ============================================================

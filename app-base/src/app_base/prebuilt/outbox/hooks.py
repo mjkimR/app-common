@@ -67,7 +67,9 @@ class BaseOutboxHook(
 
         return await super()._post_create(session, obj, context)
 
-    async def _post_update(self, session: AsyncSession, obj: ModelType, context: TContextKwargs) -> ModelType:
+    async def _post_update(
+        self, session: AsyncSession, obj: ModelType, context: TContextKwargs, partial: bool = True
+    ) -> ModelType:
         """Create outbox event after update."""
         outbox_identity: OutboxIdentityDict = {
             "aggregate_type": self.repo.model_name(),
@@ -82,7 +84,7 @@ class BaseOutboxHook(
             ),
         )
 
-        return await super()._post_update(session, obj, context)
+        return await super()._post_update(session, obj, context, partial=partial)
 
     @asynccontextmanager
     async def _context_delete(self, session: AsyncSession, obj_id: uuid.UUID, context: TContextKwargs):

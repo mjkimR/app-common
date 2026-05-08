@@ -112,11 +112,12 @@ class UniqueConstraintHooksMixin(BaseCreateHooks, BaseUpdateHooks, metaclass=abc
         obj_id: uuid.UUID,
         obj_data: BaseModel,
         context: TContextKwargs,
+        partial: bool = True,
     ):
         """
         Extends the update context to run unique constraint checks, excluding the current object.
         """
-        async with super()._context_update(session, obj_id, obj_data, context):
+        async with super()._context_update(session, obj_id, obj_data, context, partial=partial):
             constraints = self._unique_constraints(obj_data, context)
             await self._process_constraints(session, constraints, exclude_id=obj_id)
             yield

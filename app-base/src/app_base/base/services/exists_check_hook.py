@@ -16,6 +16,7 @@ class ExistsCheckHooksMixin(BaseUpdateHooks, BaseDeleteHooks):
         obj_id: uuid.UUID,
         obj_data: BaseModel,
         context: TContextKwargs,
+        partial: bool = True,
     ):
         if not await self.repo.get_by_pk(session, obj_id):
             raise NotFoundException(log_message=f"{self.repo.model_repr(obj_id)} does not exist.")
