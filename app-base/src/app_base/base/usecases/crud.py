@@ -128,9 +128,9 @@ class BaseCreateUseCase(
 
 
 class BaseUpdateUseCase(
-    ABC,
     BaseUseCase,
     Generic[TBaseUpdateService, ModelType, PutSchemaType, PatchSchemaType, TContextKwargs],
+    ABC,
 ):
     def __init__(self, service: TBaseUpdateService):
         self.service = service

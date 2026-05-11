@@ -35,6 +35,10 @@ file_storage_all = ["app-base[s3]"]
 # vector databases
 qdrant = ["qdrant-client>=1.16.2", "langchain-qdrant>=1.1.0"]
 vector_db_all = ["app-base[qdrant]"]
+# nosql databases
+mongodb = ["motor>=3.1.1"]
+firestore = ["google-cloud-firestore>=2.11.0"]
+nosql_db_all = ["app-base[mongodb,firestore]"]
 # Event broker specific
 rabbit = ["app-base[event]", "faststream[rabbit]>=0.6.6"]
 redis = ["app-base[event]", "faststream[redis]>=0.6.6"]

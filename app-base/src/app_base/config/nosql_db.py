@@ -2,7 +2,7 @@ import functools
 import os
 from typing import Generic, Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import TypeVar
 

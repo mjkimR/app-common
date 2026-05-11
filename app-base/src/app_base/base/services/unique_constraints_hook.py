@@ -13,8 +13,9 @@ from app_base.base.services.base import (
     BaseCreateHooks,
     BaseUpdateHooks,
     CreateSchemaType,
+    PatchSchemaType,
+    PutSchemaType,
     TContextKwargs,
-    UpdateSchemaType,
 )
 
 
@@ -39,7 +40,7 @@ class UniqueConstraintHooksMixin(BaseCreateHooks, BaseUpdateHooks, metaclass=abc
     @abc.abstractmethod
     async def _unique_constraints(
         self,
-        obj_data: Union[CreateSchemaType, UpdateSchemaType],
+        obj_data: Union[CreateSchemaType, PutSchemaType, PatchSchemaType],
         context: TContextKwargs,
     ) -> AsyncIterator[Tuple[ColumnElement[bool], str]]:
         """
