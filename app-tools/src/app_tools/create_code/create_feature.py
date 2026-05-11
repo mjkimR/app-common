@@ -1,32 +1,102 @@
+import re
 from pathlib import Path
 
 
-def update_router(plural_name, base_dir, import_prefix):
-    router_path = base_dir / "app/api/router.py"
-    if not router_path.exists():
-        return
-
-    content = router_path.read_text()
-    import_line = f"from {import_prefix}.{plural_name}.api import v1_{plural_name}_router"
-    include_line = f'router.include_router(v1_{plural_name}_router, prefix="/v1")'
-
-    if import_line not in content:
-        # Add import at the top
-        lines = content.splitlines()
-        lines.insert(0, import_line)
-        content = "\n".join(lines)
-
-    if include_line not in content:
-        # Add router inclusion before the end of the file
-        content += f"\n{include_line}\n"
-
-    router_path.write_text(content)
+def pluralize(name: str) -> str:
+    """A simple pluralizer."""
+    if name.endswith("y"):
+        return name[:-1] + "ies"
+    if name.endswith("s"):
+        return name + "es"
+    return name + "s"
 
 
-def create_feature(class_name: str, singular_name: str, plural_name: str, base_dir: Path, feature_prefix: str = None):
+def to_snake_case(name: str) -> str:
+    """Convert CamelCase to snake_case."""
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+
+def update_router(plural_name: str, base_dir: Path, import_prefix: str):
     """
-    Creates a new feature structure with model, repo, service, usecase, and api.
+    Updates backend/app/router.py to include the new feature's router.
     """
+    router_path = base_dir / "app/router.py"
+    try:
+        lines = router_path.read_text().splitlines()
+        if not lines:
+            print(f"Warning: {router_path} is empty. Skipping update.")
+            return
+
+        # Add import
+        last_feature_import_index = -1
+        for i, line in enumerate(lines):
+            if line.startswith(f"from {import_prefix}."):
+                last_feature_import_index = i
+
+        import_statement = f"from {import_prefix}.{plural_name}.api.v1 import router as v1_{plural_name}_router"
+        if any(import_statement in line for line in lines):
+            print(f"  - Import statement already exists in {router_path}")
+        elif last_feature_import_index != -1:
+            lines.insert(last_feature_import_index + 1, import_statement)
+        else:
+            # Fallback if no feature imports are found
+            after_line = "from app.core.database.deps import get_session"
+            try:
+                index = lines.index(after_line)
+                lines.insert(index + 1, import_statement)
+            except ValueError:
+                lines.insert(0, import_statement)  # Add at the beginning if anchor not found
+
+        # Add include_router
+        last_include_router_index = -1
+        for i, line in enumerate(lines):
+            if line.strip().startswith("v1_router.include_router("):
+                last_include_router_index = i
+
+        include_statement = f"v1_router.include_router(v1_{plural_name}_router)"
+        if any(include_statement in line for line in lines):
+            print(f"  - Router include statement already exists in {router_path}")
+        elif last_include_router_index != -1:
+            lines.insert(last_include_router_index + 1, include_statement)
+        else:
+            # Fallback for include router
+            before_line = "router.include_router(v1_router)"
+            try:
+                index = lines.index(before_line)
+                lines.insert(index, include_statement)
+            except ValueError:
+                lines.append(include_statement)  # Add at the end if anchor not found
+
+        router_path.write_text("\n".join(lines) + "\n")
+        print(f"  - Updated {router_path}")
+
+    except FileNotFoundError:
+        print(f"Warning: Could not find {router_path} to update.")
+    except Exception as e:
+        print(f"An error occurred while updating {router_path}: {e}")
+
+
+def create_feature(
+    name: str,
+    plural: str | None,
+    base_dir: Path | None = None,
+    feature_prefix: str | None = None,
+):
+    """
+    Generates a new CRUD feature.
+
+    :param name: The name of the feature in CamelCase (e.g., "Article").
+    :param plural: The plural name of the feature in snake_case.
+    :param base_dir: The base directory of the project.
+    :param feature_prefix: The prefix path for the feature directory (e.g., "app/features"). Defaults to "app/features".
+    """
+    if base_dir is None:
+        base_dir = Path.cwd()
+
+    class_name = name
+    singular_name = to_snake_case(class_name)
+    plural_name = plural if plural else pluralize(singular_name)
     prefix = feature_prefix if feature_prefix else "app/features"
     import_prefix = prefix.replace("/", ".")
 
@@ -57,19 +127,23 @@ from pydantic import BaseModel, ConfigDict, Field
 from app_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
 
 
-class {class_name}Create(BaseModel):
+class {class_name}Base(BaseModel):
     name: str = Field(description="The name of the {singular_name}.")
+
+
+class {class_name}Create({class_name}Base):
+    pass
+
+
+class {class_name}Put({class_name}Base):
+    pass
 
 
 class {class_name}Patch(BaseModel):
     name: str | None = Field(default=None, description="The name of the {singular_name}.")
 
 
-class {class_name}Put(BaseModel):
-    name: str = Field(description="The name of the {singular_name}.")
-
-
-class {class_name}Read(UUIDSchemaMixin, TimestampSchemaMixin, BaseModel):
+class {class_name}Read(UUIDSchemaMixin, TimestampSchemaMixin, {class_name}Base):
     name: str = Field(..., description="The name of the {singular_name}.")
     model_config = ConfigDict(from_attributes=True)
 """,
