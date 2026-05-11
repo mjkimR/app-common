@@ -8,7 +8,7 @@ from .base import (
 )
 from .event import NoSQLDomainEventHooksMixin
 from .exists_check import NoSQLExistsCheckHooksMixin
-from .nested_resource import NoSQLNestedResourceHooksMixin, NoSQLNestedResourceContextKwargs
+from .nested_resource import NoSQLNestedResourceContextKwargs, NoSQLNestedResourceHooksMixin
 from .unique_constraints import NoSQLUniqueConstraintHooksMixin
 from .user_aware import NoSQLUserAwareHooksMixin, NoSQLUserContextKwargs
 

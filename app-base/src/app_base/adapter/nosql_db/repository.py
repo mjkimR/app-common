@@ -7,10 +7,13 @@ from app_base.base.schemas.paginated import PaginatedList
 
 ModelType = TypeVar("ModelType", bound=Any)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+PutSchemaType = TypeVar("PutSchemaType", bound=BaseModel)
+PatchSchemaType = TypeVar("PatchSchemaType", bound=BaseModel)
+# Backward compatibility alias
+UpdateSchemaType = PutSchemaType
 
 
-class NoSQLRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+class NoSQLRepository(Generic[ModelType, CreateSchemaType, PutSchemaType, PatchSchemaType]):
     """
     Base repository class for NoSQL databases.
     """
@@ -42,19 +45,41 @@ class NoSQLRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await provider.create_document(self.collection_name, document_id, obj_dict)
         return self.model(**obj_dict)
 
+    async def put(
+        self,
+        provider: NoSQLDBProvider,
+        document_id: str,
+        obj_in: PutSchemaType,
+        **extra_fields: Any,
+    ) -> Optional[ModelType]:
+        """Full update (PUT) - all fields replaced."""
+        update_data = obj_in.model_dump()
+        update_data.update(extra_fields)
+        await provider.update_document(self.collection_name, document_id, update_data)
+        return await self.get_by_id(provider, document_id)
+
+    async def patch(
+        self,
+        provider: NoSQLDBProvider,
+        document_id: str,
+        obj_in: PatchSchemaType,
+        **extra_fields: Any,
+    ) -> Optional[ModelType]:
+        """Partial update (PATCH) - only set fields updated."""
+        update_data = obj_in.model_dump(exclude_unset=True)
+        update_data.update(extra_fields)
+        await provider.update_document(self.collection_name, document_id, update_data)
+        return await self.get_by_id(provider, document_id)
+
     async def update(
         self,
         provider: NoSQLDBProvider,
         document_id: str,
-        obj_in: UpdateSchemaType,
+        obj_in: PutSchemaType,
         **extra_fields: Any,
     ) -> Optional[ModelType]:
-        update_data = obj_in.model_dump(exclude_unset=True)
-        update_data.update(extra_fields)
-        await provider.update_document(self.collection_name, document_id, update_data)
-
-        existing = await self.get_by_id(provider, document_id)
-        return existing
+        """Deprecated: use put() or patch() instead."""
+        return await self.patch(provider, document_id, obj_in, **extra_fields)
 
     async def delete(self, provider: NoSQLDBProvider, document_id: str) -> bool:
         await provider.delete_document(self.collection_name, document_id)

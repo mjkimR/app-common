@@ -1,8 +1,6 @@
 import abc
 from typing import Any, Optional
 
-from app_base.adapter.nosql_db.interface import NoSQLDBProvider
-from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.adapter.nosql_db.hooks.base import (
     BaseNoSQLCreateHooks,
     BaseNoSQLDeleteHooks,
@@ -10,6 +8,8 @@ from app_base.adapter.nosql_db.hooks.base import (
     ModelType,
     TContextKwargs,
 )
+from app_base.adapter.nosql_db.interface import NoSQLDBProvider
+from app_base.base.schemas.delete_resp import DeleteResponse
 
 
 class NoSQLDomainEventHooksMixin(
@@ -39,8 +39,10 @@ class NoSQLDomainEventHooksMixin(
 
         return obj
 
-    async def _post_update(self, provider: NoSQLDBProvider, obj: ModelType, context: TContextKwargs) -> ModelType:
-        obj = await super()._post_update(provider, obj, context)
+    async def _post_update(
+        self, provider: NoSQLDBProvider, obj: ModelType, context: TContextKwargs, partial: bool = True
+    ) -> ModelType:
+        obj = await super()._post_update(provider, obj, context, partial)
 
         topic = f"{self.repo.model_name()}.updated"
         doc_id = getattr(obj, "id", "unknown")

@@ -4,9 +4,6 @@ from typing import Any, Required
 
 from pydantic import BaseModel
 
-from app_base.adapter.nosql_db.interface import NoSQLDBProvider
-from app_base.base.exceptions.basic import NotFoundException
-from app_base.adapter.nosql_db.repository import NoSQLRepository
 from app_base.adapter.nosql_db.hooks.base import (
     BaseNoSQLContextKwargs,
     BaseNoSQLCreateHooks,
@@ -16,6 +13,9 @@ from app_base.adapter.nosql_db.hooks.base import (
     BaseNoSQLUpdateHooks,
     TContextKwargs,
 )
+from app_base.adapter.nosql_db.interface import NoSQLDBProvider
+from app_base.adapter.nosql_db.repository import NoSQLRepository
+from app_base.base.exceptions.basic import NotFoundException
 
 
 class NoSQLNestedResourceContextKwargs(BaseNoSQLContextKwargs):
@@ -72,7 +72,9 @@ class NoSQLNestedResourceHooksMixin(
     # ============================================================
 
     @asynccontextmanager
-    async def _context_create(self, provider: NoSQLDBProvider, document_id: str, obj_data: BaseModel, context: TContextKwargs):
+    async def _context_create(
+        self, provider: NoSQLDBProvider, document_id: str, obj_data: BaseModel, context: TContextKwargs
+    ):
         async with super()._context_create(provider, document_id, obj_data, context):
             parent_id = context["parent_id"]
             await self._check_parent_exists(provider, parent_id)
@@ -126,9 +128,10 @@ class NoSQLNestedResourceHooksMixin(
         document_id: str,
         obj_data: BaseModel,
         context: TContextKwargs,
+        partial: bool = True,
     ):
         """Ensure the document being updated belongs to the parent context."""
-        async with super()._context_update(provider, document_id, obj_data, context):
+        async with super()._context_update(provider, document_id, obj_data, context, partial):
             await self._ensure_ownership(provider, document_id, context["parent_id"])
             yield
 
