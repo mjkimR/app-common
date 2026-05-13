@@ -144,7 +144,6 @@ class {class_name}Patch(BaseModel):
 
 
 class {class_name}Read(UUIDSchemaMixin, TimestampSchemaMixin, {class_name}Base):
-    name: str = Field(..., description="The name of the {singular_name}.")
     model_config = ConfigDict(from_attributes=True)
 """,
         "repos.py": f"""

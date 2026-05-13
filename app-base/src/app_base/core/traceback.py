@@ -13,7 +13,7 @@ TRACEBACK_NOISE_PATTERNS = [
     "asyncio/tasks",
     "contextlib/",
     "app_base/core/middlewares",
-    "app_base/base"
+    "app_base/base",
 ]
 
 

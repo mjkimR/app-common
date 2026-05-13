@@ -14,6 +14,10 @@ from .file_storage import (
     FileStorageSettings,
     get_file_storage_settings,
 )
+from .http_client import (
+    HTTPClientSettings,
+    get_http_client_settings,
+)
 from .nosql_db import (
     NoSQLDBSettings,
     get_nosql_db_settings,
@@ -44,4 +48,6 @@ __all__ = [
     "get_nosql_db_settings",
     "EventBrokerSettings",
     "get_event_broker_settings",
+    "HTTPClientSettings",
+    "get_http_client_settings",
 ]
