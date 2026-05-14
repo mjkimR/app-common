@@ -18,7 +18,7 @@ class AppSettings(BaseSettings):
 
     CORS_ALLOWED_ORIGINS: list[str] = Field(default_factory=list)
     CORS_ALLOW_ORIGIN_REGEX: str | None = Field(default=None)
-    CORS_ALLOW_CREDENTIALS: bool = Field(default=True)
+    CORS_ALLOW_CREDENTIALS: bool = Field(default=False)
 
     model_config = SettingsConfigDict(
         env_file=get_env_file_path(),
