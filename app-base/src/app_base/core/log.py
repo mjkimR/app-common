@@ -20,14 +20,19 @@ def set_request_id(req_id: str):
     request_id_var.set(req_id)
 
 
-def format_record(record):
-    """Custom formatter that includes request ID"""
+def global_patcher(record):
+    """Global patch function to inject dynamic data into the log record's 'extra' dict"""
     request_id = get_request_id()
     if request_id:
         record["extra"]["request_id"] = request_id.ljust(8)
     else:
         record["extra"]["request_id"] = "N/A".ljust(8)
-    return record
+
+    # Universal extension point for dynamic prefix and suffix
+    if "custom_prefix" not in record["extra"]:
+        record["extra"]["custom_prefix"] = ""
+    if "custom_suffix" not in record["extra"]:
+        record["extra"]["custom_suffix"] = ""
 
 
 def setup_logger():
@@ -44,9 +49,11 @@ def setup_logger():
         "rotation": "1 day",
         "retention": "30 days",
         "compression": "zip",
-        "filter": format_record,
         "diagnose": False,
     }
+
+    # Apply the patch globally to the core logger object
+    logger.configure(patcher=global_patcher)
 
     if settings.LOG_JSON_FORMAT:
         # 1. Console (JSON)
@@ -54,7 +61,6 @@ def setup_logger():
             sys.stdout,
             level=settings.LOG_LEVEL,
             serialize=True,
-            filter=format_record,
             backtrace=True,
             diagnose=False,
         )
@@ -68,9 +74,14 @@ def setup_logger():
         # 1. Console (Text + Color)
         logger.add(
             sys.stdout,
-            format="[<yellow>{extra[request_id]}</yellow>] <green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>",
+            format=(
+                "[<yellow>{extra[request_id]}</yellow>] "
+                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                "<level>{level: <8}</level> | "
+                "{extra[custom_prefix]}<level>{message}</level>{extra[custom_suffix]} "
+                "<cyan>({name}:{line})</cyan>"
+            ),
             level=settings.LOG_LEVEL,
-            filter=format_record,
             colorize=True,
             backtrace=True,
             diagnose=True,
@@ -78,7 +89,13 @@ def setup_logger():
         # 2. File (Text)
         logger.add(
             **common_file_config,
-            format="[{extra[request_id]}] {time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{line} | {message}",
+            format=(
+                "[{extra[request_id]}] "
+                "{time:YYYY-MM-DD HH:mm:ss} | "
+                "{level: <8} | "
+                "{extra[custom_prefix]}{message}{extra[custom_suffix]} "
+                "({name}:{line})"
+            ),
             backtrace=True,
         )
     return logger
