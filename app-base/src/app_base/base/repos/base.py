@@ -50,7 +50,11 @@ class BaseRepository(
     deleted_at_column: Optional[str] = "deleted_at"
 
     def __init__(self):
-        self._primary_keys = self._get_primary_keys(self.model)
+        inspector = sa_inspect(self.model)
+        if inspector is None:  # pragma: no cover
+            raise ValueError("Model inspection failed, resulting in None.")
+        self._primary_keys: Sequence[Column] = inspector.mapper.primary_key
+        self._model_columns: set[str] = {col.key for col in inspector.mapper.columns}
 
     @classmethod
     def model_name(cls):
@@ -73,14 +77,6 @@ class BaseRepository(
             f"{pk_col.key}={str(value)}" for pk_col, value in zip(self._primary_keys, pk_values, strict=False)
         )
         return f"{self.model_name()}({pk_str})"
-
-    def _get_primary_keys(self, model: type[ModelType]) -> Sequence[Column]:
-        """Get the primary key of a SQLAlchemy model."""
-        inspector_result = sa_inspect(model)
-        if inspector_result is None:  # pragma: no cover
-            raise ValueError("Model inspection failed, resulting in None.")
-        primary_key_columns: Sequence[Column] = inspector_result.mapper.primary_key
-        return primary_key_columns
 
     def _get_primary_key_filters(self, pk: PrimaryKeyType):
         if not self._primary_keys:
@@ -180,8 +176,7 @@ class BaseRepository(
         **update_fields: Any,
     ) -> ModelType:
         obj_dict = obj_in.model_dump()
-        model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
-        obj_dict = {k: v for k, v in obj_dict.items() if k in model_columns}  # Filter out non-model fields
+        obj_dict = {k: v for k, v in obj_dict.items() if k in self._model_columns}  # Filter out non-model fields
         obj_dict.update(update_fields)
         db_obj: ModelType = self.model(**obj_dict)
         session.add(db_obj)
@@ -196,10 +191,9 @@ class BaseRepository(
         **update_fields: Any,
     ) -> Sequence[ModelType]:
         db_objs = []
-        model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
         for obj_in in objs_in:
             obj_dict = obj_in.model_dump()
-            obj_dict = {k: v for k, v in obj_dict.items() if k in model_columns}  # Filter out non-model fields
+            obj_dict = {k: v for k, v in obj_dict.items() if k in self._model_columns}  # Filter out non-model fields
             obj_dict.update(update_fields)
             db_objs.append(self.model(**obj_dict))
 
@@ -288,8 +282,7 @@ class BaseRepository(
         else:
             update_data = obj_in.model_dump(exclude_unset=partial)
 
-        model_columns = {col.key for col in sa_inspect(self.model).mapper.columns}
-        update_data = {k: v for k, v in update_data.items() if k in model_columns}  # Filter out non-model fields
+        update_data = {k: v for k, v in update_data.items() if k in self._model_columns}  # Filter out non-model fields
         update_data.update(update_fields)  # Include additional update fields
 
         if not update_data and partial:
