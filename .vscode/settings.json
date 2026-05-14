@@ -1,5 +1,8 @@
 {
     "python-envs.pythonProjects": [],
+    "python.analysis.extraPaths": [
+        "./app-base/src",
+    ],
     "python.testing.pytestArgs": [
         "./app-base/src/tests",
         "./app-tools/src/tests"
@@ -18,5 +21,8 @@
     "[json]": {
         "editor.defaultFormatter": "vscode.json-language-features",
         "editor.formatOnSave": true
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
     }
 }
