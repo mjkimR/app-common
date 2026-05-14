@@ -60,6 +60,11 @@ class BaseRepository(
     def model_name(cls):
         return cls.model.__name__
 
+    @property
+    def primary_keys(self) -> Sequence[Column]:
+        """The primary key columns of the model."""
+        return self._primary_keys
+
     def model_repr(self, pk):
         if not self._primary_keys:
             raise ValueError("No primary key defined for this model.")
@@ -188,13 +193,20 @@ class BaseRepository(
         self,
         session: AsyncSession,
         objs_in: Sequence[CreateSchemaType],
+        extra_fields_list: Optional[Sequence[dict[str, Any]]] = None,
         **update_fields: Any,
     ) -> Sequence[ModelType]:
+        if extra_fields_list is not None and len(extra_fields_list) != len(objs_in):
+            raise ValueError(
+                f"extra_fields_list length ({len(extra_fields_list)}) must match objs_in length ({len(objs_in)})."
+            )
         db_objs = []
-        for obj_in in objs_in:
+        for idx, obj_in in enumerate(objs_in):
             obj_dict = obj_in.model_dump()
             obj_dict = {k: v for k, v in obj_dict.items() if k in self._model_columns}  # Filter out non-model fields
             obj_dict.update(update_fields)
+            if extra_fields_list is not None:
+                obj_dict.update(extra_fields_list[idx])
             db_objs.append(self.model(**obj_dict))
 
         created_objs: list[ModelType] = []

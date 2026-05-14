@@ -15,7 +15,7 @@ from app_base.base.repos.base import (
     PatchSchemaType,
     PutSchemaType,
 )
-from app_base.base.schemas.delete_resp import DeleteResponse
+from app_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
 from app_base.core.log import logger
 
@@ -106,6 +106,31 @@ class BaseCreateHooks(BaseHooksInterface):
         """Hook executed after create."""
         return obj
 
+    @asynccontextmanager
+    async def _context_create_multi(
+        self, session: AsyncSession, obj_data_list: Sequence[BaseModel], context: TContextKwargs
+    ):
+        """Hook executed within a context before create_multi.
+        Defaults to running _context_create for each item sequentially.
+        Override to replace with bulk-level context handling.
+        """
+        for obj_data in obj_data_list:
+            async with self._context_create(session, obj_data, context=context):
+                pass
+        yield
+
+    async def _post_create_multi(
+        self, session: AsyncSession, objs: Sequence[ModelType], context: TContextKwargs
+    ) -> Sequence[ModelType]:
+        """Hook executed after create_multi.
+        Defaults to running _post_create for each item sequentially.
+        Override to replace with bulk-level post processing.
+        """
+        results = []
+        for obj in objs:
+            results.append(await self._post_create(session, obj, context=context))
+        return results
+
 
 class BaseCreateServiceMixin(
     ABC,
@@ -132,6 +157,21 @@ class BaseCreateServiceMixin(
             extra_fields = self._prepare_create_fields(obj_data, context=ctx, **update_fields)
             obj = await self.repo.create(session, obj_in=obj_data, **extra_fields)
             return await self._post_create(session, obj, context=ctx)
+
+    async def create_multi(
+        self,
+        session: AsyncSession,
+        obj_data_list: Sequence[CreateSchemaType],
+        context: Optional[TContextKwargs] = None,
+        **update_fields: Any,
+    ) -> Sequence[ModelType]:
+        ctx = self._ensure_context(context, self.context_model)
+        async with self._context_create_multi(session, obj_data_list, context=ctx):
+            extra_fields_list = [
+                self._prepare_create_fields(obj_data, context=ctx, **update_fields) for obj_data in obj_data_list
+            ]
+            objs = await self.repo.create_multi(session, objs_in=obj_data_list, extra_fields_list=extra_fields_list)
+            return await self._post_create_multi(session, objs, context=ctx)
 
 
 # ============================================================
@@ -241,6 +281,30 @@ class BaseDeleteHooks(BaseHooksInterface):
         """Hook executed after delete."""
         return result
 
+    @asynccontextmanager
+    async def _context_delete_multi(self, session: AsyncSession, obj_ids: Sequence[uuid.UUID], context: TContextKwargs):
+        """Hook executed within a context before delete_multi.
+        Defaults to running _context_delete for each item sequentially.
+        Override to replace with bulk-level context handling.
+        """
+        for obj_id in obj_ids:
+            async with self._context_delete(session, obj_id, context=context):
+                pass
+        yield
+
+    async def _post_delete_multi(
+        self,
+        session: AsyncSession,
+        obj_ids: Sequence[uuid.UUID],
+        result: MultipleDeleteResponse,
+        context: TContextKwargs,
+    ) -> MultipleDeleteResponse:
+        """Hook executed after delete_multi.
+        Defaults to returning the result as-is.
+        Override for bulk-level post processing.
+        """
+        return result
+
 
 class BaseDeleteServiceMixin(
     ABC,
@@ -266,6 +330,19 @@ class BaseDeleteServiceMixin(
             success = await self.repo.delete_by_pk(session, pk=obj_id)
             result = DeleteResponse(success=success, identity=obj_id)
             result = await self._post_delete(session, obj_id, result, context=ctx)
+            return result
+
+    async def delete_multi(
+        self,
+        session: AsyncSession,
+        obj_ids: Sequence[uuid.UUID],
+        context: Optional[TContextKwargs] = None,
+    ) -> MultipleDeleteResponse:
+        ctx = self._ensure_context(context, self.context_model)
+        async with self._context_delete_multi(session, obj_ids, context=ctx):
+            deleted_count = await self.repo.delete_by_pk_multi(session, pks=obj_ids)
+            result = MultipleDeleteResponse(deleted_count=deleted_count)
+            result = await self._post_delete_multi(session, obj_ids, result, context=ctx)
             return result
 
 

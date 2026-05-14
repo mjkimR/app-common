@@ -1,10 +1,10 @@
 import abc
 import uuid
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app_base.base.schemas.delete_resp import DeleteResponse
+from app_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
 from app_base.base.services.base import (
     BaseCreateHooks,
     BaseDeleteHooks,
@@ -49,6 +49,23 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
 
         return obj
 
+    async def _post_create_multi(
+        self, session: AsyncSession, objs: Sequence[ModelType], context: TContextKwargs
+    ) -> Sequence[ModelType]:
+        """
+        Publish a single bulk domain event after multiple objects are created.
+        """
+        objs = await super()._post_create_multi(session, objs, context)
+        if objs:
+            topic = f"{self.repo.model_name()}.created_multi"
+            payload = {
+                "resource_ids": [str(obj.id) for obj in objs],
+                "resource_type": self.repo.model_name(),
+                "event_type": "created_multi",
+            }
+            await self.publish_event(topic, payload)
+        return objs
+
     async def _post_update(
         self, session: AsyncSession, obj: ModelType, context: TContextKwargs, partial: bool = True
     ) -> ModelType:
@@ -80,4 +97,25 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
             payload = self._get_event_payload("deleted", obj_id)
             await self.publish_event(topic, payload)
 
+        return result
+
+    async def _post_delete_multi(
+        self,
+        session: AsyncSession,
+        obj_ids: Sequence[uuid.UUID],
+        result: MultipleDeleteResponse,
+        context: TContextKwargs,
+    ) -> MultipleDeleteResponse:
+        """
+        Publish a single bulk domain event after multiple objects are deleted.
+        """
+        result = await super()._post_delete_multi(session, obj_ids, result, context)
+        if result.deleted_count > 0:
+            topic = f"{self.repo.model_name()}.deleted_multi"
+            payload = {
+                "resource_ids": [str(obj_id) for obj_id in obj_ids],
+                "resource_type": self.repo.model_name(),
+                "event_type": "deleted_multi",
+            }
+            await self.publish_event(topic, payload)
         return result

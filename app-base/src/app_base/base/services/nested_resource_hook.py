@@ -1,7 +1,7 @@
 import uuid
 from abc import abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, Required
+from typing import Any, Required, Sequence
 
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -82,6 +82,15 @@ class NestedResourceHooksMixin(
             await self._check_parent_exists(session, parent_id)
             yield
 
+    @asynccontextmanager
+    async def _context_create_multi(
+        self, session: AsyncSession, obj_data_list: Sequence[BaseModel], context: TContextKwargs
+    ):
+        """Check parent existence once for the whole batch instead of N times."""
+        parent_id = context["parent_id"]
+        await self._check_parent_exists(session, parent_id)
+        yield
+
     def _prepare_create_fields(
         self, obj_data: BaseModel, context: TContextKwargs, **update_fields: Any
     ) -> dict[str, Any]:
@@ -149,4 +158,21 @@ class NestedResourceHooksMixin(
         """Ensure the object being deleted belongs to the parent context."""
         async with super()._context_delete(session, obj_id, context):
             await self._ensure_ownership(session, obj_id, context["parent_id"])
+            yield
+
+    @asynccontextmanager
+    async def _context_delete_multi(self, session: AsyncSession, obj_ids: Sequence[uuid.UUID], context: TContextKwargs):
+        """Bulk ownership check using a single IN query instead of N individual get_by_pk calls."""
+        async with super()._context_delete_multi(session, obj_ids, context):
+            if obj_ids:
+                parent_id = context["parent_id"]
+                pk_col = self.repo.primary_keys[0]
+                objs = await self.repo.get_all(session, where=pk_col.in_(obj_ids))
+                for obj in objs:
+                    obj_parent_id = getattr(obj, self.fk_name)
+                    if str(obj_parent_id) != str(parent_id):
+                        raise NotFoundException(
+                            log_message=f"{self.repo.model_repr(getattr(obj, pk_col.key))} does not belong to "
+                            f"{self.parent_repo.model_repr(parent_id)}"
+                        )
             yield
