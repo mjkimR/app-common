@@ -16,6 +16,10 @@ class AppSettings(BaseSettings):
     LOG_SIMPLE_TRACEBACK: bool = Field(default=True)
     LOG_TRACEBACK_WHITELIST: list[str] = Field(default_factory=lambda: ["app_base"])
 
+    CORS_ALLOWED_ORIGINS: list[str] = Field(default_factory=list)
+    CORS_ALLOW_ORIGIN_REGEX: str | None = Field(default=None)
+    CORS_ALLOW_CREDENTIALS: bool = Field(default=False)
+
     model_config = SettingsConfigDict(
         env_file=get_env_file_path(),
         extra="ignore",
