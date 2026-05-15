@@ -80,8 +80,8 @@ async def process_outbox_events_job():
                     logger.error(f"Failed to process event {event.id}: {e}")
                     event.status = EventStatus.FAILED
                     event.retry_count += 1
-                session.add(event)
 
+            session.add_all(events_to_process)
             await session.commit()
             logger.info("Outbox processor job finished.")
 
@@ -135,8 +135,7 @@ async def resolve_zombie_events():
                     event.status = EventStatus.PENDING
                     pending_count += 1
 
-                session.add(event)
-
+            session.add_all(zombie_events)
             await session.commit()
             logger.info(f"Zombie resolution complete: {pending_count} reset to PENDING, {failed_count} moved to DLQ.")
 
