@@ -48,20 +48,19 @@ def get_exception_traceback_str(exc: Exception) -> str:
         for i, frame in enumerate(tb_list):
             filename = frame.filename
 
-            # 1. Check if this is the last frame (error point)
-            # If it is the last frame, always show it regardless of package
+            # 1. Always include the last frame (the exact error point)
             is_last_frame = i == total_frames - 1
 
             if is_last_frame:
                 filtered_frames.append(frame)
                 continue
 
-            # 2. Check for noise patterns (hide middleware calls in the middle)
+            # 2. Skip noise patterns (hide middleware calls in the middle)
             normalized_path = filename.replace(os.sep, "/")
             if any(pattern in normalized_path for pattern in TRACEBACK_NOISE_PATTERNS):
                 continue
 
-            # 3. Whitelist logic (filtering site-packages)
+            # 3. Whitelist logic (filter site-packages, keep whitelisted ones)
             is_external_lib = "site-packages" in filename or "dist-packages" in filename
             if is_external_lib:
                 if _is_whitelisted(filename, settings.LOG_TRACEBACK_WHITELIST):
@@ -70,13 +69,13 @@ def get_exception_traceback_str(exc: Exception) -> str:
                 # Project code or standard library
                 filtered_frames.append(frame)
 
-        # Formatting
+        # Format filtered frames into a string
         stack_str = "".join(traceback.format_list(filtered_frames))
         exc_msg = "".join(traceback.format_exception_only(type(e), e))
 
         return f"{stack_str}{exc_msg}"
 
-    # 1. Collect the exception chain (Cause/Context) safely to prevent infinite loops
+    # 1. Collect the exception chain (cause/context) safely to prevent infinite loops
     exceptions = []
     seen_ids = set()
     curr = exc
@@ -94,12 +93,12 @@ def get_exception_traceback_str(exc: Exception) -> str:
         else:
             curr = None
 
-    # 2. Assemble formatted blocks in reverse order (from root cause to the latest exception)
+    # 2. Assemble formatted blocks in reverse order (root cause first, latest exception last)
     blocks = ["Traceback (Filtered):\n"]
     for i in range(len(exceptions) - 1, -1, -1):
         e = exceptions[i]
 
-        # Add connection messages between exceptions (standard Python behavior)
+        # Add chaining messages between exceptions (mirrors standard Python behavior)
         if i < len(exceptions) - 1:
             prev_e = exceptions[i + 1]
             if getattr(prev_e, "__cause__", None) is e:

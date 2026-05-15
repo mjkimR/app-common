@@ -23,19 +23,23 @@ class NoneVectorDBSettings(VectorDBProviderConfigs):
 
 
 class QdrantSettings(VectorDBProviderConfigs):
-    url: str = Field(default="http://localhost:6333")
-    api_key: SecretStr = Field()
+    url: str = Field(default="http://localhost:6333", description="Qdrant server URL")
+    api_key: SecretStr = Field(description="API key for Qdrant authentication")
     model_config = SettingsConfigDict(env_prefix="VECTOR_DB_QDRANT_")
 
 
 class MilvusSettings(VectorDBProviderConfigs):
-    url: str = Field(default="tcp://localhost:19530")
-    api_key: SecretStr = Field()
+    url: str = Field(default="tcp://localhost:19530", description="Milvus server address in tcp://host:port format")
+    api_key: SecretStr = Field(description="API key for Milvus authentication (required for Zilliz Cloud)")
     model_config = SettingsConfigDict(env_prefix="VECTOR_DB_MILVUS_")
 
 
 class VectorDBSettings(BaseSettings, Generic[TVectorDBProviderConfigs]):
-    provider: VectorDBProviderType = Field(default="qdrant", alias="VECTOR_DB_PROVIDER")
+    provider: VectorDBProviderType = Field(
+        default="qdrant",
+        alias="VECTOR_DB_PROVIDER",
+        description="Vector database backend to use: none | qdrant | milvus",
+    )
     config: TVectorDBProviderConfigs
     model_config = SettingsConfigDict(
         env_file=get_env_file_path(),

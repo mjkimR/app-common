@@ -23,20 +23,28 @@ class NoneNoSQLDBSettings(NoSQLDBProviderConfigs):
 
 
 class FirestoreSettings(NoSQLDBProviderConfigs):
-    project_id: str = Field(default="dummy-project")
-    credentials_path: str | None = Field(default=None)
-    database_id: str = Field(default="(default)")
+    project_id: str = Field(
+        default="dummy-project", description="Google Cloud project ID that owns the Firestore database"
+    )
+    credentials_path: str | None = Field(
+        default=None, description="Path to the Google service account JSON credentials file (uses ADC if not set)"
+    )
+    database_id: str = Field(default="(default)", description="Firestore database ID to connect to")
     model_config = SettingsConfigDict(env_prefix="NOSQL_DB_FIRESTORE_")
 
 
 class MongoDBSettings(NoSQLDBProviderConfigs):
-    url: str = Field(default="mongodb://localhost:27017")
-    database: str = Field(default="app")
+    url: str = Field(default="mongodb://localhost:27017", description="MongoDB connection URI")
+    database: str = Field(default="app", description="Name of the MongoDB database to use")
     model_config = SettingsConfigDict(env_prefix="NOSQL_DB_MONGODB_")
 
 
 class NoSQLDBSettings(BaseSettings, Generic[TNoSQLDBProviderConfigs]):
-    provider: NoSQLDBProviderType = Field(default="none", alias="NOSQL_DB_PROVIDER")
+    provider: NoSQLDBProviderType = Field(
+        default="none",
+        alias="NOSQL_DB_PROVIDER",
+        description="NoSQL database backend to use: none | firestore | mongodb",
+    )
     config: TNoSQLDBProviderConfigs
     model_config = SettingsConfigDict(
         env_file=get_env_file_path(),

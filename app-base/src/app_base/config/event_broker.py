@@ -33,11 +33,11 @@ class InMemoryBrokerSettings(BrokerProviderConfigs):
 class RabbitMQBrokerSettings(BrokerProviderConfigs):
     """Settings for RabbitMQ broker."""
 
-    url: str = "localhost"
-    port: int = 5672
-    exchange: str = "events"
-    username: str | None = None
-    password: SecretStr | None = None
+    url: str = Field(default="localhost", description="RabbitMQ host address")
+    port: int = Field(default=5672, description="RabbitMQ AMQP port")
+    exchange: str = Field(default="events", description="Default exchange name for publishing messages")
+    username: str | None = Field(default=None, description="Username for RabbitMQ authentication")
+    password: SecretStr | None = Field(default=None, description="Password for RabbitMQ authentication")
 
     model_config = SettingsConfigDict(env_prefix="EVENT_BROKER_RABBITMQ_")
 
@@ -52,10 +52,10 @@ class RabbitMQBrokerSettings(BrokerProviderConfigs):
 class RedisBrokerSettings(BrokerProviderConfigs):
     """Settings for Redis broker."""
 
-    url: str = "localhost"
-    port: int = 6379
-    username: str | None = None
-    password: SecretStr | None = None
+    url: str = Field(default="localhost", description="Redis host address")
+    port: int = Field(default=6379, description="Redis port")
+    username: str | None = Field(default=None, description="Username for Redis ACL authentication (Redis 6+)")
+    password: SecretStr | None = Field(default=None, description="Password for Redis authentication")
 
     model_config = SettingsConfigDict(env_prefix="EVENT_BROKER_REDIS_")
 
@@ -73,7 +73,11 @@ class EventBrokerSettings(BaseSettings, Generic[TBrokerProviderConfigs]):
     Reads from environment variables.
     """
 
-    provider: str = Field(default="in_memory", alias="EVENT_BROKER_PROVIDER")
+    provider: str = Field(
+        default="in_memory",
+        alias="EVENT_BROKER_PROVIDER",
+        description="Event broker backend to use: none | in_memory | rabbitmq | redis",
+    )
 
     # Nested settings for provider
     config: TBrokerProviderConfigs

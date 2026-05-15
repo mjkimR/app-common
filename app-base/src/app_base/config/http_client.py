@@ -12,10 +12,16 @@ class HTTPClientSettings(BaseSettings):
     Defaults match httpx standard defaults.
     """
 
-    TIMEOUT: float = Field(default=5.0)
-    MAX_CONNECTIONS: int = Field(default=100)
-    MAX_KEEPALIVE_CONNECTIONS: int = Field(default=20)
-    KEEPALIVE_EXPIRY: float = Field(default=5.0)
+    TIMEOUT: float = Field(default=5.0, description="Default timeout in seconds for HTTP requests")
+    MAX_CONNECTIONS: int = Field(
+        default=100, description="Maximum number of concurrent HTTP connections in the connection pool"
+    )
+    MAX_KEEPALIVE_CONNECTIONS: int = Field(
+        default=20, description="Maximum number of keep-alive connections to maintain in the pool"
+    )
+    KEEPALIVE_EXPIRY: float = Field(
+        default=5.0, description="Time in seconds before an idle keep-alive connection is closed"
+    )
 
     model_config = SettingsConfigDict(
         env_file=get_env_file_path(),

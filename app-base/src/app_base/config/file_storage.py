@@ -24,18 +24,26 @@ class NoneFileStorageSettings(FileProviderConfigs):
 class LocalFileStorageSettings(FileProviderConfigs):
     """Settings for when the file storage provider is 'local'."""
 
-    bucket_name: str = "local_storage"  # This will be the root directory name
+    bucket_name: str = Field(
+        default="local_storage", description="Root directory name used as the local storage bucket"
+    )
     model_config = SettingsConfigDict(env_prefix="FS_LOCAL_")
 
 
 class S3FileStorageSettings(FileProviderConfigs):
     """Settings for when the file storage provider is 's3'."""
 
-    endpoint_url: str = "http://localhost:9000"
-    access_key: SecretStr = Field(default=SecretStr("minioadmin"))
-    secret_key: SecretStr = Field(default=SecretStr("minioadmin"))
-    bucket_name: str = "my-bucket"
-    region_name: str | None = None
+    endpoint_url: str = Field(
+        default="http://localhost:9000", description="S3-compatible endpoint URL (e.g. MinIO or AWS S3)"
+    )
+    access_key: SecretStr = Field(default=SecretStr("minioadmin"), description="S3 access key ID for authentication")
+    secret_key: SecretStr = Field(
+        default=SecretStr("minioadmin"), description="S3 secret access key for authentication"
+    )
+    bucket_name: str = Field(default="my-bucket", description="Name of the S3 bucket to use for file storage")
+    region_name: str | None = Field(
+        default=None, description="AWS region name (required for AWS S3, optional for S3-compatible providers)"
+    )
 
     model_config = SettingsConfigDict(env_prefix="FS_S3_")
 
@@ -46,7 +54,9 @@ class FileStorageSettings(BaseSettings, Generic[TFileProviderConfigs]):
     Reads from environment variables.
     """
 
-    provider: str = Field(default="none", alias="FS_PROVIDER")
+    provider: str = Field(
+        default="none", alias="FS_PROVIDER", description="File storage backend to use: none | local | s3"
+    )
 
     # Nested settings for provider
     config: TFileProviderConfigs
