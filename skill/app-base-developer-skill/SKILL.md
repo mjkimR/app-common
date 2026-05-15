@@ -41,6 +41,14 @@ It can guide you through creating new features, implementing business logic, und
 -   **Configuration, Environment Variables, Settings**: See [Managing Application Configuration](./docs/app_base_guide.md#managing-application-configuration-environment-variables).
 -   **File Storage, S3, Vector Store, AI, LLM**: See [Using Adapters & AI](./docs/app_base_guide.md#using-adapters--ai).
 
+## Reference Documentation
+
+For detailed API-level information on each module's classes, components, and precautions:
+
+-   **[Base Module Reference](./docs/reference_base.md)**: Models (Mixins), Repositories, Services (Hooks), UseCases, Dependencies, Exceptions.
+-   **[Adapter Module Reference](./docs/reference_adapter.md)**: Event Broker, File Storage (S3, Local), NoSQL Database (MongoDB, Firestore), Vector Store (Qdrant), HTTP Client.
+-   **[Core, Config, AI & Utils Reference](./docs/reference_core_config.md)**: Middlewares, Pydantic Settings, LangChain AI Factories, Time/Type Utilities.
+
 ## Quick Reference
 
 ### Code Generation
