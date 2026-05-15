@@ -18,8 +18,8 @@ def test_add_middleware_specific_origins():
         # FastAPI stores middleware in app.user_middleware
         cors_middleware = next((m for m in app.user_middleware if m.cls == CORSMiddleware), None)
         assert cors_middleware is not None
-        assert cors_middleware.options["allow_origins"] == ["https://example.com"]
-        assert cors_middleware.options["allow_credentials"] is True
+        assert cors_middleware.kwargs["allow_origins"] == ["https://example.com"]
+        assert cors_middleware.kwargs["allow_credentials"] is True
 
 
 def test_add_middleware_wildcard_origin():
@@ -34,8 +34,8 @@ def test_add_middleware_wildcard_origin():
 
         cors_middleware = next((m for m in app.user_middleware if m.cls == CORSMiddleware), None)
         assert cors_middleware is not None
-        assert cors_middleware.options["allow_origins"] == ["*"]
-        assert cors_middleware.options["allow_credentials"] is False
+        assert cors_middleware.kwargs["allow_origins"] == ["*"]
+        assert cors_middleware.kwargs["allow_credentials"] is False
 
 
 def test_add_middleware_regex_origin():
@@ -49,9 +49,9 @@ def test_add_middleware_regex_origin():
 
         cors_middleware = next((m for m in app.user_middleware if m.cls == CORSMiddleware), None)
         assert cors_middleware is not None
-        assert cors_middleware.options["allow_origins"] == []
-        assert cors_middleware.options["allow_origin_regex"] == r"https://.*\.example\.com"
-        assert cors_middleware.options["allow_credentials"] is True
+        assert cors_middleware.kwargs["allow_origins"] == []
+        assert cors_middleware.kwargs["allow_origin_regex"] == r"https://.*\.example\.com"
+        assert cors_middleware.kwargs["allow_credentials"] is True
 
 
 def test_add_middleware_credentials_disabled():
@@ -65,4 +65,4 @@ def test_add_middleware_credentials_disabled():
 
         cors_middleware = next((m for m in app.user_middleware if m.cls == CORSMiddleware), None)
         assert cors_middleware is not None
-        assert cors_middleware.options["allow_credentials"] is False
+        assert cors_middleware.kwargs["allow_credentials"] is False

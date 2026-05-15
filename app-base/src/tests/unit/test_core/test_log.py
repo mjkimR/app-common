@@ -8,10 +8,10 @@ def test_request_id_context_roundtrip():
 
 
 def test_format_record_sets_extra_request_id_left_justified():
-    # format_record should always populate record['extra']['request_id'] with padding.
+    # global_patcher should always populate record['extra']['request_id'] with padding.
     log.set_request_id("id")
     record = {"extra": {}}
-    log.format_record(record)
+    log.global_patcher(record)
 
     assert record["extra"]["request_id"] == "id".ljust(8)
 
@@ -20,7 +20,7 @@ def test_format_record_sets_na_when_request_id_empty():
     # Empty request_id should become N/A padded.
     log.set_request_id("")
     record = {"extra": {}}
-    log.format_record(record)
+    log.global_patcher(record)
 
     assert record["extra"]["request_id"] == "N/A".ljust(8)
 
