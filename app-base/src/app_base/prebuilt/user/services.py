@@ -3,6 +3,11 @@ from typing import Annotated, Union
 from uuid import UUID, uuid4
 
 import jwt
+from fastapi import Depends
+from passlib.context import CryptContext
+from pydantic import EmailStr
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app_base.base.services.base import (
     BaseContextKwargs,
     BaseDeleteServiceMixin,
@@ -10,10 +15,6 @@ from app_base.base.services.base import (
     BaseGetServiceMixin,
 )
 from app_base.config import AuthSettings, get_auth_settings
-from fastapi import Depends
-from passlib.context import CryptContext
-from pydantic import EmailStr
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from .exceptions import UserAlreadyExistsException
 from .models import User

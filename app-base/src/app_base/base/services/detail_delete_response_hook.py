@@ -1,15 +1,15 @@
-import uuid
 from abc import abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Generic
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app_base.base.repos.base import PrimaryKeyType
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.services.base import BaseDeleteHooks, TContextKwargs
 
 
-class DetailDeleteResponseHookMixin(BaseDeleteHooks):
+class DetailDeleteResponseHookMixin(BaseDeleteHooks[TContextKwargs], Generic[TContextKwargs]):
     _delete_represent_text: str | None = None
 
     @abstractmethod
@@ -20,9 +20,9 @@ class DetailDeleteResponseHookMixin(BaseDeleteHooks):
         self._delete_represent_text = text
 
     @asynccontextmanager
-    async def _context_delete(self, session: AsyncSession, obj_id: uuid.UUID, context: TContextKwargs):
-        async with super()._context_delete(session, obj_id, context):
-            obj = await self.repo.get_by_pk(session, pk=obj_id)
+    async def _context_delete(self, session: AsyncSession, obj_pk: PrimaryKeyType, context: TContextKwargs):
+        async with super()._context_delete(session, obj_pk, context):
+            obj = await self.repo.get_by_pk(session, pk=obj_pk)
             if obj:
                 represent_text = self._parse_delete_represent_text(obj)
                 self._set_delete_represent_text(represent_text)
@@ -31,12 +31,12 @@ class DetailDeleteResponseHookMixin(BaseDeleteHooks):
     async def _post_delete(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         result: DeleteResponse,
         context: TContextKwargs,
     ) -> DeleteResponse:
         """Hook executed after delete."""
-        result = await super()._post_delete(session, obj_id, result, context)
+        result = await super()._post_delete(session, obj_pk, result, context)
         if self._delete_represent_text:
             result.representation = self._delete_represent_text
         return result

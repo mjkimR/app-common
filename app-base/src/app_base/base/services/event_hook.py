@@ -1,9 +1,9 @@
 import abc
-import uuid
-from typing import Any, Optional, Sequence
+from typing import Any, Generic, Optional, Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app_base.base.repos.base import PrimaryKeyType
 from app_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
 from app_base.base.services.base import (
     BaseCreateHooks,
@@ -14,7 +14,13 @@ from app_base.base.services.base import (
 )
 
 
-class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, metaclass=abc.ABCMeta):
+class DomainEventHooksMixin(
+    BaseCreateHooks[TContextKwargs],
+    BaseUpdateHooks[TContextKwargs],
+    BaseDeleteHooks[TContextKwargs],
+    Generic[TContextKwargs],
+    metaclass=abc.ABCMeta,
+):
     """
     A base hook that publishes domain events after CUD (Create, Update, Delete) operations are completed.
     By default, it publishes the resource ID to topics such as 'ModelName.created'.
@@ -25,7 +31,32 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
         # Example: await self.event_bus.publish(topic, payload)
         pass
 
-    def _get_event_payload(self, event_type: str, obj_id: uuid.UUID, obj: Optional[ModelType] = None) -> dict[str, Any]:
+    # ============================================================
+    # PK Helpers
+    # ============================================================
+
+    def _get_pk_from_obj(self, obj: Any) -> PrimaryKeyType:
+        """Extracts the primary key value(s) from a given model object dynamically."""
+        pk_cols = self.repo.primary_keys
+        if len(pk_cols) == 1:
+            return getattr(obj, pk_cols[0].key)
+        return tuple(getattr(obj, col.key) for col in pk_cols)
+
+    def _pk_to_string(self, pk: PrimaryKeyType) -> str:
+        """
+        Converts a single or composite primary key into a string for event payloads.
+        Composite keys will be comma-separated.
+        """
+        pk_tuple = self.repo.normalize_pk_as_str(pk)
+        return ",".join(pk_tuple)
+
+    # ============================================================
+    # Hooks
+    # ============================================================
+
+    def _get_event_payload(
+        self, event_type: str, obj_pk: PrimaryKeyType, obj: Optional[ModelType] = None
+    ) -> dict[str, Any]:
         """
         Get the event payload.
 
@@ -33,7 +64,7 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
         If necessary, override this method in a child class to include more information.
         """
         return {
-            "resource_id": str(obj_id),
+            "resource_id": self._pk_to_string(obj_pk),
             "resource_type": self.repo.model_name(),
             "event_type": event_type,
         }
@@ -44,7 +75,9 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
         """
         obj = await super()._post_create(session, obj, context)
         topic = f"{self.repo.model_name()}.created"
-        payload = self._get_event_payload("created", obj.id, obj)
+
+        obj_pk = self._get_pk_from_obj(obj)
+        payload = self._get_event_payload("created", obj_pk, obj)
         await self.publish_event(topic, payload)
 
         return obj
@@ -59,7 +92,7 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
         if objs:
             topic = f"{self.repo.model_name()}.created_multi"
             payload = {
-                "resource_ids": [str(obj.id) for obj in objs],
+                "resource_ids": [self._pk_to_string(self._get_pk_from_obj(obj)) for obj in objs],
                 "resource_type": self.repo.model_name(),
                 "event_type": "created_multi",
             }
@@ -75,7 +108,8 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
         obj = await super()._post_update(session, obj, context, partial=partial)
 
         topic = f"{self.repo.model_name()}.updated"
-        payload = self._get_event_payload("updated", obj.id, obj)
+        obj_pk = self._get_pk_from_obj(obj)
+        payload = self._get_event_payload("updated", obj_pk, obj)
         await self.publish_event(topic, payload)
 
         return obj
@@ -83,18 +117,18 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
     async def _post_delete(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         result: DeleteResponse,
         context: TContextKwargs,
     ) -> DeleteResponse:
         """
         Publish a domain event after an object is deleted.
         """
-        result = await super()._post_delete(session, obj_id, result, context)
+        result = await super()._post_delete(session, obj_pk, result, context)
 
         if result.success:
             topic = f"{self.repo.model_name()}.deleted"
-            payload = self._get_event_payload("deleted", obj_id)
+            payload = self._get_event_payload("deleted", obj_pk)
             await self.publish_event(topic, payload)
 
         return result
@@ -102,18 +136,18 @@ class DomainEventHooksMixin(BaseCreateHooks, BaseUpdateHooks, BaseDeleteHooks, m
     async def _post_delete_multi(
         self,
         session: AsyncSession,
-        obj_ids: Sequence[uuid.UUID],
+        obj_pks: Sequence[PrimaryKeyType],
         result: MultipleDeleteResponse,
         context: TContextKwargs,
     ) -> MultipleDeleteResponse:
         """
         Publish a single bulk domain event after multiple objects are deleted.
         """
-        result = await super()._post_delete_multi(session, obj_ids, result, context)
+        result = await super()._post_delete_multi(session, obj_pks, result, context)
         if result.deleted_count > 0:
             topic = f"{self.repo.model_name()}.deleted_multi"
             payload = {
-                "resource_ids": [str(obj_id) for obj_id in obj_ids],
+                "resource_ids": [self._pk_to_string(pk) for pk in obj_pks],
                 "resource_type": self.repo.model_name(),
                 "event_type": "deleted_multi",
             }

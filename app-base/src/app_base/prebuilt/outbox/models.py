@@ -2,10 +2,11 @@ import datetime
 import enum
 from typing import Any, Optional
 
-from app_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
 from sqlalchemy import JSON, DateTime, String
 from sqlalchemy import Enum as EnumColumn
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
 
 
 class EventStatus(str, enum.Enum):

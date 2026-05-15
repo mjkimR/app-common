@@ -13,6 +13,7 @@ from app_base.base.repos.base import (
     CreateSchemaType,
     ModelType,
     PatchSchemaType,
+    PrimaryKeyType,
     PutSchemaType,
 )
 from app_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
@@ -88,7 +89,7 @@ class BaseServiceMixinInterface:
 # ============================================================
 
 
-class BaseCreateHooks(BaseHooksInterface):
+class BaseCreateHooks(BaseHooksInterface, Generic[TContextKwargs]):
     """Hook methods for Create operations."""
 
     @asynccontextmanager
@@ -179,14 +180,14 @@ class BaseCreateServiceMixin(
 # ============================================================
 
 
-class BaseUpdateHooks(BaseHooksInterface):
+class BaseUpdateHooks(BaseHooksInterface, Generic[TContextKwargs]):
     """Hook methods for Update operations."""
 
     @asynccontextmanager
     async def _context_update(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         obj_data: BaseModel,
         context: TContextKwargs,
         partial: bool = True,
@@ -217,44 +218,44 @@ class BaseUpdateServiceMixin(
     Update operation Mixin with hooks.
 
     Usage:
-        await service.update(session, obj_id, obj_data, context={})
+        await service.update(session, obj_pk, obj_data, context={})
     """
 
     async def put(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         obj_data: PutSchemaType,
         context: Optional[TContextKwargs] = None,
         **update_fields: Any,
     ) -> ModelType | None:
         """Full update (PUT) of an object."""
-        return await self._update_internal(session, obj_id, obj_data, partial=False, context=context, **update_fields)
+        return await self._update_internal(session, obj_pk, obj_data, partial=False, context=context, **update_fields)
 
     async def patch(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         obj_data: PatchSchemaType,
         context: Optional[TContextKwargs] = None,
         **update_fields: Any,
     ) -> ModelType | None:
         """Partial update (PATCH) of an object."""
-        return await self._update_internal(session, obj_id, obj_data, partial=True, context=context, **update_fields)
+        return await self._update_internal(session, obj_pk, obj_data, partial=True, context=context, **update_fields)
 
     async def _update_internal(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         obj_data: Union[PutSchemaType, PatchSchemaType],
         partial: bool,
         context: Optional[TContextKwargs] = None,
         **update_fields: Any,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
-        async with self._context_update(session, obj_id, obj_data, context=ctx, partial=partial):
+        async with self._context_update(session, obj_pk, obj_data, context=ctx, partial=partial):
             extra_fields = self._prepare_update_fields(obj_data, context=ctx, partial=partial, **update_fields)
-            obj = await self.repo.update_by_pk(session, pk=obj_id, obj_in=obj_data, partial=partial, **extra_fields)
+            obj = await self.repo.update_by_pk(session, pk=obj_pk, obj_in=obj_data, partial=partial, **extra_fields)
             return await self._post_update(session, obj, context=ctx, partial=partial)
 
 
@@ -263,18 +264,18 @@ class BaseUpdateServiceMixin(
 # ============================================================
 
 
-class BaseDeleteHooks(BaseHooksInterface):
+class BaseDeleteHooks(BaseHooksInterface, Generic[TContextKwargs]):
     """Hook methods for Delete operations."""
 
     @asynccontextmanager
-    async def _context_delete(self, session: AsyncSession, obj_id: uuid.UUID, context: TContextKwargs):
+    async def _context_delete(self, session: AsyncSession, obj_pk: PrimaryKeyType, context: TContextKwargs):
         """Hook executed within a context before delete (validation, cascade handling, etc.)."""
         yield
 
     async def _post_delete(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         result: DeleteResponse,
         context: TContextKwargs,
     ) -> DeleteResponse:
@@ -282,20 +283,22 @@ class BaseDeleteHooks(BaseHooksInterface):
         return result
 
     @asynccontextmanager
-    async def _context_delete_multi(self, session: AsyncSession, obj_ids: Sequence[uuid.UUID], context: TContextKwargs):
+    async def _context_delete_multi(
+        self, session: AsyncSession, obj_pks: Sequence[PrimaryKeyType], context: TContextKwargs
+    ):
         """Hook executed within a context before delete_multi.
         Defaults to running _context_delete for each item sequentially.
         Override to replace with bulk-level context handling.
         """
-        for obj_id in obj_ids:
-            async with self._context_delete(session, obj_id, context=context):
+        for obj_pk in obj_pks:
+            async with self._context_delete(session, obj_pk, context=context):
                 pass
         yield
 
     async def _post_delete_multi(
         self,
         session: AsyncSession,
-        obj_ids: Sequence[uuid.UUID],
+        obj_pks: Sequence[PrimaryKeyType],
         result: MultipleDeleteResponse,
         context: TContextKwargs,
     ) -> MultipleDeleteResponse:
@@ -316,33 +319,33 @@ class BaseDeleteServiceMixin(
     Delete operation Mixin with hooks.
 
     Usage:
-        await service.delete(session, obj_id, context={})
+        await service.delete(session, obj_pk, context={})
     """
 
     async def delete(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         context: Optional[TContextKwargs] = None,
     ) -> DeleteResponse:
         ctx = self._ensure_context(context, self.context_model)
-        async with self._context_delete(session, obj_id, context=ctx):
-            success = await self.repo.delete_by_pk(session, pk=obj_id)
-            result = DeleteResponse(success=success, identity=obj_id)
-            result = await self._post_delete(session, obj_id, result, context=ctx)
+        async with self._context_delete(session, obj_pk, context=ctx):
+            success = await self.repo.delete_by_pk(session, pk=obj_pk)
+            result = DeleteResponse(success=success, identity=obj_pk)
+            result = await self._post_delete(session, obj_pk, result, context=ctx)
             return result
 
     async def delete_multi(
         self,
         session: AsyncSession,
-        obj_ids: Sequence[uuid.UUID],
+        obj_pks: Sequence[uuid.UUID],
         context: Optional[TContextKwargs] = None,
     ) -> MultipleDeleteResponse:
         ctx = self._ensure_context(context, self.context_model)
-        async with self._context_delete_multi(session, obj_ids, context=ctx):
-            deleted_count = await self.repo.delete_by_pk_multi(session, pks=obj_ids)
+        async with self._context_delete_multi(session, obj_pks, context=ctx):
+            deleted_count = await self.repo.delete_by_pk_multi(session, pks=obj_pks)
             result = MultipleDeleteResponse(deleted_count=deleted_count)
-            result = await self._post_delete_multi(session, obj_ids, result, context=ctx)
+            result = await self._post_delete_multi(session, obj_pks, result, context=ctx)
             return result
 
 
@@ -351,11 +354,11 @@ class BaseDeleteServiceMixin(
 # ============================================================
 
 
-class BaseGetHooks(BaseHooksInterface):
+class BaseGetHooks(BaseHooksInterface, Generic[TContextKwargs]):
     """Hook methods for Get (single item) operations."""
 
     @asynccontextmanager
-    async def _context_get(self, session: AsyncSession, obj_id: uuid.UUID, context: TContextKwargs):
+    async def _context_get(self, session: AsyncSession, obj_pk: PrimaryKeyType, context: TContextKwargs):
         """Hook executed within a context before get (validation, cascade handling, etc.)."""
         yield
 
@@ -376,18 +379,18 @@ class BaseGetServiceMixin(
     Get (single item) operation Mixin with hooks.
 
     Usage:
-        await service.get(session, obj_id, context={})
+        await service.get(session, obj_pk, context={})
     """
 
     async def get(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         context: Optional[TContextKwargs] = None,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
-        async with self._context_get(session, obj_id, context=ctx):
-            obj = await self.repo.get_by_pk(session, pk=obj_id)
+        async with self._context_get(session, obj_pk, context=ctx):
+            obj = await self.repo.get_by_pk(session, pk=obj_pk)
             return await self._post_get(session, obj, context=ctx)
 
 
@@ -396,7 +399,7 @@ class BaseGetServiceMixin(
 # ============================================================
 
 
-class BaseGetMultiHooks(BaseHooksInterface):
+class BaseGetMultiHooks(BaseHooksInterface, Generic[TContextKwargs]):
     """Hook methods for Get Multi (list) operations."""
 
     @asynccontextmanager

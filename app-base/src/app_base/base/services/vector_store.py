@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import Generic
 
 from langchain_core.vectorstores import VectorStore
 from pydantic import BaseModel
@@ -8,9 +9,10 @@ from app_base.base.services.base import BaseCreateHooks, BaseDeleteHooks, BaseUp
 
 
 class VectorStoreHookMixin(
-    BaseCreateHooks,
-    BaseUpdateHooks,
-    BaseDeleteHooks,
+    BaseCreateHooks[TContextKwargs],
+    BaseUpdateHooks[TContextKwargs],
+    BaseDeleteHooks[TContextKwargs],
+    Generic[TContextKwargs],
 ):
     @property
     @abstractmethod

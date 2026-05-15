@@ -1,13 +1,13 @@
-import uuid
-
 from pydantic import BaseModel, Field
+
+from app_base.base.repos.base import PrimaryKeyType
 
 
 class DeleteResponse(BaseModel):
     success: bool = True
     message: str | None = None
 
-    identity: str | uuid.UUID | None = Field(default=None, description="The identity of the deleted object.")
+    identity: PrimaryKeyType | None = Field(default=None, description="The identity of the deleted object.")
     representation: str | None = Field(default=None, description="The string representation of the deleted object.")
 
     meta: dict = Field(

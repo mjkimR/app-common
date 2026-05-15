@@ -1,12 +1,13 @@
 from typing import Annotated, Optional
 from uuid import UUID
 
+from fastapi import Depends
+
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.services.base import BaseContextKwargs, TContextKwargs
 from app_base.base.usecases.base import BaseUseCase
 from app_base.base.usecases.crud import BaseGetMultiUseCase
 from app_base.core.database.transaction import AsyncTransaction
-from fastapi import Depends
 
 from ..exceptions import UserCantDeleteItselfException
 from ..models import User

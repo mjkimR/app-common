@@ -1,10 +1,11 @@
 from typing import Annotated
 
 import jwt
-from app_base.core.database.deps import get_session
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app_base.core.database.deps import get_session
 
 from .exceptions import (
     InvalidCredentialsException,
@@ -50,7 +51,7 @@ async def get_current_user(
 ) -> User:
     if token.user_id is None:
         raise InvalidCredentialsException()
-    user = await user_service.get(session, obj_id=token.user_id)
+    user = await user_service.get(session, obj_pk=token.user_id)
     if user is None:
         raise UserNotFoundException()
     return user

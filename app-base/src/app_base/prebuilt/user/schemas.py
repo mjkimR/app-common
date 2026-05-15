@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from app_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
+
+from app_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
 
 
 class UserCreate(BaseModel):

@@ -1,6 +1,8 @@
 import uuid
 from typing import Annotated
 
+from fastapi import APIRouter, Depends, status
+
 from app_base.base.deps.params.page import PaginationParam
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
@@ -13,7 +15,6 @@ from app_base.prebuilt.user.usecases.admin import (
     DeleteUserUseCase,
     GetMultiUserUseCase,
 )
-from fastapi import APIRouter, Depends, status
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(on_superuser)])
 

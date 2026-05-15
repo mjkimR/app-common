@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Generic, Optional, Sequence, TypeVar, Union
+from typing import Any, Generic, Optional, Sequence, TypeVar, Union, cast
 
 from pydantic import BaseModel
 from sqlalchemy import (
     Column,
+    CursorResult,
     and_,
     delete,
     func,
@@ -65,14 +66,27 @@ class BaseRepository(
         """The primary key columns of the model."""
         return self._primary_keys
 
-    def model_repr(self, pk):
+    # ============================================================
+    # PK Helpers
+    # ============================================================
+
+    def normalize_pk(self, pk: PrimaryKeyType) -> tuple[Any, ...]:
+        """Normalize single or composite primary key(s) into a consistent tuple format."""
+        if not isinstance(pk, Sequence) or isinstance(pk, str):
+            return (pk,)
+        return tuple(pk)
+
+    def normalize_pk_as_str(self, pk: PrimaryKeyType) -> tuple[str, ...]:
+        """Normalize primary key(s) into a tuple of strings for safe value comparisons (e.g., UUID vs str)."""
+        return tuple(str(x) for x in self.normalize_pk(pk))
+
+    # ============================================================
+
+    def model_repr(self, pk: PrimaryKeyType):
         if not self._primary_keys:
             raise ValueError("No primary key defined for this model.")
 
-        if not isinstance(pk, Sequence) or isinstance(pk, str):
-            pk_values = [pk]
-        else:
-            pk_values = pk
+        pk_values = self.normalize_pk(pk)
 
         if len(self._primary_keys) != len(pk_values):
             raise ValueError(
@@ -87,10 +101,7 @@ class BaseRepository(
         if not self._primary_keys:
             raise ValueError("No primary key defined for this model.")
 
-        if not isinstance(pk, Sequence) or isinstance(pk, str):
-            pk_values = [pk]
-        else:
-            pk_values = pk
+        pk_values = self.normalize_pk(pk)
 
         if len(self._primary_keys) != len(pk_values):
             raise ValueError(
@@ -133,19 +144,11 @@ class BaseRepository(
         db_row = await session.execute(stmt)
         return db_row.scalar_one_or_none()
 
-    async def get_by_pk(
-        self,
-        session: AsyncSession,
-        pk: PrimaryKeyType,
-    ) -> Optional[ModelType]:
+    async def get_by_pk(self, session: AsyncSession, pk: PrimaryKeyType) -> Optional[ModelType]:
         if not self._primary_keys:
             raise ValueError("No primary key defined for this model.")
 
-        pk_values: Union[Sequence, Any]
-        if not isinstance(pk, Sequence) or isinstance(pk, str):
-            pk_values = [pk]
-        else:
-            pk_values = pk
+        pk_values = self.normalize_pk(pk)
 
         if len(self._primary_keys) != len(pk_values):
             raise ValueError(
@@ -340,8 +343,8 @@ class BaseRepository(
             stmt = delete(self.model).filter(*filters)
 
         result = await session.execute(stmt)
-
-        deleted_or_updated = int(result.rowcount) > 0
+        cursor_result = cast(CursorResult, result)
+        deleted_or_updated = int(cursor_result.rowcount) > 0
         if deleted_or_updated:
             await session.flush()
         return deleted_or_updated
@@ -389,7 +392,8 @@ class BaseRepository(
                 stmt = delete(self.model).where(where_clause)
 
             result = await session.execute(stmt)
-            total_affected_rows += result.rowcount or 0
+            cursor_result = cast(CursorResult, result)
+            total_affected_rows += cursor_result.rowcount or 0
 
         if total_affected_rows > 0:
             await session.flush()

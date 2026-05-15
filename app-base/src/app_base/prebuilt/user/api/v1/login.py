@@ -1,12 +1,13 @@
 from typing import Annotated
 
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app_base.core.database.deps import get_session
 from app_base.prebuilt.user.exceptions import IncorrectEmailOrPasswordException
 from app_base.prebuilt.user.services import UserService
 from app_base.prebuilt.user.token_schemas import Token
-from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["Login"])
 

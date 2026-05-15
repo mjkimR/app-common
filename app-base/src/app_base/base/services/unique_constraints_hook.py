@@ -1,7 +1,6 @@
 import abc
-import uuid
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Tuple, Union
+from typing import Any, AsyncIterator, Generic, Tuple, Union
 
 from pydantic import BaseModel
 from sqlalchemy import and_
@@ -9,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnElement
 
 from app_base.base.exceptions.basic import BadRequestException
+from app_base.base.repos.base import PrimaryKeyType
 from app_base.base.services.base import (
     BaseCreateHooks,
     BaseUpdateHooks,
@@ -19,7 +19,9 @@ from app_base.base.services.base import (
 )
 
 
-class UniqueConstraintHooksMixin(BaseCreateHooks, BaseUpdateHooks, metaclass=abc.ABCMeta):
+class UniqueConstraintHooksMixin(
+    BaseCreateHooks[TContextKwargs], BaseUpdateHooks[TContextKwargs], Generic[TContextKwargs], metaclass=abc.ABCMeta
+):
     """
     Async Generator-based Unique Constraint Check Hook.
 
@@ -110,7 +112,7 @@ class UniqueConstraintHooksMixin(BaseCreateHooks, BaseUpdateHooks, metaclass=abc
     async def _context_update(
         self,
         session: AsyncSession,
-        obj_id: uuid.UUID,
+        obj_pk: PrimaryKeyType,
         obj_data: BaseModel,
         context: TContextKwargs,
         partial: bool = True,
@@ -118,7 +120,7 @@ class UniqueConstraintHooksMixin(BaseCreateHooks, BaseUpdateHooks, metaclass=abc
         """
         Extends the update context to run unique constraint checks, excluding the current object.
         """
-        async with super()._context_update(session, obj_id, obj_data, context, partial=partial):
+        async with super()._context_update(session, obj_pk, obj_data, context, partial=partial):
             constraints = self._unique_constraints(obj_data, context)
-            await self._process_constraints(session, constraints, exclude_id=obj_id)
+            await self._process_constraints(session, constraints, exclude_id=obj_pk)
             yield

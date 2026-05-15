@@ -1,9 +1,10 @@
 import datetime
 from typing import Sequence
 
-from app_base.base.repos.base import BaseRepository
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app_base.base.repos.base import BaseRepository
 
 from .models import EventStatus, Outbox
 from .schemas import OutboxCreate, OutboxUpdate

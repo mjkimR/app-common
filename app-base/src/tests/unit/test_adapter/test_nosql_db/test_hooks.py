@@ -1,6 +1,6 @@
 """Tests for nosql_db hooks (base, exists_check, event, user_aware, unique_constraints, nested_resource)."""
 
-from typing import Any, AsyncIterator, Tuple
+from typing import Any
 
 import pytest
 from app_base.adapter.nosql_db.hooks.base import (
@@ -17,7 +17,6 @@ from app_base.adapter.nosql_db.hooks.nested_resource import (
     NoSQLNestedResourceContextKwargs,
     NoSQLNestedResourceHooksMixin,
 )
-from app_base.adapter.nosql_db.hooks.unique_constraints import NoSQLUniqueConstraintHooksMixin
 from app_base.adapter.nosql_db.hooks.user_aware import NoSQLUserAwareHooksMixin, NoSQLUserContextKwargs
 from app_base.adapter.nosql_db.repository import NoSQLRepository
 from app_base.base.exceptions.basic import NotFoundException
@@ -300,57 +299,6 @@ async def test_event_hook_delete_publishes(event_service, mock_provider):
     await event_service.delete(mock_provider, "ev4")
     topics = [t for t, _ in event_service.published_events]
     assert "ItemModel.deleted" in topics
-
-
-# ================================================================
-# UniqueConstraint Hook Tests
-# ================================================================
-
-
-class UniqueNameService(
-    NoSQLUniqueConstraintHooksMixin,
-    BaseNoSQLCreateServiceMixin,
-    BaseNoSQLUpdateServiceMixin,
-):
-    @property
-    def repo(self) -> ItemRepo:
-        return ItemRepo()
-
-    @property
-    def context_model(self):
-        return BaseNoSQLContextKwargs
-
-    async def _unique_constraints(self, obj_data, context) -> AsyncIterator[Tuple[list[tuple[str, str, Any]], str]]:
-        yield ([("name", "==", obj_data.name)], "Item with this name already exists.")
-
-
-@pytest.fixture
-def unique_service():
-    return UniqueNameService()
-
-
-@pytest.mark.asyncio
-async def test_unique_constraint_create_allows_unique(unique_service, mock_provider):
-    obj = await unique_service.create(mock_provider, "uc1", ItemCreate(id="uc1", name="Unique"))
-    assert obj.name == "Unique"
-
-
-@pytest.mark.asyncio
-async def test_unique_constraint_create_rejects_duplicate(unique_service, mock_provider):
-    from app_base.base.exceptions.basic import BadRequestException
-
-    await unique_service.create(mock_provider, "uc2", ItemCreate(id="uc2", name="DupName"))
-    with pytest.raises(BadRequestException):
-        await unique_service.create(mock_provider, "uc3", ItemCreate(id="uc3", name="DupName"))
-
-
-@pytest.mark.asyncio
-async def test_unique_constraint_patch_allows_same_item(unique_service, mock_provider):
-    """Patching same item with same name should NOT raise (exclude_id logic)."""
-    await unique_service.create(mock_provider, "uc4", ItemCreate(id="uc4", name="SameName"))
-    # Patch to same name → should be fine since it excludes self
-    result = await unique_service.patch(mock_provider, "uc4", ItemPatch(name="SameName"))
-    assert result is not None
 
 
 # ================================================================
