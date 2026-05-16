@@ -41,3 +41,9 @@ app-tools create-code feature --name Article
 
 ---
 *More commands will be added as the project evolves.*
+
+## Documentation
+
+For a complete list of commands, usage examples, and details on how code generation works, please refer to the developer guide:
+
+- **[app-tools Developer Guide](../skill/app-base-developer-skill/docs/app_tools_guide.md)**

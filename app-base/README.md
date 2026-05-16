@@ -28,3 +28,10 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-base[
 ## Requirements
 
 - Python >= 3.12
+
+## Documentation
+
+For comprehensive guides on architecture, using service hooks, and detailed component references, please refer to the **Developer Skills** documentation located in the root repository:
+
+- **[app-base Developer Guide](../skill/app-base-developer-skill/docs/app_base_guide.md)**: Core architecture and service hook tutorials.
+- **[Component References](../skill/app-base-developer-skill/docs/)**: Detailed API-level documentation for `base`, `adapter`, `core`, and `config` modules.
