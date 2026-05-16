@@ -268,14 +268,12 @@ class BaseRepository(
         where: WhereClause = (),
         order_by: SeqOrOneOrNone[UnaryExpression] = (),
     ) -> Sequence[ModelType]:
-        res = await self.get_multi(
-            session,
-            offset=0,
-            limit=None,
-            where=where,
-            order_by=order_by,
-        )
-        return res.items
+        # Bolt optimization: Execute SELECT directly instead of calling get_multi.
+        # This skips the redundant SELECT COUNT(*) query executed by pagination wrappers,
+        # significantly reducing database roundtrips for full table reads.
+        stmt = self._select(where=where, order_by=order_by)
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
     async def update_by_pk(
         self,
