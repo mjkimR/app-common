@@ -217,8 +217,10 @@ class BaseRepository(
             chunk = db_objs[i : i + self.BATCH_SIZE]
             session.add_all(chunk)
             await session.flush()
-            for obj in chunk:
-                await session.refresh(obj)
+            # ⚡ Bolt Optimization: Removed loop calling `await session.refresh(obj)` here.
+            # `session.flush()` already assigns primary keys and server defaults.
+            # Calling `refresh` sequentially for each obj results in an N+1 queries
+            # bottleneck for bulk creation, slowing down inserts significantly.
             created_objs.extend(chunk)
 
         return created_objs
