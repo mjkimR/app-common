@@ -203,17 +203,14 @@ class TestBaseRepositoryGetMulti:
     @pytest.mark.asyncio
     async def test_get_multi_returns_paginated_list(self, mock_repository, mock_async_session, mock_model):
         """Should return PaginatedList with items."""
-        # Mock count query
-        count_result = MagicMock()
-        count_result.scalar_one.return_value = 1
-
         # Mock data query
         data_result = MagicMock()
         scalars_mock = MagicMock()
         scalars_mock.all.return_value = [mock_model]
         data_result.scalars.return_value = scalars_mock
 
-        mock_async_session.execute.side_effect = [count_result, data_result]
+        # With Bolt optimization, count_query is skipped since len(data) < limit
+        mock_async_session.execute.side_effect = [data_result]
 
         result = await mock_repository.get_multi(mock_async_session, offset=0, limit=10)
 
@@ -236,17 +233,36 @@ class TestBaseRepositoryGetMulti:
             await mock_repository.get_multi(mock_async_session, offset=-1)
 
     @pytest.mark.asyncio
+    async def test_get_multi_out_of_bounds_offset(self, mock_repository, mock_async_session, mock_model):
+        """Should execute COUNT(*) if data is empty but offset is > 0."""
+        # Mock count query (total count is 5, but we asked for offset 20)
+        count_result = MagicMock()
+        count_result.scalar_one.return_value = 5
+
+        # Mock data query
+        data_result = MagicMock()
+        scalars_mock = MagicMock()
+        scalars_mock.all.return_value = []
+        data_result.scalars.return_value = scalars_mock
+
+        mock_async_session.execute.side_effect = [data_result, count_result]
+
+        result = await mock_repository.get_multi(mock_async_session, offset=20, limit=10)
+
+        assert isinstance(result, PaginatedList)
+        assert result.total_count == 5
+        assert len(result.items) == 0
+
+    @pytest.mark.asyncio
     async def test_get_multi_with_none_limit(self, mock_repository, mock_async_session, mock_model):
         """Should handle None limit (no limit)."""
-        count_result = MagicMock()
-        count_result.scalar_one.return_value = 100
-
         data_result = MagicMock()
         scalars_mock = MagicMock()
         scalars_mock.all.return_value = [mock_model] * 100
         data_result.scalars.return_value = scalars_mock
 
-        mock_async_session.execute.side_effect = [count_result, data_result]
+        # With Bolt optimization, limit is None so count_query is skipped
+        mock_async_session.execute.side_effect = [data_result]
 
         result = await mock_repository.get_multi(mock_async_session, offset=0, limit=None)
 

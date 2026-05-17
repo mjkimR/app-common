@@ -235,14 +235,6 @@ class BaseRepository(
         if offset < 0:
             raise ValueError("Offset must be non-negative.")
 
-        # Total count
-        count_stmt = select(func.count()).select_from(self.model)
-        if where is not None:
-            where = to_sequence(where)
-            count_stmt = count_stmt.where(*where)
-        total_count_result = await session.execute(count_stmt)
-        total_count = total_count_result.scalar_one()
-
         # Query
         stmt = self._select(where=where, order_by=order_by)
         stmt = stmt.offset(offset)
@@ -253,7 +245,23 @@ class BaseRepository(
             stmt = stmt.options(*select_options)
 
         result = await session.execute(stmt)
-        data = result.scalars().all()
+        data = list(result.scalars().all())
+
+        # ⚡ Bolt optimization: Skip expensive COUNT(*) query when we can infer the total_count.
+        # We can safely infer the total count if:
+        # 1. limit is None (we fetched everything from the offset)
+        # 2. We fetched fewer items than the limit AND we have > 0 items OR offset is 0.
+        #    If len(data) == 0 and offset > 0, we are out-of-bounds and MUST run the count query.
+        if limit is None or (len(data) < limit and (len(data) > 0 or offset == 0)):
+            total_count = offset + len(data)
+        else:
+            # Fallback: Execute COUNT(*) query for middle pages, or out-of-bounds requests
+            count_stmt = select(func.count()).select_from(self.model)
+            if where is not None:
+                where = to_sequence(where)
+                count_stmt = count_stmt.where(*where)
+            total_count_result = await session.execute(count_stmt)
+            total_count = total_count_result.scalar_one()
 
         return PaginatedList(
             items=data,
