@@ -38,7 +38,6 @@ def test_get_storage_client_not_initialized():
         get_storage_client()
 
 
-@pytest.mark.asyncio
 async def test_setup_storage_client_initializes_client(mock_client):
     mock_settings = FileStorageSettings(FS_PROVIDER="local", **{})
     with patch(
@@ -51,7 +50,6 @@ async def test_setup_storage_client_initializes_client(mock_client):
         assert get_storage_client() == mock_create_client.return_value
 
 
-@pytest.mark.asyncio
 async def test_setup_storage_client_already_initialized(mock_client):
     set_file_storage_client(mock_client)
     mock_settings = FileStorageSettings(FS_PROVIDER="local", **{})
@@ -64,7 +62,6 @@ async def test_setup_storage_client_already_initialized(mock_client):
         assert get_storage_client() == mock_client
 
 
-@pytest.mark.asyncio
 async def test_close_storage_client(mock_client):
     set_file_storage_client(mock_client)
     await close_storage_client()
@@ -72,7 +69,6 @@ async def test_close_storage_client(mock_client):
         get_storage_client()
 
 
-@pytest.mark.asyncio
 async def test_close_storage_client_not_initialized():
     # Should not raise an error if client is not initialized
     await close_storage_client()

@@ -1,12 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from app_base.adapter.event_broker.lifespan import lifespan_event_broker
 from app_base.config.event_broker import EventBrokerSettings
 from fastapi import FastAPI
 
 
-@pytest.mark.asyncio
 async def test_lifespan_event_broker_initializes_and_cleans_up():
     mock_app = FastAPI()
     mock_settings = MagicMock(spec=EventBrokerSettings)

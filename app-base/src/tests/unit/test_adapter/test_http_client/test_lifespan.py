@@ -1,11 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from app_base.adapter.http_client.lifespan import lifespan_http_client
 from fastapi import FastAPI
 
 
-@pytest.mark.asyncio
 async def test_lifespan_http_client():
     mock_app = FastAPI()
 

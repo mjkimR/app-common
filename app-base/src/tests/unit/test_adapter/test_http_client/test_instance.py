@@ -76,7 +76,6 @@ def mock_http_settings():
     return settings
 
 
-@pytest.mark.asyncio
 @patch("app_base.adapter.http_client.instance.get_http_client_settings")
 async def test_setup_http_client(mock_get_settings, mock_http_settings):
     mock_get_settings.return_value = mock_http_settings
@@ -86,7 +85,6 @@ async def test_setup_http_client(mock_get_settings, mock_http_settings):
     assert isinstance(client, httpx.AsyncClient)
 
 
-@pytest.mark.asyncio
 @patch("app_base.adapter.http_client.instance.logger")
 async def test_setup_http_client_already_initialized(mock_logger):
     mock_client = MagicMock(spec=httpx.AsyncClient)
@@ -114,7 +112,6 @@ def test_setup_http_sync_client_already_initialized(mock_logger):
     mock_logger.info.assert_called_with("Synchronous HTTP client is already initialized.")
 
 
-@pytest.mark.asyncio
 async def test_close_http_client():
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     set_http_client(mock_client)
@@ -126,7 +123,6 @@ async def test_close_http_client():
         get_http_client()
 
 
-@pytest.mark.asyncio
 async def test_close_http_client_not_initialized():
     # Should not raise any error
     await close_http_client()

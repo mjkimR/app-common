@@ -114,7 +114,6 @@ class TestBaseCreateServiceMixin:
 
         return TestCreateService()
 
-    @pytest.mark.asyncio
     async def test_create_calls_repo_create(self, create_service, mock_async_session, mock_create_schema, mock_model):
         """Should call repository create method."""
         create_service.repo.create.return_value = mock_model
@@ -124,7 +123,6 @@ class TestBaseCreateServiceMixin:
         assert result == mock_model
         create_service.repo.create.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_create_with_context(self, create_service, mock_async_session, mock_create_schema, mock_model):
         """Should pass context through create flow."""
         create_service.repo.create.return_value = mock_model
@@ -133,7 +131,6 @@ class TestBaseCreateServiceMixin:
 
         assert result == mock_model
 
-    @pytest.mark.asyncio
     async def test_create_with_prepare_fields_hook(self, mock_async_session, mock_create_schema, mock_model):
         """Should call _prepare_create_fields hook."""
 
@@ -187,7 +184,6 @@ class TestBaseUpdateServiceMixin:
 
         return TestUpdateService()
 
-    @pytest.mark.asyncio
     async def test_put_calls_repo_update_with_partial_false(
         self,
         update_service,
@@ -206,7 +202,6 @@ class TestBaseUpdateServiceMixin:
             mock_async_session, pk=sample_uuid, obj_in=mock_update_schema, partial=False
         )
 
-    @pytest.mark.asyncio
     async def test_patch_calls_repo_update_with_partial_true(
         self,
         update_service,
@@ -252,7 +247,6 @@ class TestBaseDeleteServiceMixin:
 
         return TestDeleteService()
 
-    @pytest.mark.asyncio
     async def test_delete_calls_repo_delete(self, delete_service, mock_async_session, sample_uuid):
         """Should call repository delete_by_pk method."""
         delete_service.repo.delete_by_pk.return_value = True
@@ -262,7 +256,6 @@ class TestBaseDeleteServiceMixin:
         assert result.success is True
         delete_service.repo.delete_by_pk.assert_called_once_with(mock_async_session, pk=sample_uuid)
 
-    @pytest.mark.asyncio
     async def test_delete_returns_false_when_not_found(self, delete_service, mock_async_session, sample_uuid):
         """Should return False when record not found."""
         delete_service.repo.delete_by_pk.return_value = False
@@ -298,7 +291,6 @@ class TestBaseGetServiceMixin:
 
         return TestGetService()
 
-    @pytest.mark.asyncio
     async def test_get_calls_repo_get_by_pk(self, get_service, mock_async_session, mock_model, sample_uuid):
         """Should call repository get_by_pk method."""
         get_service.repo.get_by_pk.return_value = mock_model
@@ -308,7 +300,6 @@ class TestBaseGetServiceMixin:
         assert result == mock_model
         get_service.repo.get_by_pk.assert_called_once_with(mock_async_session, pk=sample_uuid)
 
-    @pytest.mark.asyncio
     async def test_get_returns_none_when_not_found(self, get_service, mock_async_session, sample_uuid):
         """Should return None when record not found."""
         get_service.repo.get_by_pk.return_value = None
@@ -317,7 +308,6 @@ class TestBaseGetServiceMixin:
 
         assert result is None
 
-    @pytest.mark.asyncio
     async def test_get_with_post_get_hook(self, mock_async_session, mock_model, sample_uuid):
         """Should call _post_get hook."""
 
@@ -371,7 +361,6 @@ class TestBaseGetMultiServiceMixin:
 
         return TestGetMultiService()
 
-    @pytest.mark.asyncio
     async def test_get_multi_calls_repo_get_multi(self, get_multi_service, mock_async_session, mock_model):
         """Should call repository get_multi method."""
         paginated = PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
@@ -382,7 +371,6 @@ class TestBaseGetMultiServiceMixin:
         assert result == paginated
         get_multi_service.repo.get_multi.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_get_multi_with_where_conditions(self, get_multi_service, mock_async_session, mock_model):
         """Should pass where conditions to repository."""
         paginated = PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
@@ -394,7 +382,6 @@ class TestBaseGetMultiServiceMixin:
         call_kwargs = get_multi_service.repo.get_multi.call_args.kwargs
         assert "where" in call_kwargs
 
-    @pytest.mark.asyncio
     async def test_get_multi_merges_extra_filters(self, mock_async_session, mock_model):
         """Should merge extra filters from _prepare_get_multi_filters hook."""
 
@@ -421,7 +408,6 @@ class TestBaseGetMultiServiceMixin:
         call_kwargs = service.repo.get_multi.call_args.kwargs
         assert len(call_kwargs["where"]) == 1
 
-    @pytest.mark.asyncio
     async def test_get_multi_merges_where_list_with_extra_filters(self, mock_async_session, mock_model):
         """Should merge where list with extra filters."""
 

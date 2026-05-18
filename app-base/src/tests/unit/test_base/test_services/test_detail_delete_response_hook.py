@@ -38,7 +38,6 @@ class TestDetailDeleteResponseHook:
     def service(self, mock_repo):
         return ConcreteDetailDeleteService(mock_repo)
 
-    @pytest.mark.asyncio
     async def test_context_delete_sets_represent_text_when_obj_exists(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -51,7 +50,6 @@ class TestDetailDeleteResponseHook:
 
         assert service._delete_represent_text == "Item(Test Item)"
 
-    @pytest.mark.asyncio
     async def test_context_delete_does_not_set_represent_text_when_obj_not_found(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -62,7 +60,6 @@ class TestDetailDeleteResponseHook:
 
         assert service._delete_represent_text is None
 
-    @pytest.mark.asyncio
     async def test_post_delete_sets_representation_on_result(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -73,7 +70,6 @@ class TestDetailDeleteResponseHook:
 
         assert updated.representation == "Item(Test Item)"
 
-    @pytest.mark.asyncio
     async def test_post_delete_skips_representation_when_not_set(
         self, service, mock_async_session, sample_uuid, base_context
     ):

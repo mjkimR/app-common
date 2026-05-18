@@ -35,14 +35,12 @@ class TestExistsCheckUpdate:
     def service(self, mock_repo):
         return ConcreteExistsCheckService(mock_repo)
 
-    @pytest.mark.asyncio
     async def test_context_update_passes_when_obj_exists(self, service, mock_async_session, sample_uuid, base_context):
         service.repo.get_by_pk = AsyncMock(return_value=MagicMock())
 
         async with service._context_update(mock_async_session, sample_uuid, MagicMock(), base_context):
             pass  # No exception expected
 
-    @pytest.mark.asyncio
     async def test_context_update_raises_not_found_when_obj_missing(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -63,14 +61,12 @@ class TestExistsCheckDelete:
     def service(self, mock_repo):
         return ConcreteExistsCheckService(mock_repo)
 
-    @pytest.mark.asyncio
     async def test_context_delete_passes_when_obj_exists(self, service, mock_async_session, sample_uuid, base_context):
         service.repo.get_by_pk = AsyncMock(return_value=MagicMock())
 
         async with service._context_delete(mock_async_session, sample_uuid, base_context):
             pass  # No exception expected
 
-    @pytest.mark.asyncio
     async def test_context_delete_raises_not_found_when_obj_missing(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -91,7 +87,6 @@ class TestExistsCheckDeleteMulti:
     def service(self, mock_repo):
         return ConcreteExistsCheckService(mock_repo)
 
-    @pytest.mark.asyncio
     async def test_context_delete_multi_passes_when_all_exist(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -105,7 +100,6 @@ class TestExistsCheckDeleteMulti:
         async with service._context_delete_multi(mock_async_session, [sample_uuid], base_context):
             pass  # No exception expected
 
-    @pytest.mark.asyncio
     async def test_context_delete_multi_raises_not_found_when_missing(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -116,7 +110,6 @@ class TestExistsCheckDeleteMulti:
             async with service._context_delete_multi(mock_async_session, [sample_uuid], base_context):
                 pass
 
-    @pytest.mark.asyncio
     async def test_context_delete_multi_skips_check_for_empty_list(self, service, mock_async_session, base_context):
         async with service._context_delete_multi(mock_async_session, [], base_context):
             pass  # Empty list should not raise

@@ -87,7 +87,6 @@ def test_get_vector_store_factory():
     assert factory.provider == mock_provider
 
 
-@pytest.mark.asyncio
 async def test_get_vector_store():
     mock_provider = MockVectorStoreProvider(MagicMock())
     set_vector_store_provider(mock_provider)
@@ -98,7 +97,6 @@ async def test_get_vector_store():
     assert mock_provider.create_vector_store_called_with == (collection_name, model_name)
 
 
-@pytest.mark.asyncio
 async def test_setup_vector_store_provider(mock_qdrant_settings):
     mock_settings = mock_qdrant_settings
     with patch(
@@ -109,7 +107,6 @@ async def test_setup_vector_store_provider(mock_qdrant_settings):
         assert get_vector_store_provider() is not None
 
 
-@pytest.mark.asyncio
 async def test_setup_vector_store_provider_already_initialized(mock_qdrant_settings):
     mock_provider = MockVectorStoreProvider(MagicMock())
     set_vector_store_provider(mock_provider)
@@ -120,7 +117,6 @@ async def test_setup_vector_store_provider_already_initialized(mock_qdrant_setti
         assert get_vector_store_provider() == mock_provider
 
 
-@pytest.mark.asyncio
 async def test_close_vector_store():
     mock_provider = MockVectorStoreProvider(MagicMock())
     set_vector_store_provider(mock_provider)
@@ -130,7 +126,6 @@ async def test_close_vector_store():
         get_vector_store_provider()
 
 
-@pytest.mark.asyncio
 async def test_close_vector_store_not_initialized():
     await close_vector_store()
     with pytest.raises(RuntimeError, match="Vector Store provider is not initialized. Check lifespan."):

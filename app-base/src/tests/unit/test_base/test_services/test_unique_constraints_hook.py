@@ -45,7 +45,6 @@ class TestUniqueConstraintCreate:
     def service(self, mock_repo):
         return ConcreteUniqueConstraintService(mock_repo)
 
-    @pytest.mark.asyncio
     async def test_context_create_passes_when_no_duplicate(self, service, mock_async_session, base_context):
         service.repo.exists = AsyncMock(return_value=False)
         obj_data = MagicMock()
@@ -56,7 +55,6 @@ class TestUniqueConstraintCreate:
 
         service.repo.exists.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_context_create_raises_when_duplicate_found(self, service, mock_async_session, base_context):
         service.repo.exists = AsyncMock(return_value=True)
         obj_data = MagicMock()
@@ -66,7 +64,6 @@ class TestUniqueConstraintCreate:
             async with service._context_create(mock_async_session, obj_data, base_context):
                 pass
 
-    @pytest.mark.asyncio
     async def test_context_create_skips_check_when_no_constraint_yields(
         self, service, mock_async_session, base_context
     ):
@@ -90,7 +87,6 @@ class TestUniqueConstraintUpdate:
     def service(self, mock_repo):
         return ConcreteUniqueConstraintService(mock_repo)
 
-    @pytest.mark.asyncio
     async def test_context_update_passes_when_no_duplicate(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -103,7 +99,6 @@ class TestUniqueConstraintUpdate:
 
         service.repo.exists.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_context_update_raises_when_duplicate_found(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -115,7 +110,6 @@ class TestUniqueConstraintUpdate:
             async with service._context_update(mock_async_session, sample_uuid, obj_data, base_context):
                 pass
 
-    @pytest.mark.asyncio
     async def test_context_update_passes_exclude_id_to_check(
         self, service, mock_async_session, sample_uuid, base_context
     ):

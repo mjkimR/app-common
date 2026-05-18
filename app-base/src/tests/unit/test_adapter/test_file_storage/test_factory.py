@@ -39,7 +39,6 @@ def mock_unsupported_settings():
     return mock_settings
 
 
-@pytest.mark.asyncio
 async def test_create_client_local_provider(mock_local_settings):
     with patch(
         "app_base.adapter.file_storage.factory.LocalStorageProvider.from_config", new_callable=AsyncMock
@@ -50,7 +49,6 @@ async def test_create_client_local_provider(mock_local_settings):
         assert client == mock_from_config.return_value
 
 
-@pytest.mark.asyncio
 async def test_create_client_s3_provider(mock_s3_settings):
     with patch(
         "app_base.adapter.file_storage.factory.S3StorageProvider.from_config", new_callable=AsyncMock
@@ -61,7 +59,6 @@ async def test_create_client_s3_provider(mock_s3_settings):
         assert client == mock_from_config.return_value
 
 
-@pytest.mark.asyncio
 async def test_create_client_unsupported_provider(mock_unsupported_settings):
     with pytest.raises(ValueError, match="Unsupported file storage client: unsupported"):
         await FileStorageFactory.create_client(mock_unsupported_settings)

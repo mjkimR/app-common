@@ -508,7 +508,6 @@ class TestAllHooksChaining:
     # 1. super() chaining
     # -------------------------------------------------------------------------
 
-    @pytest.mark.asyncio
     async def test_super_chaining(self, case, mock_repo, mock_parent_repo, mock_session, sample_uuid):
         """SpyAllMixin must be reached when HookMixin calls super() correctly."""
         if case.skip_chaining:
@@ -528,7 +527,6 @@ class TestAllHooksChaining:
     # 2. body execution (yield present)
     # -------------------------------------------------------------------------
 
-    @pytest.mark.asyncio
     async def test_body_executes(self, case, mock_repo, mock_parent_repo, mock_session, sample_uuid):
         """Code inside the with-block must actually run (missing yield prevents entry)."""
         case.ok_setup(mock_repo, mock_parent_repo, sample_uuid)
@@ -544,7 +542,6 @@ class TestAllHooksChaining:
     # 3. exception propagation
     # -------------------------------------------------------------------------
 
-    @pytest.mark.asyncio
     async def test_body_exception_propagates(self, case, mock_repo, mock_parent_repo, mock_session, sample_uuid):
         """Exceptions raised inside the with-block must propagate outward (not be swallowed)."""
         case.ok_setup(mock_repo, mock_parent_repo, sample_uuid)
@@ -558,7 +555,6 @@ class TestAllHooksChaining:
     # 4. pre-hook exception blocks body entry
     # -------------------------------------------------------------------------
 
-    @pytest.mark.asyncio
     async def test_pre_hook_blocks_body(self, case, mock_repo, mock_parent_repo, mock_session, sample_uuid):
         """When a hook raises before yield, the body must not be entered."""
         if case.fail_setup is None:

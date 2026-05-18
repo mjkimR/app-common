@@ -114,13 +114,11 @@ def nested_context(parent_id) -> NestedResourceContextKwargs:
 
 
 class TestCheckParentExists:
-    @pytest.mark.asyncio
     async def test_passes_when_parent_exists(self, service, mock_async_session, parent_id):
         service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
 
         await service._check_parent_exists(mock_async_session, parent_id)  # No exception
 
-    @pytest.mark.asyncio
     async def test_raises_not_found_when_parent_missing(self, service, mock_async_session, parent_id):
         service.parent_repo.get_by_pk = AsyncMock(return_value=None)
 
@@ -134,7 +132,6 @@ class TestCheckParentExists:
 
 
 class TestEnsureOwnership:
-    @pytest.mark.asyncio
     async def test_passes_when_obj_belongs_to_parent(self, service, mock_async_session, sample_uuid, parent_id):
         mock_obj = MagicMock()
         mock_obj.parent_id = parent_id
@@ -142,7 +139,6 @@ class TestEnsureOwnership:
 
         await service._ensure_ownership(mock_async_session, sample_uuid, parent_id)  # No exception
 
-    @pytest.mark.asyncio
     async def test_raises_when_obj_belongs_to_different_parent(
         self, service, mock_async_session, sample_uuid, parent_id
     ):
@@ -154,7 +150,6 @@ class TestEnsureOwnership:
         with pytest.raises(NotFoundException):
             await service._ensure_ownership(mock_async_session, sample_uuid, parent_id)
 
-    @pytest.mark.asyncio
     async def test_passes_when_obj_not_found(self, service, mock_async_session, sample_uuid, parent_id):
         service.repo.get_by_pk = AsyncMock(return_value=None)
 
@@ -197,7 +192,6 @@ class TestPrepareGetMultiFilters:
 
 
 class TestNestedContextHooks:
-    @pytest.mark.asyncio
     async def test_context_create_checks_parent_exists(self, service, mock_async_session, nested_context):
         service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
 
@@ -206,7 +200,6 @@ class TestNestedContextHooks:
 
         service.parent_repo.get_by_pk.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_context_create_raises_when_parent_missing(self, service, mock_async_session, nested_context):
         service.parent_repo.get_by_pk = AsyncMock(return_value=None)
 
@@ -214,7 +207,6 @@ class TestNestedContextHooks:
             async with service._context_create(mock_async_session, MagicMock(), nested_context):
                 pass
 
-    @pytest.mark.asyncio
     async def test_context_get_multi_checks_parent_exists(self, service, mock_async_session, nested_context):
         service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
 
@@ -223,7 +215,6 @@ class TestNestedContextHooks:
 
         service.parent_repo.get_by_pk.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_context_update_raises_when_wrong_parent(
         self, service, mock_async_session, sample_uuid, nested_context, parent_id
     ):
@@ -235,7 +226,6 @@ class TestNestedContextHooks:
             async with service._context_update(mock_async_session, sample_uuid, MagicMock(), nested_context):
                 pass
 
-    @pytest.mark.asyncio
     async def test_context_delete_raises_when_wrong_parent(
         self, service, mock_async_session, sample_uuid, nested_context
     ):

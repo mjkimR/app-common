@@ -84,7 +84,6 @@ def test_setup_event_broker_already_initialized(mock_broker):
         mock_create.assert_not_called()
 
 
-@pytest.mark.asyncio
 async def test_close_event_broker(mock_broker):
     set_event_broker(mock_broker)
     await close_event_broker()
@@ -95,7 +94,6 @@ async def test_close_event_broker(mock_broker):
     mock_broker.close.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_close_event_broker_not_initialized():
     # Should not raise an error if broker is not initialized
     await close_event_broker()

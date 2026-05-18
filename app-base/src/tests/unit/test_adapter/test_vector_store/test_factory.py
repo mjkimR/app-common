@@ -51,7 +51,6 @@ def vector_store_factory():
     return VectorStoreFactory(provider)
 
 
-@pytest.mark.asyncio
 async def test_get_vector_store_new_instance(vector_store_factory):
     collection_name = "test_collection_new"
     model_name = "test_model_new"
@@ -64,7 +63,6 @@ async def test_get_vector_store_new_instance(vector_store_factory):
         assert (mock_get_settings.return_value.provider, collection_name, model_name) in vector_store_cache
 
 
-@pytest.mark.asyncio
 async def test_get_vector_store_cached_instance(vector_store_factory):
     collection_name = "test_collection_cached"
     model_name = "test_model_cached"
@@ -78,7 +76,6 @@ async def test_get_vector_store_cached_instance(vector_store_factory):
         assert (mock_get_settings.return_value.provider, collection_name, model_name) in vector_store_cache
 
 
-@pytest.mark.asyncio
 async def test_vector_store_cache_different_params(vector_store_factory):
     with patch("app_base.adapter.vector_store.factory.get_vector_db_settings") as mock_get_settings:
         mock_get_settings.return_value = MagicMock(provider="mock")

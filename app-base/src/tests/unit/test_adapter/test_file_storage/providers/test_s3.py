@@ -60,7 +60,6 @@ def mock_aiobotocore_client():
     return mock_client
 
 
-@pytest.mark.asyncio
 async def test_from_config_success(mock_s3_settings, mock_aiobotocore_client):
     with patch("aiobotocore.session.get_session") as mock_get_session:
         mock_session = MagicMock()
@@ -81,7 +80,6 @@ async def test_from_config_success(mock_s3_settings, mock_aiobotocore_client):
         assert provider.bucket_name == "test-bucket"
 
 
-@pytest.mark.asyncio
 async def test_from_config_no_config_raises_error():
     mock_settings = MagicMock(spec=FileStorageSettings)
     mock_settings.provider = "s3"
@@ -90,14 +88,12 @@ async def test_from_config_no_config_raises_error():
         await S3StorageProvider.from_config(mock_settings)
 
 
-@pytest.mark.asyncio
 async def test_close(mock_aiobotocore_client):
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
     await provider.close()
     mock_aiobotocore_client.close.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_download_file_success(mock_aiobotocore_client):
     mock_body_stream = AsyncMock()
     mock_body_stream.read.return_value = b"file content"
@@ -114,7 +110,6 @@ async def test_download_file_success(mock_aiobotocore_client):
     assert content == b"file content"
 
 
-@pytest.mark.asyncio
 async def test_download_file_not_found(mock_aiobotocore_client):
     mock_aiobotocore_client.get_object.side_effect = ClientError(
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"
@@ -124,7 +119,6 @@ async def test_download_file_not_found(mock_aiobotocore_client):
         await provider.download_file("non_existent.txt")
 
 
-@pytest.mark.asyncio
 async def test_download_file_stream_success(mock_aiobotocore_client):
     mock_body = MagicMock()
     mock_body.iter_chunks.return_value.__aiter__.return_value = [b"chunk1", b"chunk2"]
@@ -135,7 +129,6 @@ async def test_download_file_stream_success(mock_aiobotocore_client):
     assert chunks == [b"chunk1", b"chunk2"]
 
 
-@pytest.mark.asyncio
 async def test_download_file_stream_not_found(mock_aiobotocore_client):
     mock_aiobotocore_client.get_object.side_effect = ClientError(
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"
@@ -146,7 +139,6 @@ async def test_download_file_stream_not_found(mock_aiobotocore_client):
             pass
 
 
-@pytest.mark.asyncio
 async def test_upload_file_success(mock_aiobotocore_client):
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
     await provider.upload_file("upload.txt", b"upload data")
@@ -155,14 +147,12 @@ async def test_upload_file_success(mock_aiobotocore_client):
     )
 
 
-@pytest.mark.asyncio
 async def test_delete_file_success(mock_aiobotocore_client):
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
     await provider.delete_file("delete.txt")
     mock_aiobotocore_client.delete_object.assert_called_once_with(Bucket="test-bucket", Key="delete.txt")
 
 
-@pytest.mark.asyncio
 async def test_list_files_success(mock_aiobotocore_client):
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
     files = await provider.list_files("prefix/")
@@ -173,7 +163,6 @@ async def test_list_files_success(mock_aiobotocore_client):
     assert files == ["file1.txt", "subdir/file2.txt"]
 
 
-@pytest.mark.asyncio
 async def test_file_exists_true(mock_aiobotocore_client):
     mock_aiobotocore_client.head_object.return_value = {}
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
@@ -181,7 +170,6 @@ async def test_file_exists_true(mock_aiobotocore_client):
     assert exists is True
 
 
-@pytest.mark.asyncio
 async def test_file_exists_false(mock_aiobotocore_client):
     mock_aiobotocore_client.head_object.side_effect = ClientError(
         {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject"
@@ -191,7 +179,6 @@ async def test_file_exists_false(mock_aiobotocore_client):
     assert exists is False
 
 
-@pytest.mark.asyncio
 async def test_get_file_metadata_success(mock_aiobotocore_client):
     mock_aiobotocore_client.head_object.return_value = {
         "ContentLength": 123,
@@ -208,7 +195,6 @@ async def test_get_file_metadata_success(mock_aiobotocore_client):
     assert metadata["path"] == "meta.txt"
 
 
-@pytest.mark.asyncio
 async def test_get_file_metadata_not_found(mock_aiobotocore_client):
     mock_aiobotocore_client.head_object.side_effect = ClientError(
         {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject"

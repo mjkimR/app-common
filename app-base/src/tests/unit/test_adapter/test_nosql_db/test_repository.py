@@ -52,7 +52,6 @@ def user_repo():
 # ----------------------------------------------------------------
 
 
-@pytest.mark.asyncio
 async def test_create_and_get_by_id(user_repo, mock_provider):
     obj_in = UserCreateSchema(id="u1", name="Alice", email="alice@example.com")
     created = await user_repo.create(mock_provider, "u1", obj_in)
@@ -64,13 +63,11 @@ async def test_create_and_get_by_id(user_repo, mock_provider):
     assert fetched.name == "Alice"
 
 
-@pytest.mark.asyncio
 async def test_get_by_id_not_found(user_repo, mock_provider):
     result = await user_repo.get_by_id(mock_provider, "not_exist")
     assert result is None
 
 
-@pytest.mark.asyncio
 async def test_create_with_extra_fields(user_repo, mock_provider):
     obj_in = UserCreateSchema(id="u2", name="Bob", email="bob@example.com")
     await user_repo.create(mock_provider, "u2", obj_in, extra="extra_val")
@@ -78,7 +75,6 @@ async def test_create_with_extra_fields(user_repo, mock_provider):
     assert fetched is not None
 
 
-@pytest.mark.asyncio
 async def test_put_replaces_document(user_repo, mock_provider):
     obj_in = UserCreateSchema(id="u3", name="Charlie", email="charlie@example.com")
     await user_repo.create(mock_provider, "u3", obj_in)
@@ -90,7 +86,6 @@ async def test_put_replaces_document(user_repo, mock_provider):
     assert updated.email == "charlie_new@example.com"
 
 
-@pytest.mark.asyncio
 async def test_patch_updates_only_set_fields(user_repo, mock_provider):
     obj_in = UserCreateSchema(id="u4", name="Dave", email="dave@example.com")
     await user_repo.create(mock_provider, "u4", obj_in)
@@ -103,7 +98,6 @@ async def test_patch_updates_only_set_fields(user_repo, mock_provider):
     assert patched.email == "dave@example.com"
 
 
-@pytest.mark.asyncio
 async def test_delete(user_repo, mock_provider):
     obj_in = UserCreateSchema(id="u5", name="Eve", email="eve@example.com")
     await user_repo.create(mock_provider, "u5", obj_in)
@@ -115,7 +109,6 @@ async def test_delete(user_repo, mock_provider):
     assert fetched is None
 
 
-@pytest.mark.asyncio
 async def test_exists(user_repo, mock_provider):
     obj_in = UserCreateSchema(id="u6", name="Frank", email="frank@example.com")
     await user_repo.create(mock_provider, "u6", obj_in)
@@ -124,7 +117,6 @@ async def test_exists(user_repo, mock_provider):
     assert await user_repo.exists(mock_provider, "not_exist") is False
 
 
-@pytest.mark.asyncio
 async def test_get_multi_no_filter(user_repo, mock_provider):
     for i in range(5):
         obj_in = UserCreateSchema(id=f"m{i}", name=f"User{i}", email=f"u{i}@example.com")
@@ -136,7 +128,6 @@ async def test_get_multi_no_filter(user_repo, mock_provider):
     assert len(result.items) == 5
 
 
-@pytest.mark.asyncio
 async def test_get_multi_with_offset_limit(user_repo, mock_provider):
     for i in range(10):
         obj_in = UserCreateSchema(id=f"p{i}", name=f"User{i}", email=f"u{i}@example.com")
@@ -149,7 +140,6 @@ async def test_get_multi_with_offset_limit(user_repo, mock_provider):
     assert result.limit == 4
 
 
-@pytest.mark.asyncio
 async def test_get_multi_with_filter(user_repo, mock_provider):
     await user_repo.create(mock_provider, "f1", UserCreateSchema(id="f1", name="Alice", email="a@example.com"))
     await user_repo.create(mock_provider, "f2", UserCreateSchema(id="f2", name="Bob", email="b@example.com"))

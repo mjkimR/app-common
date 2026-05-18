@@ -23,7 +23,6 @@ def test_get_nosql_db_provider_not_initialized():
         get_nosql_db_provider()
 
 
-@pytest.mark.asyncio
 async def test_close_nosql_db(mock_provider):
     set_nosql_db_provider(mock_provider)
     await close_nosql_db()
@@ -32,7 +31,6 @@ async def test_close_nosql_db(mock_provider):
         get_nosql_db_provider()
 
 
-@pytest.mark.asyncio
 async def test_setup_nosql_db_provider_none_provider():
     from unittest.mock import MagicMock
 
@@ -46,7 +44,6 @@ async def test_setup_nosql_db_provider_none_provider():
         get_nosql_db_provider()
 
 
-@pytest.mark.asyncio
 async def test_setup_nosql_db_provider_already_initialized(mock_provider):
     from unittest.mock import MagicMock
 

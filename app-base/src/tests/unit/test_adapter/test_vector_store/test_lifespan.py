@@ -1,11 +1,9 @@
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from app_base.adapter.vector_store.lifespan import lifespan_vector_store
 from fastapi import FastAPI
 
 
-@pytest.mark.asyncio
 async def test_lifespan_vector_store_initializes_and_cleans_up():
     mock_app = FastAPI()
     with (

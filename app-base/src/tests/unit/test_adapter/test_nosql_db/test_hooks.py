@@ -85,14 +85,12 @@ def item_service():
 # ================================================================
 
 
-@pytest.mark.asyncio
 async def test_create_mixin(item_service, mock_provider):
     obj = await item_service.create(mock_provider, "i1", ItemCreate(id="i1", name="Widget"))
     assert obj.id == "i1"
     assert obj.name == "Widget"
 
 
-@pytest.mark.asyncio
 async def test_get_mixin(item_service, mock_provider):
     await item_service.create(mock_provider, "i2", ItemCreate(id="i2", name="Gadget"))
     obj = await item_service.get(mock_provider, "i2")
@@ -100,13 +98,11 @@ async def test_get_mixin(item_service, mock_provider):
     assert obj.name == "Gadget"
 
 
-@pytest.mark.asyncio
 async def test_get_mixin_not_found(item_service, mock_provider):
     obj = await item_service.get(mock_provider, "nonexistent")
     assert obj is None
 
 
-@pytest.mark.asyncio
 async def test_put_mixin(item_service, mock_provider):
     await item_service.create(mock_provider, "i3", ItemCreate(id="i3", name="Original"))
     updated = await item_service.put(mock_provider, "i3", ItemPut(name="Replaced"))
@@ -114,7 +110,6 @@ async def test_put_mixin(item_service, mock_provider):
     assert updated.name == "Replaced"
 
 
-@pytest.mark.asyncio
 async def test_patch_mixin(item_service, mock_provider):
     await item_service.create(mock_provider, "i4", ItemCreate(id="i4", name="Original"))
     patched = await item_service.patch(mock_provider, "i4", ItemPatch(name="Patched"))
@@ -122,7 +117,6 @@ async def test_patch_mixin(item_service, mock_provider):
     assert patched.name == "Patched"
 
 
-@pytest.mark.asyncio
 async def test_delete_mixin(item_service, mock_provider):
     await item_service.create(mock_provider, "i5", ItemCreate(id="i5", name="ToDelete"))
     result = await item_service.delete(mock_provider, "i5")
@@ -130,7 +124,6 @@ async def test_delete_mixin(item_service, mock_provider):
     assert result.identity == "i5"
 
 
-@pytest.mark.asyncio
 async def test_get_multi_mixin(item_service, mock_provider):
     for i in range(3):
         await item_service.create(mock_provider, f"l{i}", ItemCreate(id=f"l{i}", name=f"Item{i}"))
@@ -162,25 +155,21 @@ def exists_check_service():
     return ExistsCheckService()
 
 
-@pytest.mark.asyncio
 async def test_exists_check_put_raises_if_not_found(exists_check_service, mock_provider):
     with pytest.raises(NotFoundException):
         await exists_check_service.put(mock_provider, "missing", ItemPut(name="X"))
 
 
-@pytest.mark.asyncio
 async def test_exists_check_patch_raises_if_not_found(exists_check_service, mock_provider):
     with pytest.raises(NotFoundException):
         await exists_check_service.patch(mock_provider, "missing", ItemPatch(name="X"))
 
 
-@pytest.mark.asyncio
 async def test_exists_check_delete_raises_if_not_found(exists_check_service, mock_provider):
     with pytest.raises(NotFoundException):
         await exists_check_service.delete(mock_provider, "missing")
 
 
-@pytest.mark.asyncio
 async def test_exists_check_put_succeeds_if_found(exists_check_service, mock_provider):
     repo = exists_check_service.repo
     await repo.create(mock_provider, "e1", ItemCreate(id="e1", name="Exists"))
@@ -212,7 +201,6 @@ def user_aware_service():
     return UserAwareService()
 
 
-@pytest.mark.asyncio
 async def test_user_aware_create_injects_user_id(user_aware_service, mock_provider):
     context: NoSQLUserContextKwargs = {"user_id": "user_abc"}
     await user_aware_service.create(mock_provider, "ua1", ItemCreate(id="ua1", name="Item"), context=context)
@@ -222,7 +210,6 @@ async def test_user_aware_create_injects_user_id(user_aware_service, mock_provid
     assert raw.get("updated_by") == "user_abc"
 
 
-@pytest.mark.asyncio
 async def test_user_aware_patch_injects_updated_by(user_aware_service, mock_provider):
     repo = user_aware_service.repo
     await repo.create(mock_provider, "ua2", ItemCreate(id="ua2", name="Item"))
@@ -264,14 +251,12 @@ def event_service():
     return EventService()
 
 
-@pytest.mark.asyncio
 async def test_event_hook_create_publishes(event_service, mock_provider):
     await event_service.create(mock_provider, "ev1", ItemCreate(id="ev1", name="Item"))
     topics = [t for t, _ in event_service.published_events]
     assert "ItemModel.created" in topics
 
 
-@pytest.mark.asyncio
 async def test_event_hook_put_publishes(event_service, mock_provider):
     repo = event_service.repo
     await repo.create(mock_provider, "ev2", ItemCreate(id="ev2", name="Item"))
@@ -281,7 +266,6 @@ async def test_event_hook_put_publishes(event_service, mock_provider):
     assert "ItemModel.updated" in topics
 
 
-@pytest.mark.asyncio
 async def test_event_hook_patch_publishes(event_service, mock_provider):
     repo = event_service.repo
     await repo.create(mock_provider, "ev3", ItemCreate(id="ev3", name="Item"))
@@ -291,7 +275,6 @@ async def test_event_hook_patch_publishes(event_service, mock_provider):
     assert "ItemModel.updated" in topics
 
 
-@pytest.mark.asyncio
 async def test_event_hook_delete_publishes(event_service, mock_provider):
     repo = event_service.repo
     await repo.create(mock_provider, "ev4", ItemCreate(id="ev4", name="Item"))
@@ -365,7 +348,6 @@ def nested_service():
     return NestedChildService()
 
 
-@pytest.mark.asyncio
 async def test_nested_create_injects_parent_id(nested_service, mock_provider):
     # Insert parent document directly via provider
     await mock_provider.create_document("parents", "p1", {"id": "p1", "name": "Parent"})
@@ -375,14 +357,12 @@ async def test_nested_create_injects_parent_id(nested_service, mock_provider):
     assert child.parent_id == "p1"
 
 
-@pytest.mark.asyncio
 async def test_nested_create_raises_if_parent_not_found(nested_service, mock_provider):
     context: NoSQLNestedResourceContextKwargs = {"parent_id": "no_parent"}
     with pytest.raises(NotFoundException):
         await nested_service.create(mock_provider, "c2", ChildCreate(id="c2", name="Orphan"), context=context)
 
 
-@pytest.mark.asyncio
 async def test_nested_patch_raises_if_wrong_parent(nested_service, mock_provider):
     await mock_provider.create_document("parents", "p2", {"id": "p2", "name": "Parent2"})
     await mock_provider.create_document("children", "c3", {"id": "c3", "name": "Child", "parent_id": "p2"})
@@ -392,7 +372,6 @@ async def test_nested_patch_raises_if_wrong_parent(nested_service, mock_provider
         await nested_service.patch(mock_provider, "c3", ChildPatch(name="Wrong"), context=context)
 
 
-@pytest.mark.asyncio
 async def test_nested_get_multi_filters_by_parent(nested_service, mock_provider):
     await mock_provider.create_document("parents", "p3", {"id": "p3", "name": "Parent3"})
     await mock_provider.create_document("children", "c4", {"id": "c4", "name": "Child4", "parent_id": "p3"})

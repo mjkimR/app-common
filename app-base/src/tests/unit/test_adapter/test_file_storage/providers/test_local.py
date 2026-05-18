@@ -34,7 +34,6 @@ def mock_local_settings(test_root_path):
     return mock_settings
 
 
-@pytest.mark.asyncio
 async def test_from_config_creates_provider(mock_local_settings, test_root_path):
     # Ensure the root path doesn't exist before from_config is called
     if test_root_path.exists():
@@ -46,7 +45,6 @@ async def test_from_config_creates_provider(mock_local_settings, test_root_path)
     assert test_root_path.is_dir()  # Should create the root path
 
 
-@pytest.mark.asyncio
 async def test_from_config_no_config_raises_error():
     mock_settings = MagicMock(spec=FileStorageSettings)
     mock_settings.provider = "local"
@@ -67,7 +65,6 @@ def test_get_full_path_outside_root_raises_error(local_storage_provider, tmp_pat
         local_storage_provider._get_full_path(file_path)
 
 
-@pytest.mark.asyncio
 async def test_download_file_success(local_storage_provider, test_root_path):
     file_content = b"test content"
     file_path = test_root_path / "test.txt"
@@ -77,13 +74,11 @@ async def test_download_file_success(local_storage_provider, test_root_path):
     assert downloaded_content == file_content
 
 
-@pytest.mark.asyncio
 async def test_download_file_not_found(local_storage_provider):
     with pytest.raises(FileNotFoundError, match="File not found at non_existent.txt"):
         await local_storage_provider.download_file("non_existent.txt")
 
 
-@pytest.mark.asyncio
 async def test_download_file_stream_success(local_storage_provider, test_root_path):
     file_content = b"stream content" * 10
     file_path = test_root_path / "stream.txt"
@@ -94,14 +89,12 @@ async def test_download_file_stream_success(local_storage_provider, test_root_pa
     assert downloaded_content == file_content
 
 
-@pytest.mark.asyncio
 async def test_download_file_stream_not_found(local_storage_provider):
     with pytest.raises(FileNotFoundError, match="File not found at non_existent_stream.txt"):
         async for _ in local_storage_provider.download_file_stream("non_existent_stream.txt"):
             pass
 
 
-@pytest.mark.asyncio
 async def test_upload_file_success(local_storage_provider, test_root_path):
     file_content = b"upload data"
     file_name = "uploaded.txt"
@@ -111,7 +104,6 @@ async def test_upload_file_success(local_storage_provider, test_root_path):
     assert uploaded_path.read_bytes() == file_content
 
 
-@pytest.mark.asyncio
 async def test_upload_file_creates_directories(local_storage_provider, test_root_path):
     file_content = b"nested upload"
     file_name = "nested/dir/file.txt"
@@ -122,7 +114,6 @@ async def test_upload_file_creates_directories(local_storage_provider, test_root
     assert uploaded_path.parent.is_dir()
 
 
-@pytest.mark.asyncio
 async def test_delete_file_success(local_storage_provider, test_root_path):
     file_path = test_root_path / "to_delete.txt"
     file_path.write_bytes(b"delete me")
@@ -132,13 +123,11 @@ async def test_delete_file_success(local_storage_provider, test_root_path):
     assert not file_path.exists()
 
 
-@pytest.mark.asyncio
 async def test_delete_file_not_found_no_error(local_storage_provider):
     # Deleting a non-existent file should not raise an error
     await local_storage_provider.delete_file("non_existent_delete.txt")
 
 
-@pytest.mark.asyncio
 async def test_list_files_success(local_storage_provider, test_root_path):
     (test_root_path / "a.txt").write_bytes(b"")
     (test_root_path / "subdir").mkdir(parents=True, exist_ok=True)
@@ -156,19 +145,16 @@ async def test_list_files_success(local_storage_provider, test_root_path):
     assert sorted(files_with_prefix) == sorted(expected_files_with_prefix)
 
 
-@pytest.mark.asyncio
 async def test_file_exists_true(local_storage_provider, test_root_path):
     file_path = test_root_path / "exists.txt"
     file_path.write_bytes(b"")
     assert await local_storage_provider.file_exists("exists.txt") is True
 
 
-@pytest.mark.asyncio
 async def test_file_exists_false(local_storage_provider):
     assert await local_storage_provider.file_exists("does_not_exist.txt") is False
 
 
-@pytest.mark.asyncio
 async def test_get_file_metadata_success(local_storage_provider, test_root_path):
     file_path = test_root_path / "meta.txt"
     file_content = b"metadata content"
@@ -180,15 +166,14 @@ async def test_get_file_metadata_success(local_storage_provider, test_root_path)
     assert metadata["path"] == "meta.txt"
 
 
-@pytest.mark.asyncio
 async def test_get_file_metadata_not_found(local_storage_provider):
     with pytest.raises(FileNotFoundError, match="File not found at non_existent_meta.txt"):
         await local_storage_provider.get_file_metadata("non_existent_meta.txt")
 
 
-def test_close_does_nothing(local_storage_provider):
+async def test_close_does_nothing(local_storage_provider):
     # This method is a no-op for LocalStorageProvider, so just ensure it doesn't raise an error
     try:
-        local_storage_provider.close()
+        await local_storage_provider.close()
     except Exception as e:
         pytest.fail(f"close() raised an unexpected exception: {e}")

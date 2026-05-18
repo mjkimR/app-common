@@ -40,7 +40,6 @@ class TestDomainEventHookPost:
     def service(self, mock_repo):
         return ConcreteEventHookService(mock_repo)
 
-    @pytest.mark.asyncio
     async def test_post_create_publishes_created_event(self, service, mock_async_session, base_context):
         obj = MagicMock()
         pk_col = service.repo.primary_keys[0]
@@ -56,7 +55,6 @@ class TestDomainEventHookPost:
         assert payload["resource_type"] == "MockModel"
         assert payload["resource_id"] == str(obj_id)
 
-    @pytest.mark.asyncio
     async def test_post_create_multi_publishes_created_multi_event(self, service, mock_async_session, base_context):
         pk_col = service.repo.primary_keys[0]
         objs = []
@@ -73,13 +71,11 @@ class TestDomainEventHookPost:
         assert payload["event_type"] == "created_multi"
         assert len(payload["resource_ids"]) == 3
 
-    @pytest.mark.asyncio
     async def test_post_create_multi_does_not_publish_for_empty_list(self, service, mock_async_session, base_context):
         await service._post_create_multi(mock_async_session, [], base_context)
 
         assert not any(e[0] == "MockModel.created_multi" for e in service.published_events)
 
-    @pytest.mark.asyncio
     async def test_post_update_publishes_updated_event(self, service, mock_async_session, base_context):
         obj = MagicMock()
         pk_col = service.repo.primary_keys[0]
@@ -93,7 +89,6 @@ class TestDomainEventHookPost:
         assert topic == "MockModel.updated"
         assert payload["event_type"] == "updated"
 
-    @pytest.mark.asyncio
     async def test_post_delete_publishes_deleted_event_on_success(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -106,7 +101,6 @@ class TestDomainEventHookPost:
         assert topic == "MockModel.deleted"
         assert payload["event_type"] == "deleted"
 
-    @pytest.mark.asyncio
     async def test_post_delete_does_not_publish_on_failure(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -116,7 +110,6 @@ class TestDomainEventHookPost:
 
         assert len(service.published_events) == 0
 
-    @pytest.mark.asyncio
     async def test_post_delete_multi_publishes_event_when_deleted(
         self, service, mock_async_session, sample_uuid, base_context
     ):
@@ -130,7 +123,6 @@ class TestDomainEventHookPost:
         assert topic == "MockModel.deleted_multi"
         assert len(payload["resource_ids"]) == 2
 
-    @pytest.mark.asyncio
     async def test_post_delete_multi_does_not_publish_when_deleted_count_zero(
         self, service, mock_async_session, base_context
     ):
