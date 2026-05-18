@@ -229,19 +229,12 @@ class BaseRepository(
         where: WhereClause = (),
         order_by: SeqOrOneOrNone[UnaryExpression] = (),
         select_options: SeqOrOneOrNone[ExecutableOption] = (),
+        skip_count: bool = False,
     ) -> PaginatedList[ModelType]:
         if limit is not None and limit < 0:
             raise ValueError("Limit must be non-negative.")
         if offset < 0:
             raise ValueError("Offset must be non-negative.")
-
-        # Total count
-        count_stmt = select(func.count()).select_from(self.model)
-        if where is not None:
-            where = to_sequence(where)
-            count_stmt = count_stmt.where(*where)
-        total_count_result = await session.execute(count_stmt)
-        total_count = total_count_result.scalar_one()
 
         # Query
         stmt = self._select(where=where, order_by=order_by)
@@ -253,7 +246,20 @@ class BaseRepository(
             stmt = stmt.options(*select_options)
 
         result = await session.execute(stmt)
-        data = result.scalars().all()
+        data = list(result.scalars().all())
+
+        if skip_count:
+            total_count = None
+        elif limit is None or (len(data) < limit and (len(data) > 0 or offset == 0)):
+            total_count = offset + len(data)
+        else:
+            # Fallback: Execute COUNT(*) query for middle pages, or out-of-bounds requests
+            count_stmt = select(func.count()).select_from(self.model)
+            if where is not None:
+                where = to_sequence(where)
+                count_stmt = count_stmt.where(*where)
+            total_count_result = await session.execute(count_stmt)
+            total_count = total_count_result.scalar_one()
 
         return PaginatedList(
             items=data,
@@ -268,14 +274,9 @@ class BaseRepository(
         where: WhereClause = (),
         order_by: SeqOrOneOrNone[UnaryExpression] = (),
     ) -> Sequence[ModelType]:
-        res = await self.get_multi(
-            session,
-            offset=0,
-            limit=None,
-            where=where,
-            order_by=order_by,
-        )
-        return res.items
+        stmt = self._select(where=where, order_by=order_by)
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
     async def update_by_pk(
         self,
