@@ -8,7 +8,6 @@ from tests.fixtures.db import (
     db_url,
     inspect_session_fixture,
     session_fixture,
-    session_maker,
     setup_database,
 )
 
@@ -17,7 +16,6 @@ __all__ = [
     "db_url",
     "setup_database",
     "async_engine",
-    "session_maker",
     "session_fixture",
     "inspect_session_fixture",
 ]

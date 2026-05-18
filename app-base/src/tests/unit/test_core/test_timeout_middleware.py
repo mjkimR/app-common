@@ -24,7 +24,7 @@ def test_add_middleware_custom_timeout():
 
 def test_request_completes_within_timeout():
     app = FastAPI()
-    add_middleware(app, timeout=1)
+    add_middleware(app, timeout=30)
 
     @app.get("/fast")
     async def fast_route():

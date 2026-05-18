@@ -20,7 +20,7 @@ Strategy:
       integrate/conftest.py (autouse, function scope).
 """
 
-import asyncio
+import os
 
 import pytest
 import pytest_asyncio
@@ -47,7 +47,8 @@ def db_url(db_type):
     elif db_type in {"postgresql", "postgres", "pg"}:
         from testcontainers.postgres import PostgresContainer
 
-        with PostgresContainer("postgres:16") as postgres:
+        postgres_version = os.getenv("POSTGRES_VERSION", "16")
+        with PostgresContainer(f"postgres:{postgres_version}") as postgres:
             sync_url = postgres.get_connection_url()  # psycopg2
             async_url = sync_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
             yield async_url
@@ -75,33 +76,25 @@ def async_engine(db_url):
     yield engine
 
 
-@pytest.fixture(scope="session")
-def setup_database(async_engine):
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def setup_database(async_engine):
     """
     Create all tables before the test session and drop them afterwards.
-    Reuses async_engine so that SQLite in-memory DB shares the same connection
-    (StaticPool) as the one used during tests — preventing 'no such table' errors.
     """
     Base = get_base()
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-    async def create_tables():
-        async with async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-    async def drop_tables():
-        async with async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
-
-    asyncio.run(create_tables())
     yield
-    asyncio.run(drop_tables())
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture(scope="session")
-def session_maker(async_engine, setup_database):
+def session_maker(async_engine):
     """
     Async session factory shared across the entire test session.
-    expire_on_commit=False keeps loaded objects accessible after commit.
     """
     return async_sessionmaker(
         async_engine,
@@ -113,7 +106,13 @@ def session_maker(async_engine, setup_database):
 
 
 @pytest_asyncio.fixture(name="session")
-async def session_fixture(async_engine, session_maker, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest):
+async def session_fixture(
+    async_engine,
+    session_maker,
+    setup_database,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+):
     """
     Function-scoped async session for each test.
 
@@ -173,7 +172,7 @@ async def session_fixture(async_engine, session_maker, monkeypatch: pytest.Monke
 
 
 @pytest_asyncio.fixture(name="inspect_session")
-async def inspect_session_fixture(session_maker):
+async def inspect_session_fixture(session_maker, setup_database):
     """
     Read-only inspection session for asserting database state after a test.
     Opens a separate session without committing any changes.
