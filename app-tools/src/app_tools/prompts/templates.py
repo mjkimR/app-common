@@ -24,6 +24,7 @@ COMMIT_MESSAGE_PROMPT_TEMPLATE = """You are an expert software engineer writing 
 - Do NOT include any explanation, commentary, or introductory text outside the code block.
 - Do NOT include the word "commit message" or any heading before the code block.
 - Output only the code block — nothing else.
+- Do NOT insert arbitrary line breaks in the middle of a sentence. Let the text editor wrap long lines automatically.
 
 ## Git Diff (staged changes)
 
@@ -49,12 +50,13 @@ CODE_REVIEW_PROMPT_TEMPLATE = """You are an expert software engineer performing 
 
 ## Output Format
 - Structure your review with clear sections per aspect (only include sections that have findings).
-- Use (*) for bullet points.
+- Use * for bullet points.
 - For each finding, include:
   - The file and line reference (if applicable)
   - A clear description of the issue or suggestion
   - A recommended fix or improvement (if applicable)
 - At the end, provide a brief **Summary** with an overall assessment (Approve / Request Changes / Needs Discussion).
+- Do NOT insert arbitrary line breaks in the middle of a sentence. Let the text editor wrap long lines automatically.
 
 ## Git Diff
 
