@@ -24,7 +24,7 @@ def test_add_middleware_custom_timeout():
 
 def test_request_completes_within_timeout():
     app = FastAPI()
-    add_middleware(app, timeout=5)
+    add_middleware(app, timeout=1)
 
     @app.get("/fast")
     async def fast_route():
@@ -37,11 +37,11 @@ def test_request_completes_within_timeout():
 
 def test_request_timeout_returns_504():
     app = FastAPI()
-    add_middleware(app, timeout=1)
+    add_middleware(app, timeout=0.001)
 
     @app.get("/slow")
     async def slow_route():
-        await asyncio.sleep(5)
+        await asyncio.sleep(0.01)
         return {"message": "ok"}
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -51,11 +51,11 @@ def test_request_timeout_returns_504():
 
 def test_timeout_response_body():
     app = FastAPI()
-    add_middleware(app, timeout=1)
+    add_middleware(app, timeout=0.001)
 
     @app.get("/slow")
     async def slow_route():
-        await asyncio.sleep(5)
+        await asyncio.sleep(0.01)
         return {"message": "ok"}
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -67,11 +67,11 @@ def test_timeout_logs_error_on_timeout():
     from unittest.mock import patch
 
     app = FastAPI()
-    add_middleware(app, timeout=1)
+    add_middleware(app, timeout=0.001)
 
     @app.get("/slow")
     async def slow_route():
-        await asyncio.sleep(5)
+        await asyncio.sleep(0.01)
         return {"message": "ok"}
 
     client = TestClient(app, raise_server_exceptions=False)

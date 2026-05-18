@@ -10,7 +10,7 @@ from app_base.core.log import logger
 class TimeoutMiddleware:
     """Pure ASGI Middleware to enforce request timeout"""
 
-    def __init__(self, app: ASGIApp, timeout: int = 60):
+    def __init__(self, app: ASGIApp, timeout: float = 60.0):
         self.app = app
         self.timeout = timeout
 
@@ -28,6 +28,6 @@ class TimeoutMiddleware:
             await response(scope, receive, send)
 
 
-def add_middleware(app: FastAPI, timeout: int = 60):
+def add_middleware(app: FastAPI, timeout: float = 60.0):
     """Add timeout middleware to FastAPI app"""
     app.add_middleware(TimeoutMiddleware, timeout=timeout)

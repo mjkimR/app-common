@@ -89,7 +89,11 @@ class UserService(
     async def authenticate(self, session: AsyncSession, email: str, password: str) -> User | None:
         user = await self.repo.get_by_email(session, email=email)
         if user is not None and self.is_valid_password(password, user.hashed_password):
-            return user
+            if user is not None:
+                if self.is_valid_password(password, user.hashed_password):
+                    return user
+            else:
+                self.context.dummy_verify()
         return None
 
     def create_access_token(self, user: User) -> str:
