@@ -24,5 +24,9 @@
     },
     "[jsonc]": {
         "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "terminal.integrated.env.windows": {
+        "PATH": "${workspaceFolder}\\.venv\\Scripts;${env:PATH}",
+        "VIRTUAL_ENV": "${workspaceFolder}\\.venv"
     }
 }
