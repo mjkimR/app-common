@@ -6,12 +6,11 @@ from pydantic import BaseModel
 from sqlalchemy import (
     Column,
     CursorResult,
-    and_,
     delete,
     func,
     literal,
-    or_,
     select,
+    tuple_,
     update,
 )
 from sqlalchemy import inspect as sa_inspect
@@ -358,16 +357,17 @@ class BaseRepository(
             return 0
 
         total_affected_rows = 0
+        pk_cols = self.primary_keys
 
         for i in range(0, len(pks), self.BATCH_SIZE):
             chunk = pks[i : i + self.BATCH_SIZE]
 
-            filter_clauses = []
-            for pk in chunk:
-                pk_filters = self._get_primary_key_filters(pk)
-                filter_clauses.append(and_(*pk_filters))
-
-            where_clause = or_(*filter_clauses)
+            if len(pk_cols) == 1:
+                val_list = [self.normalize_pk(pk)[0] for pk in chunk]
+                where_clause = pk_cols[0].in_(val_list)
+            else:
+                val_list = [self.normalize_pk(pk) for pk in chunk]
+                where_clause = tuple_(*pk_cols).in_(val_list)
 
             if soft_delete:
                 if not self.is_deleted_column:
