@@ -163,6 +163,7 @@ async def session_fixture(
                     await clean_db_after_test(async_engine.url.drivername, tables, conn)
             except Exception as e:
                 logger.error(f"Error during TRUNCATE cleanup: {e}")
+                raise RuntimeError(f"Error during TRUNCATE cleanup: {e}") from e
     else:
         # ── Savepoint / Rollback strategy ────────────────────────────────────
         # All DB operations happen inside one connection/transaction so that
@@ -190,3 +191,4 @@ async def session_fixture(
                     await conn.rollback()
                 except Exception as e:
                     logger.error(f"Error rolling back transaction: {e}")
+                    raise RuntimeError(f"Error rolling back transaction: {e}") from e
