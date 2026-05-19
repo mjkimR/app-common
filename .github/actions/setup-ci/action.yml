@@ -22,7 +22,7 @@ runs:
     - name: Install Just
       shell: bash
       run: |
-        ./scripts/install-just.sh
+        bash ./scripts/install-just.sh
 
     - name: Initialize Project
       shell: bash
