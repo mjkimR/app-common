@@ -22,3 +22,5 @@ wheels/
 !.gitignore
 !.env.example
 !.python-version
+!.github
+!.pre-commit-config.yaml

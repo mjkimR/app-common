@@ -1,0 +1,49 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*.*.*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up CI environment
+        uses: ./.github/actions/setup-ci
+        with:
+          python-version: '3.13'
+
+      - name: Run Lint
+        run: |
+          just lint-check
+
+  test:
+    name: Test / ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SQLite
+            test-command: test
+          - name: PostgreSQL
+            test-command: test-pg
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up CI environment
+        uses: ./.github/actions/setup-ci
+        with:
+          python-version: '3.13'
+
+      - name: Run Tests
+        run: |
+          just ${{ matrix.test-command }}
