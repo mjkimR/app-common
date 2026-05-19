@@ -27,3 +27,8 @@ venv = ".venv"
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
 extraPaths = ["./app-base/src", "./app-tools/src"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]
