@@ -13,9 +13,12 @@ Strategy:
     After each test the outer transaction is rolled back, restoring the DB state.
     → Safe for unit tests and most integration tests.
 
-  [opt-in] @pytest.mark.real_commit — TRUNCATE strategy:
-    Allows real commits so that external components (e.g. Celery workers)
-    can observe committed data during integration tests.
+  [SQLite always / opt-in via @pytest.mark.real_commit] TRUNCATE strategy:
+    Allows real commits.
+    SQLite always uses this strategy because aiosqlite does not reliably
+    support nested savepoints (the async driver mis-handles SAVEPOINT/RELEASE).
+    PostgreSQL tests can opt in with @pytest.mark.real_commit to allow
+    external components (e.g. Celery workers) to observe committed data.
     → TRUNCATE is performed by _clean_db_after_integrate_test in
       integrate/conftest.py (autouse, function scope).
 """
@@ -24,9 +27,12 @@ import os
 
 import pytest
 import pytest_asyncio
+from loguru import logger
 from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
+
+from tests.utils import clean_db_after_test
 
 
 def get_base():
@@ -117,36 +123,46 @@ async def session_fixture(
     Function-scoped async session for each test.
 
     - Patches get_async_engine / get_session_maker so application code uses the test engine.
-    - Data isolation strategy is determined by the presence of @pytest.mark.real_commit:
+    - Data isolation strategy is determined by the backend and @pytest.mark.real_commit:
 
-      [Default] Savepoint/Rollback:
+      [TRUNCATE strategy — SQLite always / @pytest.mark.real_commit]:
+        Real commits are allowed.
+        SQLite always uses this path because aiosqlite does not reliably support
+        nested savepoints (SAVEPOINT/RELEASE handling is broken in the async driver).
+        PostgreSQL tests can opt in via @pytest.mark.real_commit (e.g. to let
+        Celery workers observe committed data during integration tests).
+        Cleanup is delegated to _clean_db_after_integrate_test in integrate/conftest.py.
+
+      [Savepoint/Rollback strategy — PostgreSQL default]:
         An outer transaction is opened on a single connection.
         The session runs with join_transaction_mode="create_savepoint", meaning
         session.commit() only creates/releases a savepoint — no real commit happens.
         After the test the outer transaction is rolled back, wiping all changes.
-
-      [@pytest.mark.real_commit] TRUNCATE:
-        Real commits are allowed (e.g. so Celery workers can observe inserted data).
-        Cleanup is delegated to _clean_db_after_integrate_test in integrate/conftest.py.
     """
     from app_base.core.database import engine as db_engine_mod
 
     monkeypatch.setattr(db_engine_mod, "get_async_engine", lambda: async_engine)
 
+    is_sqlite = async_engine.url.drivername.startswith("sqlite")
     use_real_commit = request.node.get_closest_marker("real_commit") is not None
 
-    if use_real_commit:
+    if is_sqlite or use_real_commit:
         # ── TRUNCATE strategy ────────────────────────────────────────────────
+        # SQLite: aiosqlite does not reliably support nested savepoints,
+        #         so real commits + TRUNCATE cleanup is used instead.
+        # real_commit marker: allows external components to observe committed data.
         monkeypatch.setattr(db_engine_mod, "get_session_maker", lambda: session_maker)
-        async with session_maker() as session:
-            yield session
-
-        from tests.utils import clean_db_after_test
-
-        Base = get_base()
-        tables = reversed(Base.metadata.sorted_tables)
-        async with async_engine.connect() as conn:
-            await clean_db_after_test(async_engine.url.drivername, tables, conn)
+        try:
+            async with session_maker() as session:
+                yield session
+        finally:
+            try:
+                Base = get_base()
+                tables = reversed(Base.metadata.sorted_tables)
+                async with async_engine.connect() as conn:
+                    await clean_db_after_test(async_engine.url.drivername, tables, conn)
+            except Exception as e:
+                logger.error(f"Error during TRUNCATE cleanup: {e}")
     else:
         # ── Savepoint / Rollback strategy ────────────────────────────────────
         # All DB operations happen inside one connection/transaction so that
@@ -162,20 +178,15 @@ async def session_fixture(
                 join_transaction_mode="create_savepoint",
             )
             monkeypatch.setattr(db_engine_mod, "get_session_maker", lambda: bound_maker)
-            async with AsyncSession(
-                conn,
-                expire_on_commit=False,
-                join_transaction_mode="create_savepoint",
-            ) as session:
-                yield session
-            await conn.rollback()
-
-
-@pytest_asyncio.fixture(name="inspect_session")
-async def inspect_session_fixture(session_maker, setup_database):
-    """
-    Read-only inspection session for asserting database state after a test.
-    Opens a separate session without committing any changes.
-    """
-    async with session_maker() as session:
-        yield session
+            try:
+                async with AsyncSession(
+                    conn,
+                    expire_on_commit=False,
+                    join_transaction_mode="create_savepoint",
+                ) as session:
+                    yield session
+            finally:
+                try:
+                    await conn.rollback()
+                except Exception as e:
+                    logger.error(f"Error rolling back transaction: {e}")

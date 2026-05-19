@@ -6,7 +6,6 @@ Import all fixtures from this package for easy access.
 from tests.fixtures.db import (
     async_engine,
     db_url,
-    inspect_session_fixture,
     session_fixture,
     setup_database,
 )
@@ -17,5 +16,4 @@ __all__ = [
     "setup_database",
     "async_engine",
     "session_fixture",
-    "inspect_session_fixture",
 ]
