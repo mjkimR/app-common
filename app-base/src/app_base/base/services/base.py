@@ -1,21 +1,19 @@
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from functools import lru_cache
-from typing import Any, Generic, Optional, Sequence, TypedDict, Union
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing_extensions import TypeVar
 
 from app_base.base.repos.base import (
     BaseRepository,
-    CreateSchemaType,
-    ModelType,
-    PatchSchemaType,
     PrimaryKeyType,
-    PutSchemaType,
 )
+from app_base.base.repos.query_options import ListQueryOptions
 from app_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
 from app_base.core.log import logger
@@ -27,17 +25,13 @@ class BaseContextKwargs(TypedDict):
     pass
 
 
-TRepo = TypeVar("TRepo", bound=BaseRepository)
-TContextKwargs = TypeVar("TContextKwargs", bound=BaseContextKwargs, default=BaseContextKwargs)
-
-
 class BaseHooksInterface:
     """Base Hooks Interface."""
 
     repo: BaseRepository
 
 
-class BaseServiceMixinInterface:
+class BaseServiceMixinInterface[TContextKwargs: BaseContextKwargs]:
     """Base Service class."""
 
     @property
@@ -61,7 +55,7 @@ class BaseServiceMixinInterface:
     @classmethod
     def _ensure_context(
         cls,
-        context: Optional[TContextKwargs],
+        context: TContextKwargs | None,
         cast_to: Any = BaseContextKwargs,
     ) -> TContextKwargs:
         """
@@ -89,7 +83,7 @@ class BaseServiceMixinInterface:
 # ============================================================
 
 
-class BaseCreateHooks(BaseHooksInterface, Generic[TContextKwargs]):
+class BaseCreateHooks[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHooksInterface):
     """Hook methods for Create operations."""
 
     @asynccontextmanager
@@ -152,11 +146,15 @@ class BaseCreateHooks(BaseHooksInterface, Generic[TContextKwargs]):
         return objs
 
 
-class BaseCreateServiceMixin(
+class BaseCreateServiceMixin[
+    TRepo: BaseRepository,
+    ModelType,
+    CreateSchemaType: BaseModel,
+    TContextKwargs: BaseContextKwargs,
+](
     ABC,
-    BaseCreateHooks,
-    BaseServiceMixinInterface,
-    Generic[TRepo, ModelType, CreateSchemaType, TContextKwargs],
+    BaseCreateHooks[ModelType, TContextKwargs],
+    BaseServiceMixinInterface[TContextKwargs],
 ):
     """
     Create operation Mixin with hooks.
@@ -169,7 +167,7 @@ class BaseCreateServiceMixin(
         self,
         session: AsyncSession,
         obj_data: CreateSchemaType,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType:
         ctx = self._ensure_context(context, self.context_model)
@@ -182,7 +180,7 @@ class BaseCreateServiceMixin(
         self,
         session: AsyncSession,
         obj_data_list: Sequence[CreateSchemaType],
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> Sequence[ModelType]:
         ctx = self._ensure_context(context, self.context_model)
@@ -199,7 +197,7 @@ class BaseCreateServiceMixin(
 # ============================================================
 
 
-class BaseUpdateHooks(BaseHooksInterface, Generic[TContextKwargs]):
+class BaseUpdateHooks[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHooksInterface):
     """Hook methods for Update operations."""
 
     @asynccontextmanager
@@ -227,11 +225,16 @@ class BaseUpdateHooks(BaseHooksInterface, Generic[TContextKwargs]):
         return obj
 
 
-class BaseUpdateServiceMixin(
+class BaseUpdateServiceMixin[
+    TRepo: BaseRepository,
+    ModelType,
+    PutSchemaType: BaseModel,
+    PatchSchemaType: BaseModel,
+    TContextKwargs: BaseContextKwargs,
+](
     ABC,
-    BaseUpdateHooks,
-    BaseServiceMixinInterface,
-    Generic[TRepo, ModelType, PutSchemaType, PatchSchemaType, TContextKwargs],
+    BaseUpdateHooks[ModelType, TContextKwargs],
+    BaseServiceMixinInterface[TContextKwargs],
 ):
     """
     Update operation Mixin with hooks.
@@ -245,7 +248,7 @@ class BaseUpdateServiceMixin(
         session: AsyncSession,
         obj_pk: PrimaryKeyType,
         obj_data: PutSchemaType,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType | None:
         """Full update (PUT) of an object."""
@@ -256,7 +259,7 @@ class BaseUpdateServiceMixin(
         session: AsyncSession,
         obj_pk: PrimaryKeyType,
         obj_data: PatchSchemaType,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType | None:
         """Partial update (PATCH) of an object."""
@@ -266,9 +269,9 @@ class BaseUpdateServiceMixin(
         self,
         session: AsyncSession,
         obj_pk: PrimaryKeyType,
-        obj_data: Union[PutSchemaType, PatchSchemaType],
+        obj_data: PutSchemaType | PatchSchemaType,
         partial: bool,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
@@ -283,7 +286,7 @@ class BaseUpdateServiceMixin(
 # ============================================================
 
 
-class BaseDeleteHooks(BaseHooksInterface, Generic[TContextKwargs]):
+class BaseDeleteHooks[TContextKwargs: BaseContextKwargs](BaseHooksInterface):
     """Hook methods for Delete operations."""
 
     @asynccontextmanager
@@ -347,11 +350,10 @@ class BaseDeleteHooks(BaseHooksInterface, Generic[TContextKwargs]):
         return result
 
 
-class BaseDeleteServiceMixin(
+class BaseDeleteServiceMixin[TRepo: BaseRepository, ModelType, TContextKwargs: BaseContextKwargs](
     ABC,
-    BaseDeleteHooks,
-    BaseServiceMixinInterface,
-    Generic[TRepo, ModelType, TContextKwargs],
+    BaseDeleteHooks[TContextKwargs],
+    BaseServiceMixinInterface[TContextKwargs],
 ):
     """
     Delete operation Mixin with hooks.
@@ -364,7 +366,7 @@ class BaseDeleteServiceMixin(
         self,
         session: AsyncSession,
         obj_pk: PrimaryKeyType,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
     ) -> DeleteResponse:
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_delete(session, obj_pk, context=ctx):
@@ -377,7 +379,7 @@ class BaseDeleteServiceMixin(
         self,
         session: AsyncSession,
         obj_pks: Sequence[uuid.UUID],
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
     ) -> MultipleDeleteResponse:
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_delete_multi(session, obj_pks, context=ctx):
@@ -392,7 +394,7 @@ class BaseDeleteServiceMixin(
 # ============================================================
 
 
-class BaseGetHooks(BaseHooksInterface, Generic[TContextKwargs]):
+class BaseGetHooks[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHooksInterface):
     """Hook methods for Get (single item) operations."""
 
     @asynccontextmanager
@@ -407,11 +409,10 @@ class BaseGetHooks(BaseHooksInterface, Generic[TContextKwargs]):
         return obj
 
 
-class BaseGetServiceMixin(
+class BaseGetServiceMixin[TRepo: BaseRepository, ModelType, TContextKwargs: BaseContextKwargs](
     ABC,
-    BaseGetHooks,
-    BaseServiceMixinInterface,
-    Generic[TRepo, ModelType, TContextKwargs],
+    BaseGetHooks[ModelType, TContextKwargs],
+    BaseServiceMixinInterface[TContextKwargs],
 ):
     """
     Get (single item) operation Mixin with hooks.
@@ -424,7 +425,7 @@ class BaseGetServiceMixin(
         self,
         session: AsyncSession,
         obj_pk: PrimaryKeyType,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_get(session, obj_pk, context=ctx):
@@ -437,7 +438,7 @@ class BaseGetServiceMixin(
 # ============================================================
 
 
-class BaseGetMultiHooks(BaseHooksInterface, Generic[TContextKwargs]):
+class BaseGetMultiHooks[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHooksInterface):
     """Hook methods for Get Multi (list) operations."""
 
     @asynccontextmanager
@@ -459,39 +460,39 @@ class BaseGetMultiHooks(BaseHooksInterface, Generic[TContextKwargs]):
         return result
 
 
-class BaseGetMultiServiceMixin(
+class BaseGetMultiServiceMixin[TRepo: BaseRepository, ModelType, TContextKwargs: BaseContextKwargs](
     ABC,
-    BaseGetMultiHooks,
-    BaseServiceMixinInterface,
-    Generic[TRepo, ModelType, TContextKwargs],
+    BaseGetMultiHooks[ModelType, TContextKwargs],
+    BaseServiceMixinInterface[TContextKwargs],
 ):
     """
     Get Multi (list) operation Mixin with hooks.
 
     Usage:
-        await service.get_multi(session, offset=0, limit=100, context={})
+        await service.get_multi(session, query_options=ListQueryOptions(offset=0, limit=100), context={})
     """
 
     async def get_multi(
         self,
         session: AsyncSession,
-        offset: int = 0,
-        limit: Optional[int] = 100,
-        order_by=(),
-        where=(),
-        context: Optional[TContextKwargs] = None,
+        query_options: ListQueryOptions | None = None,
+        context: TContextKwargs | None = None,
     ) -> PaginatedList[ModelType]:
+        query_options = query_options or ListQueryOptions()
         ctx = self._ensure_context(context, self.context_model)
+        extra_filters = self._prepare_get_multi_filters(context=ctx)
+
+        # Merge where conditions
+        where = query_options.where
+        if where is None:
+            where = extra_filters
+        elif isinstance(where, Sequence):
+            where = list(where) + extra_filters
+        elif extra_filters:
+            where = [where, *extra_filters]
+
+        query_options = replace(query_options, where=where)
+
         async with self._context_get_multi(session, context=ctx):
-            extra_filters = self._prepare_get_multi_filters(context=ctx)
-
-            # Merge where conditions
-            if where is None:
-                where = extra_filters
-            elif isinstance(where, Sequence):
-                where = list(where) + extra_filters
-            elif extra_filters:
-                where = [where] + extra_filters
-
-            result = await self.repo.get_multi(session, offset=offset, limit=limit, where=where, order_by=order_by)
+            result = await self.repo.get_multi(session, query_options=query_options)
             return await self._post_get_multi(session, result, context=ctx)

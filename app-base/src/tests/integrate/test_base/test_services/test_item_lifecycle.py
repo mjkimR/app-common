@@ -7,6 +7,7 @@ import uuid
 import pytest
 from app_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
 from app_base.base.repos.base import BaseRepository
+from app_base.base.repos.query_options import ListQueryOptions
 from app_base.base.services.base import (
     BaseCreateServiceMixin,
     BaseDeleteServiceMixin,
@@ -107,7 +108,7 @@ async def test_item_crud_lifecycle(session):
     assert updated.updated_by == user_id
 
     # 4. Get Multi
-    items_list = await service.get_multi(session, limit=10, context=context)
+    items_list = await service.get_multi(session, query_options=ListQueryOptions(limit=10), context=context)
     assert items_list.total_count == 1
     assert items_list.items[0].id == item.id
 

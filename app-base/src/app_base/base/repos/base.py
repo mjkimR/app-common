@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Generic, Optional, Sequence, TypeVar, Union, cast
+from collections.abc import Sequence
+from datetime import UTC, datetime
+from typing import Any, cast
 
 from pydantic import BaseModel
 from sqlalchemy import (
@@ -15,39 +16,26 @@ from sqlalchemy import (
 )
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.base import ExecutableOption
-from sqlalchemy.sql.elements import ColumnElement, UnaryExpression
+from sqlalchemy.sql.elements import UnaryExpression
 from sqlalchemy.sql.selectable import Select
 
+from app_base.base.repos.query_options import ListQueryOptions, WhereClause
 from app_base.base.schemas.paginated import PaginatedList
 from app_base.core.log import logger
 from app_base.utils.type_hint import SeqOrOneOrNone, to_sequence
 
-ModelType = TypeVar("ModelType", bound=Any)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-PutSchemaType = TypeVar("PutSchemaType", bound=BaseModel)
-PatchSchemaType = TypeVar("PatchSchemaType", bound=BaseModel)
-
-PrimaryKeyType = Union[Sequence[Union[str, int, uuid.UUID]], Union[str, int, uuid.UUID]]
-WhereClause = SeqOrOneOrNone[ColumnElement[bool]]
+PrimaryKeyType = Sequence[str | int | uuid.UUID] | str | int | uuid.UUID
 
 
-class BaseRepository(
-    Generic[
-        ModelType,
-        CreateSchemaType,
-        PutSchemaType,
-        PatchSchemaType,
-    ]
-):
+class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType: BaseModel, PatchSchemaType: BaseModel]:
     BATCH_SIZE = 1000
 
     model: type[ModelType]
     resource_name: str
 
-    default_order_by_col: Optional[str] = "created_at"
-    is_deleted_column: Optional[str] = "is_deleted"
-    deleted_at_column: Optional[str] = "deleted_at"
+    default_order_by_col: str | None = "created_at"
+    is_deleted_column: str | None = "is_deleted"
+    deleted_at_column: str | None = "deleted_at"
 
     def __init__(self):
         inspector = sa_inspect(self.model)
@@ -92,7 +80,7 @@ class BaseRepository(
                 f"Incorrect number of primary key values provided. Expected {len(self._primary_keys)}, got {len(pk_values)}."
             )
         pk_str = ", ".join(
-            f"{pk_col.key}={str(value)}" for pk_col, value in zip(self._primary_keys, pk_values, strict=False)
+            f"{pk_col.key}={value!s}" for pk_col, value in zip(self._primary_keys, pk_values, strict=False)
         )
         return f"{self.model_name()}({pk_str})"
 
@@ -136,14 +124,14 @@ class BaseRepository(
         session: AsyncSession,
         where: WhereClause = (),
         order_by: SeqOrOneOrNone[UnaryExpression] = (),
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         stmt = self._select(where, order_by)
         stmt = stmt.limit(1)
 
         db_row = await session.execute(stmt)
         return db_row.scalar_one_or_none()
 
-    async def get_by_pk(self, session: AsyncSession, pk: PrimaryKeyType) -> Optional[ModelType]:
+    async def get_by_pk(self, session: AsyncSession, pk: PrimaryKeyType) -> ModelType | None:
         if not self._primary_keys:
             raise ValueError("No primary key defined for this model.")
 
@@ -195,7 +183,7 @@ class BaseRepository(
         self,
         session: AsyncSession,
         objs_in: Sequence[CreateSchemaType],
-        extra_fields_list: Optional[Sequence[dict[str, Any]]] = None,
+        extra_fields_list: Sequence[dict[str, Any]] | None = None,
         **update_fields: Any,
     ) -> Sequence[ModelType]:
         if extra_fields_list is not None and len(extra_fields_list) != len(objs_in):
@@ -223,13 +211,15 @@ class BaseRepository(
     async def get_multi(
         self,
         session: AsyncSession,
-        offset: int = 0,
-        limit: Optional[int] = 100,
-        where: WhereClause = (),
-        order_by: SeqOrOneOrNone[UnaryExpression] = (),
-        select_options: SeqOrOneOrNone[ExecutableOption] = (),
-        skip_count: bool = False,
+        query_options: ListQueryOptions | None = None,
     ) -> PaginatedList[ModelType]:
+        query_options = query_options or ListQueryOptions()
+        offset = query_options.offset
+        limit = query_options.limit
+        where = query_options.where
+        order_by = query_options.order_by
+        select_options = query_options.select_options
+
         if limit is not None and limit < 0:
             raise ValueError("Limit must be non-negative.")
         if offset < 0:
@@ -247,7 +237,7 @@ class BaseRepository(
         result = await session.execute(stmt)
         data = list(result.scalars().all())
 
-        if skip_count:
+        if query_options.skip_count:
             total_count = None
         elif limit is None or (len(data) < limit and (len(data) > 0 or offset == 0)):
             total_count = offset + len(data)
@@ -281,19 +271,16 @@ class BaseRepository(
         self,
         session: AsyncSession,
         pk: PrimaryKeyType,
-        obj_in: Union[PutSchemaType, PatchSchemaType, dict[str, Any]],
+        obj_in: PutSchemaType | PatchSchemaType | dict[str, Any],
         return_updated_obj: bool = True,
         partial: bool = True,
         **update_fields: Any,
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         db_obj = await self.get_by_pk(session, pk)
         if not db_obj:
             return None
 
-        if isinstance(obj_in, dict):
-            update_data = obj_in.copy()
-        else:
-            update_data = obj_in.model_dump(exclude_unset=partial)
+        update_data = obj_in.copy() if isinstance(obj_in, dict) else obj_in.model_dump(exclude_unset=partial)
 
         update_data = {k: v for k, v in update_data.items() if k in self._model_columns}  # Filter out non-model fields
         update_data.update(update_fields)  # Include additional update fields
@@ -306,9 +293,10 @@ class BaseRepository(
 
         session.add(db_obj)
         await session.flush()
-        await session.refresh(db_obj)
-
-        return db_obj if return_updated_obj else None
+        if return_updated_obj:
+            await session.refresh(db_obj)
+            return db_obj
+        return None
 
     async def delete_by_pk(
         self,
@@ -334,7 +322,7 @@ class BaseRepository(
 
             update_values: dict[str, Any] = {self.is_deleted_column: True}
             if self.deleted_at_column and hasattr(self.model, self.deleted_at_column):
-                update_values[self.deleted_at_column] = datetime.now(timezone.utc)
+                update_values[self.deleted_at_column] = datetime.now(UTC)
 
             stmt = update(self.model).filter(*filters).values(**update_values)
         else:
@@ -384,7 +372,7 @@ class BaseRepository(
 
                 update_values: dict[str, Any] = {self.is_deleted_column: True}
                 if self.deleted_at_column and hasattr(self.model, self.deleted_at_column):
-                    update_values[self.deleted_at_column] = datetime.now(timezone.utc)
+                    update_values[self.deleted_at_column] = datetime.now(UTC)
 
                 stmt = update(self.model).where(where_clause).values(**update_values)
             else:
