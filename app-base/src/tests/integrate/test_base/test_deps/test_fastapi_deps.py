@@ -5,7 +5,10 @@ from app_base.base.deps.filters.combine import create_combined_filter_dependency
 from app_base.base.deps.filters.decorators import filter_for
 from app_base.base.deps.ordering.base import order_by_for
 from app_base.base.deps.ordering.combine import create_order_by_dependency
-from fastapi import APIRouter, Depends, FastAPI
+from app_base.base.deps.params.page import PaginationParams
+from app_base.base.deps.query_options import create_list_query_options_dependency
+from app_base.base.repos.query_options import ListQueryOptions
+from fastapi import APIRouter, Depends, FastAPI, Query
 from fastapi.testclient import TestClient
 
 
@@ -59,6 +62,22 @@ def order_by_created_at(desc: bool):
 
 
 ordering_dep = create_order_by_dependency(order_by_name, order_by_created_at, default_order="-created_at")
+list_query_options_dep = create_list_query_options_dependency(combined_filters, ordering_dep)
+pagination_only_query_options_dep = create_list_query_options_dependency()
+filters_only_query_options_dep = create_list_query_options_dependency(filters_dependency=combined_filters)
+order_by_only_query_options_dep = create_list_query_options_dependency(order_by_dependency=ordering_dep)
+
+
+def nullable_limit_pagination_params(
+    offset: int = Query(default=0),
+    limit: int | None = Query(default=None),
+) -> PaginationParams:
+    return PaginationParams(offset=offset, limit=limit)
+
+
+nullable_limit_query_options_dep = create_list_query_options_dependency(
+    pagination_dependency=nullable_limit_pagination_params
+)
 
 # FastAPI App
 app = FastAPI()
@@ -70,6 +89,64 @@ async def list_items(
     filters: Annotated[list, Depends(combined_filters)], order_by: Annotated[list, Depends(ordering_dep)]
 ):
     return {"filters": filters, "order_by": order_by}
+
+
+@router.get("/query-options")
+async def list_query_options(query_options: Annotated[ListQueryOptions, Depends(list_query_options_dep)]):
+    return {
+        "offset": query_options.offset,
+        "limit": query_options.limit,
+        "where": query_options.where,
+        "order_by": query_options.order_by,
+    }
+
+
+@router.get("/query-options/pagination-only")
+async def list_pagination_only_query_options(
+    query_options: Annotated[ListQueryOptions, Depends(pagination_only_query_options_dep)],
+):
+    return {
+        "offset": query_options.offset,
+        "limit": query_options.limit,
+        "where": query_options.where,
+        "order_by": query_options.order_by,
+    }
+
+
+@router.get("/query-options/filters-only")
+async def list_filters_only_query_options(
+    query_options: Annotated[ListQueryOptions, Depends(filters_only_query_options_dep)],
+):
+    return {
+        "offset": query_options.offset,
+        "limit": query_options.limit,
+        "where": query_options.where,
+        "order_by": query_options.order_by,
+    }
+
+
+@router.get("/query-options/order-by-only")
+async def list_order_by_only_query_options(
+    query_options: Annotated[ListQueryOptions, Depends(order_by_only_query_options_dep)],
+):
+    return {
+        "offset": query_options.offset,
+        "limit": query_options.limit,
+        "where": query_options.where,
+        "order_by": query_options.order_by,
+    }
+
+
+@router.get("/query-options/nullable-limit")
+async def list_nullable_limit_query_options(
+    query_options: Annotated[ListQueryOptions, Depends(nullable_limit_query_options_dep)],
+):
+    return {
+        "offset": query_options.offset,
+        "limit": query_options.limit,
+        "where": query_options.where,
+        "order_by": query_options.order_by,
+    }
 
 
 app.include_router(router)
@@ -114,3 +191,53 @@ async def test_ordering_multiple_with_desc(client):
     assert response.status_code == 200
     data = response.json()
     assert data["order_by"] == ["name DESC", "created_at ASC"]
+
+
+async def test_list_query_options_dependency_combines_params_filters_and_ordering(client):
+    response = client.get("/query-options?offset=10&limit=20&name=Alice&order_by=name")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["offset"] == 10
+    assert data["limit"] == 20
+    assert data["where"] == ["name == Alice"]
+    assert data["order_by"] == ["name ASC"]
+
+
+async def test_list_query_options_dependency_supports_pagination_only(client):
+    response = client.get("/query-options/pagination-only?offset=5&limit=15&name=Alice&order_by=name")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["offset"] == 5
+    assert data["limit"] == 15
+    assert data["where"] == []
+    assert data["order_by"] == []
+
+
+async def test_list_query_options_dependency_supports_filters_only(client):
+    response = client.get("/query-options/filters-only?offset=5&limit=15&name=Alice&order_by=name")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["offset"] == 5
+    assert data["limit"] == 15
+    assert data["where"] == ["name == Alice"]
+    assert data["order_by"] == []
+
+
+async def test_list_query_options_dependency_supports_order_by_only(client):
+    response = client.get("/query-options/order-by-only?offset=5&limit=15&name=Alice&order_by=name")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["offset"] == 5
+    assert data["limit"] == 15
+    assert data["where"] == []
+    assert data["order_by"] == ["name ASC"]
+
+
+async def test_list_query_options_dependency_supports_custom_pagination(client):
+    response = client.get("/query-options/nullable-limit?offset=5")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["offset"] == 5
+    assert data["limit"] is None
+    assert data["where"] == []
+    assert data["order_by"] == []

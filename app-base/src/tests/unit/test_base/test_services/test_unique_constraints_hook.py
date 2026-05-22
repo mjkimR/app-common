@@ -1,6 +1,6 @@
 """Unit tests for UniqueConstraintHooksMixin."""
 
-from typing import AsyncIterator, Tuple
+from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -28,7 +28,7 @@ class ConcreteUniqueConstraintService(UniqueConstraintHooksMixin):
     def context_model(self):
         return BaseContextKwargs
 
-    async def _unique_constraints(self, obj_data, context) -> AsyncIterator[Tuple[ColumnElement, str]]:
+    async def _unique_constraints(self, obj_data, context) -> AsyncIterator[tuple[ColumnElement, str]]:
         # Yield a real SQLAlchemy expression for testing
         if getattr(obj_data, "name", None):
             condition = MockModel.id == None  # noqa: E711 — dummy condition for test
@@ -60,7 +60,7 @@ class TestUniqueConstraintCreate:
         obj_data = MagicMock()
         obj_data.name = "duplicate_name"
 
-        with pytest.raises(BadRequestException, match="Name already exists."):
+        with pytest.raises(BadRequestException, match=r"Name already exists."):
             async with service._context_create(mock_async_session, obj_data, base_context):
                 pass
 

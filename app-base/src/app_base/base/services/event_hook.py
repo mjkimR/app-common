@@ -1,24 +1,23 @@
 import abc
-from typing import Any, Generic, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_base.base.repos.base import PrimaryKeyType
 from app_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
 from app_base.base.services.base import (
+    BaseContextKwargs,
     BaseCreateHooks,
     BaseDeleteHooks,
     BaseUpdateHooks,
-    ModelType,
-    TContextKwargs,
 )
 
 
-class DomainEventHooksMixin(
-    BaseCreateHooks[TContextKwargs],
-    BaseUpdateHooks[TContextKwargs],
+class DomainEventHooksMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    BaseCreateHooks[ModelType, TContextKwargs],
+    BaseUpdateHooks[ModelType, TContextKwargs],
     BaseDeleteHooks[TContextKwargs],
-    Generic[TContextKwargs],
     metaclass=abc.ABCMeta,
 ):
     """
@@ -35,7 +34,7 @@ class DomainEventHooksMixin(
     # PK Helpers
     # ============================================================
 
-    def _get_pk_from_obj(self, obj: Any) -> PrimaryKeyType:
+    def _get_pk_from_obj(self, obj: ModelType) -> PrimaryKeyType:
         """Extracts the primary key value(s) from a given model object dynamically."""
         pk_cols = self.repo.primary_keys
         if len(pk_cols) == 1:
@@ -55,7 +54,7 @@ class DomainEventHooksMixin(
     # ============================================================
 
     def _get_event_payload(
-        self, event_type: str, obj_pk: PrimaryKeyType, obj: Optional[ModelType] = None
+        self, event_type: str, obj_pk: PrimaryKeyType, obj: ModelType | None = None
     ) -> dict[str, Any]:
         """
         Get the event payload.

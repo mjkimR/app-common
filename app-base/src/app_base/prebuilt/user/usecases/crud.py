@@ -1,9 +1,9 @@
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends
 
-from app_base.base.services.base import TContextKwargs
+from app_base.base.services.base import BaseContextKwargs
 from app_base.base.usecases.base import BaseUseCase
 from app_base.core.database.transaction import AsyncTransaction
 
@@ -21,7 +21,7 @@ class GetUserUseCase(BaseUseCase):
         self,
         user_id: UUID,
         current_user: User,
-        context: Optional[TContextKwargs] = None,
+        context: BaseContextKwargs | None = None,
     ) -> User | None:
         if current_user.id == user_id:
             return current_user
@@ -40,7 +40,7 @@ class UpdateUserUseCase(BaseUseCase):
         obj_data: UserUpdate,
         user_id: UUID,
         current_user: User,
-        context: Optional[TContextKwargs] = None,
+        context: BaseContextKwargs | None = None,
     ) -> User | None:
         if current_user.id == user_id:
             return current_user

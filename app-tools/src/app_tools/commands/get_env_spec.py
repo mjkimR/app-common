@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, Dict, Type
+from typing import Any
 
 import click
 
@@ -26,7 +26,7 @@ except ImportError:
     sys.exit(1)
 
 
-def get_env_variable_specs(settings_class: Type[Any], provider_type: str | None = None) -> Dict[str, str]:
+def get_env_variable_specs(settings_class: type[Any], provider_type: str | None = None) -> dict[str, str]:
     """
     Extracts environment variable specifications from a Pydantic BaseSettings class.
     Handles aliases, env_prefix, and nested delimiters.

@@ -116,12 +116,14 @@ class TestGetExceptionTracebackStrFilteredMode:
             name="handle",
         )
 
-        with patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings()):
-            with patch("traceback.extract_tb", return_value=[noise_frame, last_frame]):
-                try:
-                    raise RuntimeError("noise test")
-                except RuntimeError as exc:
-                    result = get_exception_traceback_str(exc)
+        with (
+            patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings()),
+            patch("traceback.extract_tb", return_value=[noise_frame, last_frame]),
+        ):
+            try:
+                raise RuntimeError("noise test")
+            except RuntimeError as exc:
+                result = get_exception_traceback_str(exc)
 
         assert "starlette/middleware" not in result
         assert "service.py" in result
@@ -136,12 +138,14 @@ class TestGetExceptionTracebackStrFilteredMode:
             name="dispatch",
         )
 
-        with patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings()):
-            with patch("traceback.extract_tb", return_value=[noise_frame]):
-                try:
-                    raise RuntimeError("last frame test")
-                except RuntimeError as exc:
-                    result = get_exception_traceback_str(exc)
+        with (
+            patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings()),
+            patch("traceback.extract_tb", return_value=[noise_frame]),
+        ):
+            try:
+                raise RuntimeError("last frame test")
+            except RuntimeError as exc:
+                result = get_exception_traceback_str(exc)
 
         # The last frame should be kept regardless of noise pattern
         assert "line 99" in result or "dispatch" in result
@@ -160,12 +164,14 @@ class TestGetExceptionTracebackStrFilteredMode:
             name="do_work",
         )
 
-        with patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings(whitelist=[])):
-            with patch("traceback.extract_tb", return_value=[site_frame, project_frame]):
-                try:
-                    raise RuntimeError("external lib test")
-                except RuntimeError as exc:
-                    result = get_exception_traceback_str(exc)
+        with (
+            patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings(whitelist=[])),
+            patch("traceback.extract_tb", return_value=[site_frame, project_frame]),
+        ):
+            try:
+                raise RuntimeError("external lib test")
+            except RuntimeError as exc:
+                result = get_exception_traceback_str(exc)
 
         assert "_client.py" not in result
         assert "service.py" in result
@@ -184,12 +190,14 @@ class TestGetExceptionTracebackStrFilteredMode:
             name="query",
         )
 
-        with patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings(whitelist=["sqlalchemy"])):
-            with patch("traceback.extract_tb", return_value=[sqlalchemy_frame, project_frame]):
-                try:
-                    raise RuntimeError("whitelist test")
-                except RuntimeError as exc:
-                    result = get_exception_traceback_str(exc)
+        with (
+            patch("app_base.core.traceback.get_app_settings", return_value=_mock_settings(whitelist=["sqlalchemy"])),
+            patch("traceback.extract_tb", return_value=[sqlalchemy_frame, project_frame]),
+        ):
+            try:
+                raise RuntimeError("whitelist test")
+            except RuntimeError as exc:
+                result = get_exception_traceback_str(exc)
 
         assert "session.py" in result
 

@@ -1,19 +1,18 @@
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any
 
 from pydantic import BaseModel
 
 from app_base.adapter.nosql_db.interface import NoSQLDBProvider
+from app_base.adapter.nosql_db.query_options import NoSQLListQueryOptions
 from app_base.base.schemas.paginated import PaginatedList
 
-ModelType = TypeVar("ModelType", bound=Any)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-PutSchemaType = TypeVar("PutSchemaType", bound=BaseModel)
-PatchSchemaType = TypeVar("PatchSchemaType", bound=BaseModel)
-# Backward compatibility alias
-UpdateSchemaType = PutSchemaType
 
-
-class NoSQLRepository(Generic[ModelType, CreateSchemaType, PutSchemaType, PatchSchemaType]):
+class NoSQLRepository[
+    ModelType: Any,
+    CreateSchemaType: BaseModel,
+    PutSchemaType: BaseModel,
+    PatchSchemaType: BaseModel,
+]:
     """
     Base repository class for NoSQL databases.
     """
@@ -27,7 +26,7 @@ class NoSQLRepository(Generic[ModelType, CreateSchemaType, PutSchemaType, PatchS
     def model_repr(self, document_id: str) -> str:
         return f"{self.model_name()}(id={document_id})"
 
-    async def get_by_id(self, provider: NoSQLDBProvider, document_id: str) -> Optional[ModelType]:
+    async def get_by_id(self, provider: NoSQLDBProvider, document_id: str) -> ModelType | None:
         data = await provider.get_document(self.collection_name, document_id)
         if not data:
             return None
@@ -51,7 +50,7 @@ class NoSQLRepository(Generic[ModelType, CreateSchemaType, PutSchemaType, PatchS
         document_id: str,
         obj_in: PutSchemaType,
         **extra_fields: Any,
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """Full update (PUT) - all fields replaced."""
         update_data = obj_in.model_dump()
         update_data.update(extra_fields)
@@ -64,7 +63,7 @@ class NoSQLRepository(Generic[ModelType, CreateSchemaType, PutSchemaType, PatchS
         document_id: str,
         obj_in: PatchSchemaType,
         **extra_fields: Any,
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """Partial update (PATCH) - only set fields updated."""
         update_data = obj_in.model_dump(exclude_unset=True)
         update_data.update(extra_fields)
@@ -77,7 +76,7 @@ class NoSQLRepository(Generic[ModelType, CreateSchemaType, PutSchemaType, PatchS
         document_id: str,
         obj_in: PutSchemaType,
         **extra_fields: Any,
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """Deprecated: use put() or patch() instead."""
         return await self.patch(provider, document_id, obj_in, **extra_fields)
 
@@ -88,21 +87,20 @@ class NoSQLRepository(Generic[ModelType, CreateSchemaType, PutSchemaType, PatchS
     async def get_multi(
         self,
         provider: NoSQLDBProvider,
-        filters: list[tuple[str, str, Any]] | None = None,
-        offset: int = 0,
-        limit: int = 100,
+        query_options: NoSQLListQueryOptions | None = None,
     ) -> PaginatedList[ModelType]:
-        docs = await provider.list_documents(self.collection_name, filters=filters)
+        query_options = query_options or NoSQLListQueryOptions()
+        docs = await provider.list_documents(self.collection_name, filters=list(query_options.filters))
 
         total_count = len(docs)
-        paged_docs = docs[offset : offset + limit]
+        paged_docs = docs[query_options.offset : query_options.offset + query_options.limit]
 
         items = [self.model(**doc) for doc in paged_docs]
         return PaginatedList(
             items=items,
             total_count=total_count,
-            offset=offset,
-            limit=limit,
+            offset=query_options.offset,
+            limit=query_options.limit,
         )
 
     async def exists(self, provider: NoSQLDBProvider, document_id: str) -> bool:

@@ -4,6 +4,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
+from app_base.base.repos.query_options import ListQueryOptions
 from app_base.base.schemas.paginated import PaginatedList
 
 
@@ -35,7 +36,7 @@ class TestBaseRepositoryPrimaryKeys:
 
     def test_get_primary_key_filters_mismatched_count_raises_error(self, mock_repository, sample_uuid):
         """Should raise error when PK count doesn't match."""
-        with pytest.raises(ValueError, match="Incorrect number of primary key values"):
+        with pytest.raises(ValueError, match=r"Incorrect number of primary key values"):
             mock_repository._get_primary_key_filters([sample_uuid, sample_uuid])
 
 
@@ -201,7 +202,10 @@ class TestBaseRepositoryGetMulti:
 
         mock_async_session.execute.return_value = data_result
 
-        result = await mock_repository.get_multi(mock_async_session, offset=0, limit=10)
+        result = await mock_repository.get_multi(
+            mock_async_session,
+            query_options=ListQueryOptions(offset=0, limit=10),
+        )
 
         assert isinstance(result, PaginatedList)
         assert result.total_count == 1
@@ -211,13 +215,13 @@ class TestBaseRepositoryGetMulti:
 
     async def test_get_multi_negative_limit_raises_error(self, mock_repository, mock_async_session):
         """Should raise ValueError for negative limit."""
-        with pytest.raises(ValueError, match="Limit must be non-negative"):
-            await mock_repository.get_multi(mock_async_session, limit=-1)
+        with pytest.raises(ValueError, match=r"Limit must be non-negative"):
+            await mock_repository.get_multi(mock_async_session, query_options=ListQueryOptions(limit=-1))
 
     async def test_get_multi_negative_offset_raises_error(self, mock_repository, mock_async_session):
         """Should raise ValueError for negative offset."""
-        with pytest.raises(ValueError, match="Offset must be non-negative"):
-            await mock_repository.get_multi(mock_async_session, offset=-1)
+        with pytest.raises(ValueError, match=r"Offset must be non-negative"):
+            await mock_repository.get_multi(mock_async_session, query_options=ListQueryOptions(offset=-1))
 
     async def test_get_multi_with_none_limit(self, mock_repository, mock_async_session, mock_model):
         """Should handle None limit (no limit)."""
@@ -228,7 +232,10 @@ class TestBaseRepositoryGetMulti:
 
         mock_async_session.execute.side_effect = [data_result]
 
-        result = await mock_repository.get_multi(mock_async_session, offset=0, limit=None)
+        result = await mock_repository.get_multi(
+            mock_async_session,
+            query_options=ListQueryOptions(offset=0, limit=None),
+        )
 
         assert result.limit is None
         assert len(result.items) == 100
@@ -278,7 +285,7 @@ class TestBaseRepositoryUpdate:
         # Schema with no fields set
         update_schema = MockUpdateSchema()
 
-        with pytest.raises(ValueError, match="Update data cannot be empty"):
+        with pytest.raises(ValueError, match=r"Update data cannot be empty"):
             await mock_repository.update_by_pk(mock_async_session, sample_uuid, update_schema)
 
     async def test_update_by_pk_extra_fields_are_filtered(
@@ -347,7 +354,7 @@ class TestBaseRepositoryDelete:
         self, mock_repository, mock_async_session, sample_uuid
     ):
         """Should raise error when soft delete requested but model lacks is_deleted column."""
-        with pytest.raises(ValueError, match="Soft delete requires"):
+        with pytest.raises(ValueError, match=r"Soft delete requires"):
             await mock_repository.delete_by_pk(mock_async_session, sample_uuid, soft_delete=True)
 
 

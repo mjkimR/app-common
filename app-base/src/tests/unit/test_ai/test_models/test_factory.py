@@ -44,7 +44,7 @@ class TestConfigLoader:
         del os.environ["TEST_DB_URL"]
 
     def test_load_yaml_with_env_file_not_found(self, tmp_path):
-        with pytest.raises(FileNotFoundError, match="Configuration file not found"):
+        with pytest.raises(FileNotFoundError, match=r"Configuration file not found"):
             ConfigLoader.load_yaml_with_env(str(tmp_path / "non_existent.yml"))
 
     @patch("app_base.ai.models.factory.logger")
@@ -138,7 +138,7 @@ class TestAIModelFactory:
             "aliases": [],
             "groups": [],
         }
-        with pytest.raises(ValueError, match="Error in models item 'm1'"):
+        with pytest.raises(ValueError, match=r"Error in models item 'm1'"):
             AIModelFactory(config_path=str(tmp_path / "catalog.yml"))
 
     @patch("app_base.ai.models.factory.ConfigLoader.load_yaml_with_env")
@@ -152,7 +152,7 @@ class TestAIModelFactory:
             "groups": [],
         }
         with pytest.raises(
-            ValueError, match="Configuration Error: Alias 'a1' refers to non-existent target 'non-existent'"
+            ValueError, match=r"Configuration Error: Alias 'a1' refers to non-existent target 'non-existent'"
         ):
             AIModelFactory(config_path=str(tmp_path / "catalog.yml"))
 
@@ -168,7 +168,7 @@ class TestAIModelFactory:
                 {"name": "g1", "type": "llm", "members": ["non-existent"]},
             ],
         }
-        with pytest.raises(ValueError, match="Model group 'g1' has unknown member 'non-existent'"):
+        with pytest.raises(ValueError, match=r"Model group 'g1' has unknown member 'non-existent'"):
             AIModelFactory(config_path=str(tmp_path / "catalog.yml"))
 
     @patch("app_base.ai.models.factory.LLMFactory")
@@ -213,12 +213,12 @@ class TestAIModelFactory:
         # Test type mismatch
         with pytest.raises(
             ValueError,
-            match="Type mismatch: Requested model 'embedding-model-1' is 'text-embedding', but operation expects 'llm'",
+            match=r"Type mismatch: Requested model 'embedding-model-1' is 'text-embedding', but operation expects 'llm'",
         ):
             factory.get_llm("embedding-model-1")
 
         # Test model not found
-        with pytest.raises(ValueError, match="Model 'non-existent' not found in models."):
+        with pytest.raises(ValueError, match=r"Model 'non-existent' not found in models."):
             factory.get_llm("non-existent")
 
     @patch("app_base.ai.models.factory.LLMFactory")
@@ -269,11 +269,11 @@ class TestAIModelFactory:
         # Test errors
         with pytest.raises(
             ValueError,
-            match="Type mismatch: Model 'embedding-main' is type 'text-embedding', but LLM fallbacks were requested.",
+            match=r"Type mismatch: Model 'embedding-main' is type 'text-embedding', but LLM fallbacks were requested.",
         ):
             factory.get_fallback_llms("embedding-main")
 
-        with pytest.raises(ValueError, match="Model or Alias 'non-existent' not found in models or aliases."):
+        with pytest.raises(ValueError, match=r"Model or Alias 'non-existent' not found in models or aliases."):
             factory.get_fallback_llms("non-existent")
 
     @patch("app_base.ai.models.factory.LLMFactory")
@@ -313,12 +313,12 @@ class TestAIModelFactory:
         # Test type mismatch
         with pytest.raises(
             ValueError,
-            match="Type mismatch: Requested model 'llm-model-1' is 'llm', but operation expects 'text-embedding'",
+            match=r"Type mismatch: Requested model 'llm-model-1' is 'llm', but operation expects 'text-embedding'",
         ):
             factory.get_embedding("llm-model-1")
 
         # Test model not found
-        with pytest.raises(ValueError, match="Model 'non-existent' not found in models."):
+        with pytest.raises(ValueError, match=r"Model 'non-existent' not found in models."):
             factory.get_embedding("non-existent")
 
     @patch("app_base.ai.models.factory.LLMFactory")
@@ -361,7 +361,7 @@ class TestAIModelFactory:
         # Test type mismatch
         with pytest.raises(
             ValueError,
-            match="Type mismatch: Requested model 'llm-model' is 'llm', but operation expects 'text-embedding'",
+            match=r"Type mismatch: Requested model 'llm-model' is 'llm', but operation expects 'text-embedding'",
         ):
             factory.get_embedding_dimension("llm-model")
 
@@ -427,7 +427,7 @@ class TestAIModelFactory:
         assert len(group.members) == 2
         assert group.default == "llm-model-A"
 
-        with pytest.raises(ValueError, match="Model group 'non-existent-group' not found."):
+        with pytest.raises(ValueError, match=r"Model group 'non-existent-group' not found."):
             factory.get_group("non-existent-group")
 
     @patch("app_base.ai.models.factory.LLMFactory")

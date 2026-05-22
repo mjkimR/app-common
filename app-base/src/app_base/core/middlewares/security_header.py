@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from fastapi import FastAPI
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -5,7 +7,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 class SecurityHeaderMiddleware:
     """Pure ASGI Middleware to add security headers to responses"""
 
-    SECURITY_HEADERS: list[tuple[bytes, bytes]] = [
+    SECURITY_HEADERS: ClassVar[list[tuple[bytes, bytes]]] = [
         (b"x-content-type-options", b"nosniff"),
         (b"x-frame-options", b"DENY"),
         (b"strict-transport-security", b"max-age=31536000; includeSubDomains"),

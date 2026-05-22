@@ -1,3 +1,4 @@
+from app_base.base.repos.query_options import ListQueryOptions
 from app_base.base.usecases.crud import (
     BaseCreateUseCase,
     BaseDeleteUseCase,
@@ -67,7 +68,7 @@ async def test_usecase_lifecycle(session):
 
     # 4. Get Multi
     multi_uc = GetMultiItemUseCase()
-    items = await multi_uc.execute(offset=0, limit=10, context=context)
+    items = await multi_uc.execute(query_options=ListQueryOptions(offset=0, limit=10), context=context)
     assert items.total_count == 1
     assert items.items[0].id == item.id
 

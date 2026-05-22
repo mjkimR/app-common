@@ -1,10 +1,9 @@
 import functools
 import os
-from typing import Generic, Literal
+from typing import Literal
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import TypeVar
 
 from app_base.config.util import get_env_file_path
 
@@ -13,9 +12,6 @@ NoSQLDBProviderType = Literal["none", "firestore", "mongodb"]
 
 class NoSQLDBProviderConfigs(BaseSettings):
     pass
-
-
-TNoSQLDBProviderConfigs = TypeVar("TNoSQLDBProviderConfigs", bound=NoSQLDBProviderConfigs)
 
 
 class NoneNoSQLDBSettings(NoSQLDBProviderConfigs):
@@ -39,7 +35,7 @@ class MongoDBSettings(NoSQLDBProviderConfigs):
     model_config = SettingsConfigDict(env_prefix="NOSQL_DB_MONGODB_")
 
 
-class NoSQLDBSettings(BaseSettings, Generic[TNoSQLDBProviderConfigs]):
+class NoSQLDBSettings[TNoSQLDBProviderConfigs: NoSQLDBProviderConfigs](BaseSettings):
     provider: NoSQLDBProviderType = Field(
         default="none",
         alias="NOSQL_DB_PROVIDER",

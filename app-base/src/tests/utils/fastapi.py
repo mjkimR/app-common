@@ -1,24 +1,25 @@
 import inspect
+from collections.abc import Callable
 from types import SimpleNamespace
-from typing import Annotated, Any, Callable, TypeVar, get_args, get_origin
+from typing import Annotated, Any, get_args, get_origin
 
 from fastapi import Request
 from fastapi.params import Depends
-
-T = TypeVar("T")
 
 
 class MockRequest:
     """Mock class that mimics the state of a FastAPI Request object"""
 
-    def __init__(self, state_attrs: dict[str, Any] = None):
+    def __init__(self, state_attrs: dict[str, Any] | None = None):
         # Convert dict to object for attribute access (e.g., request.state.db)
         self.state = SimpleNamespace(**(state_attrs or {}))
         self.scope = {"type": "http"}  # Basic scope info (expand if needed)
 
 
-def resolve_dependency(
-    target: Callable[..., T] | type[T], state: dict[str, Any] = None, overrides: dict[Callable, Any] = None
+def resolve_dependency[T](
+    target: Callable[..., T] | type[T],
+    state: dict[str, Any] | None = None,
+    overrides: dict[Callable, Any] | None = None,
 ) -> T:
     """
     Test helper that resolves FastAPI dependency trees and creates objects.

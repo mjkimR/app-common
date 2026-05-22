@@ -256,6 +256,7 @@ from fastapi import APIRouter, Depends, status
 
 from app_base.base.deps.params.page import PaginationParam
 from app_base.base.exceptions.basic import NotFoundException
+from app_base.base.repos.query_options import ListQueryOptions
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
 from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Read, {class_name}Patch, {class_name}Put
@@ -284,7 +285,8 @@ async def get_{plural_name}(
     use_case: Annotated[GetMulti{class_name}UseCase, Depends()],
     pagination: PaginationParam,
 ):
-    return await use_case.execute(**pagination)
+    query_options = ListQueryOptions(offset=pagination.offset, limit=pagination.limit)
+    return await use_case.execute(query_options=query_options)
 
 
 @router.get("/{{{singular_name}_id}}", response_model={class_name}Read)

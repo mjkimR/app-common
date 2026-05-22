@@ -36,7 +36,7 @@ def assert_paginated_response(response: Response, min_items: int = 0):
     assert len(data["items"]) >= min_items, f"Expected at least {min_items} items"
 
 
-def assert_error_response(response: Response, status_code: int, error_type: str = None):
+def assert_error_response(response: Response, status_code: int, error_type: str | None = None):
     """Assert that response is an error response."""
     assert_status_code(response, status_code)
     data = response.json()

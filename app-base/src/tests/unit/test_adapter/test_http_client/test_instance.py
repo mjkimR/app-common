@@ -39,7 +39,7 @@ def test_set_http_client():
 def test_set_http_client_already_initialized():
     mock_client = MagicMock(spec=httpx.AsyncClient)
     set_http_client(mock_client)
-    with pytest.raises(RuntimeError, match="HTTP client is already initialized."):
+    with pytest.raises(RuntimeError, match=r"HTTP client is already initialized."):
         set_http_client(mock_client)
 
 
@@ -52,17 +52,17 @@ def test_set_http_sync_client():
 def test_set_http_sync_client_already_initialized():
     mock_client = MagicMock(spec=httpx.Client)
     set_http_sync_client(mock_client)
-    with pytest.raises(RuntimeError, match="Synchronous HTTP client is already initialized."):
+    with pytest.raises(RuntimeError, match=r"Synchronous HTTP client is already initialized."):
         set_http_sync_client(mock_client)
 
 
 def test_get_http_client_not_initialized():
-    with pytest.raises(RuntimeError, match="HTTP client is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"HTTP client is not initialized. Check lifespan."):
         get_http_client()
 
 
 def test_get_http_sync_client_not_initialized():
-    with pytest.raises(RuntimeError, match="Synchronous HTTP client is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"Synchronous HTTP client is not initialized. Check lifespan."):
         get_http_sync_client()
 
 
@@ -119,7 +119,7 @@ async def test_close_http_client():
     await close_http_client()
 
     mock_client.aclose.assert_awaited_once()
-    with pytest.raises(RuntimeError, match="HTTP client is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"HTTP client is not initialized. Check lifespan."):
         get_http_client()
 
 
@@ -135,7 +135,7 @@ def test_close_http_sync_client():
     close_http_sync_client()
 
     mock_client.close.assert_called_once()
-    with pytest.raises(RuntimeError, match="Synchronous HTTP client is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"Synchronous HTTP client is not initialized. Check lifespan."):
         get_http_sync_client()
 
 

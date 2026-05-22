@@ -14,12 +14,12 @@ def test_set_nosql_db_provider(mock_provider):
 
 def test_set_nosql_db_provider_already_initialized(mock_provider):
     set_nosql_db_provider(mock_provider)
-    with pytest.raises(RuntimeError, match="NoSQL DB provider is already initialized."):
+    with pytest.raises(RuntimeError, match=r"NoSQL DB provider is already initialized."):
         set_nosql_db_provider(mock_provider)
 
 
 def test_get_nosql_db_provider_not_initialized():
-    with pytest.raises(RuntimeError, match="NoSQL DB provider is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"NoSQL DB provider is not initialized. Check lifespan."):
         get_nosql_db_provider()
 
 

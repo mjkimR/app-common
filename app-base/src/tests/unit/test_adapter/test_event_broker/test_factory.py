@@ -78,7 +78,7 @@ def test_create_rabbitmq_provider(mock_rabbitmq_settings):
 
 def test_create_rabbitmq_provider_wrong_config(mock_rabbitmq_settings):
     mock_rabbitmq_settings.config = MagicMock()  # Wrong config type (not RabbitMQBrokerSettings)
-    with pytest.raises(TypeError, match="Expected RabbitMQBrokerSettings for rabbitmq provider"):
+    with pytest.raises(TypeError, match=r"Expected RabbitMQBrokerSettings for rabbitmq provider"):
         EventBrokerFactory.create(mock_rabbitmq_settings)
 
 
@@ -95,10 +95,10 @@ def test_create_redis_provider(mock_redis_settings):
 
 def test_create_redis_provider_wrong_config(mock_redis_settings):
     mock_redis_settings.config = MagicMock()  # Wrong config type (not RedisBrokerSettings)
-    with pytest.raises(TypeError, match="Expected RedisBrokerSettings for redis provider"):
+    with pytest.raises(TypeError, match=r"Expected RedisBrokerSettings for redis provider"):
         EventBrokerFactory.create(mock_redis_settings)
 
 
 def test_create_unsupported_provider(mock_unsupported_settings):
-    with pytest.raises(ValueError, match="Unknown provider: unsupported"):
+    with pytest.raises(ValueError, match=r"Unknown provider: unsupported"):
         EventBrokerFactory.create(mock_unsupported_settings)

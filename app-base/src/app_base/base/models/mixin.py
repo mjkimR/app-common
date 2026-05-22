@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import Optional
 
 from sqlalchemy import JSON, UUID, DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -28,12 +27,12 @@ class TimestampMixin:
 
 class AuditMixin:
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
 
 class SoftDeleteMixin:
     is_deleted: Mapped[bool] = mapped_column(default=False, nullable=False)
-    deleted_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     def mark_deleted(self):
         self.is_deleted = True
@@ -41,7 +40,7 @@ class SoftDeleteMixin:
 
 
 class TaggableMixin:
-    tags: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
 
     def add_tag(self, tag: str):
         if not self.tags:

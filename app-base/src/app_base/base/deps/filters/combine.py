@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from sqlalchemy import ColumnElement
 
@@ -77,7 +78,7 @@ def create_combined_filter_dependency(
             param_name_mapping = filter_spec["params"]
             builder_arguments = {}
 
-            for param_key in param_name_mapping.keys():
+            for param_key in param_name_mapping:
                 if param_key in params:
                     builder_arguments[param_name_mapping[param_key]] = params[param_key]
             collected_filter_conditions.append(builder(**builder_arguments))

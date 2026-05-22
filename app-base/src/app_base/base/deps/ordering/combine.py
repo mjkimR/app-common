@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
 from fastapi import Query
 from sqlalchemy.sql import ColumnElement
@@ -9,7 +9,7 @@ from app_base.base.deps.ordering.base import OrderByCriteria
 def create_order_by_dependency(
     *criteria: OrderByCriteria,
     default_order: str = "-created_at",
-    tie_breaker: Optional[OrderByCriteria] = None,
+    tie_breaker: OrderByCriteria | None = None,
 ) -> Callable:
     """Creates a FastAPI dependency for handling dynamic order_by query parameters.
 
@@ -50,7 +50,7 @@ def create_order_by_dependency(
 
     final_description = "\n".join(desc_lines)
 
-    def dependency(order_by: Optional[str] = Query(default=None, description=final_description)) -> List[ColumnElement]:
+    def dependency(order_by: str | None = Query(default=None, description=final_description)) -> list[ColumnElement]:
         if not order_by:
             order_by = default_order
 

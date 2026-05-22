@@ -70,12 +70,12 @@ def test_set_vector_store_provider():
 def test_set_vector_store_provider_already_initialized():
     mock_provider = MockVectorStoreProvider(MagicMock())
     set_vector_store_provider(mock_provider)
-    with pytest.raises(RuntimeError, match="Vector Store provider is already initialized."):
+    with pytest.raises(RuntimeError, match=r"Vector Store provider is already initialized."):
         set_vector_store_provider(mock_provider)
 
 
 def test_get_vector_store_provider_not_initialized():
-    with pytest.raises(RuntimeError, match="Vector Store provider is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"Vector Store provider is not initialized. Check lifespan."):
         get_vector_store_provider()
 
 
@@ -122,11 +122,11 @@ async def test_close_vector_store():
     set_vector_store_provider(mock_provider)
     await close_vector_store()
     assert mock_provider.close_called is True
-    with pytest.raises(RuntimeError, match="Vector Store provider is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"Vector Store provider is not initialized. Check lifespan."):
         get_vector_store_provider()
 
 
 async def test_close_vector_store_not_initialized():
     await close_vector_store()
-    with pytest.raises(RuntimeError, match="Vector Store provider is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"Vector Store provider is not initialized. Check lifespan."):
         get_vector_store_provider()

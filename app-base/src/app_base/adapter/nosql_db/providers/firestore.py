@@ -1,4 +1,5 @@
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from app_base.adapter.nosql_db.interface import NoSQLDBProvider, import_error_handler
 from app_base.adapter.nosql_db.registry import register_nosql_db

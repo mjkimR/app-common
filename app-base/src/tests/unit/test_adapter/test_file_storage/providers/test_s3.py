@@ -84,7 +84,7 @@ async def test_from_config_no_config_raises_error():
     mock_settings = MagicMock(spec=FileStorageSettings)
     mock_settings.provider = "s3"
     mock_settings.config = None  # Set config to None for this test case
-    with pytest.raises(ValueError, match="S3 storage settings are not configured."):
+    with pytest.raises(ValueError, match=r"S3 storage settings are not configured."):
         await S3StorageProvider.from_config(mock_settings)
 
 
@@ -115,7 +115,7 @@ async def test_download_file_not_found(mock_aiobotocore_client):
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"
     )
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
-    with pytest.raises(FileNotFoundError, match="File not found at non_existent.txt"):
+    with pytest.raises(FileNotFoundError, match=r"File not found at non_existent.txt"):
         await provider.download_file("non_existent.txt")
 
 
@@ -134,7 +134,7 @@ async def test_download_file_stream_not_found(mock_aiobotocore_client):
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"
     )
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
-    with pytest.raises(FileNotFoundError, match="File not found at non_existent.txt"):
+    with pytest.raises(FileNotFoundError, match=r"File not found at non_existent.txt"):
         async for _ in provider.download_file_stream("non_existent.txt"):
             pass
 
@@ -200,5 +200,5 @@ async def test_get_file_metadata_not_found(mock_aiobotocore_client):
         {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject"
     )
     provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
-    with pytest.raises(FileNotFoundError, match="File not found at non_existent_meta.txt"):
+    with pytest.raises(FileNotFoundError, match=r"File not found at non_existent_meta.txt"):
         await provider.get_file_metadata("non_existent_meta.txt")

@@ -45,7 +45,7 @@ class ConfigLoader:
         if not os.path.exists(path):
             raise FileNotFoundError(f"Configuration file not found: {path}")
 
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
             content = pattern.sub(replace_env, content)
             return yaml.safe_load(content)
@@ -61,7 +61,7 @@ class AIModelFactory:
         if not cls._instance:
             with cls._lock:
                 if not cls._instance:
-                    cls._instance = super(AIModelFactory, cls).__new__(cls)
+                    cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
 
@@ -96,7 +96,7 @@ class AIModelFactory:
             try:
                 self.models[name] = AIModelItem(**item)
             except Exception as e:
-                raise ValueError(f"Error in models item '{name}': {str(e)}") from e
+                raise ValueError(f"Error in models item '{name}': {e!s}") from e
         for item in raw_config.get("aliases", []):
             if "name" not in item:
                 raise ValueError("Each alias item must have a 'name' field.")
@@ -104,7 +104,7 @@ class AIModelFactory:
             try:
                 self.aliases[name] = AIModelAliasItem(**item)
             except Exception as e:
-                raise ValueError(f"Error in alias item '{name}': {str(e)}") from e
+                raise ValueError(f"Error in alias item '{name}': {e!s}") from e
         catalogs = {
             **{name: model.to_catalog_item() for name, model in self.models.items()},
             **{name: alias.to_catalog_item() for name, alias in self.aliases.items()},
@@ -116,7 +116,7 @@ class AIModelFactory:
             try:
                 self.groups[name] = AIModelGroupItem.from_data(item, catalogs)
             except Exception as e:
-                raise ValueError(f"Error in group item '{name}': {str(e)}") from e
+                raise ValueError(f"Error in group item '{name}': {e!s}") from e
 
     def _validate_config(self):
         """Validate the integrity and type correctness of the configuration file."""

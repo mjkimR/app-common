@@ -36,7 +36,7 @@ def test_set_event_broker(mock_broker):
 
 def test_set_event_broker_already_initialized(mock_broker):
     set_event_broker(mock_broker)
-    with pytest.raises(RuntimeError, match="Event broker event_broker is already initialized."):
+    with pytest.raises(RuntimeError, match=r"Event broker event_broker is already initialized."):
         set_event_broker(mock_broker)
 
 

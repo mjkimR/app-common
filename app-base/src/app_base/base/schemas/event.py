@@ -1,12 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import Any
 
 from pydantic import UUID4, BaseModel, Field
 
 from app_base.utils.time_util import get_current_utc_time
-
-TPayload = TypeVar("TPayload", bound=BaseModel)
 
 
 class DomainEvent(BaseModel):

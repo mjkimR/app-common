@@ -1,11 +1,11 @@
-from typing import Any, Optional
+from typing import Any
 
 from app_base.adapter.event_broker.factory import EventBrokerFactory
 from app_base.config import get_event_broker_settings
 from app_base.config.event_broker import EventBrokerSettings
 from app_base.core.log import logger
 
-_event_broker: Optional[Any] = None
+_event_broker: Any | None = None
 
 
 def set_event_broker(event_broker: Any) -> None:

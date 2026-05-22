@@ -21,7 +21,7 @@ class TimeoutMiddleware:
 
         try:
             await asyncio.wait_for(self.app(scope, receive, send), timeout=self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             path = scope.get("path", "")
             logger.error(f"Request timeout: {path}")
             response = PlainTextResponse("Request processing time exceeded limit", status_code=504)

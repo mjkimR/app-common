@@ -22,9 +22,11 @@ def mock_ai_model_factory():
 
 
 async def test_qdrant_provider_from_config_import_error(mock_qdrant_settings):
-    with patch.dict("sys.modules", {"qdrant_client": None}):
-        with pytest.raises(ImportError, match="Failed to import dependencies for vector store kind 'qdrant'"):
-            QdrantProvider.from_config(mock_qdrant_settings)
+    with (
+        patch.dict("sys.modules", {"qdrant_client": None}),
+        pytest.raises(ImportError, match=r"Failed to import dependencies for vector store kind 'qdrant'"),
+    ):
+        QdrantProvider.from_config(mock_qdrant_settings)
 
 
 def test_qdrant_provider_close(mock_qdrant_client):
@@ -39,5 +41,5 @@ def test_create_vector_store_import_error(mock_qdrant_client, mock_ai_model_fact
         patch("app_base.adapter.vector_store.providers.qdrant.AIModelFactory", return_value=mock_ai_model_factory),
     ):
         provider = QdrantProvider(mock_qdrant_client)
-        with pytest.raises(ImportError, match="Failed to import dependencies for vector store kind 'qdrant'"):
+        with pytest.raises(ImportError, match=r"Failed to import dependencies for vector store kind 'qdrant'"):
             provider.create_vector_store("collection", "model")

@@ -1,7 +1,6 @@
 """Unit tests for NestedResourceHooksMixin."""
 
 import uuid
-from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -29,7 +28,7 @@ class MockChildModel(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "mock_child_items"
 
     name: Mapped[str] = mapped_column(String(100))
-    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(nullable=True)
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
 
 
 class MockChildRepository(BaseRepository[MockChildModel, BaseModel, BaseModel, BaseModel]):
@@ -206,6 +205,14 @@ class TestNestedContextHooks:
         with pytest.raises(NotFoundException):
             async with service._context_create(mock_async_session, MagicMock(), nested_context):
                 pass
+
+    async def test_context_create_multi_checks_parent_exists_once(self, service, mock_async_session, nested_context):
+        service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
+
+        async with service._context_create_multi(mock_async_session, [MagicMock(), MagicMock()], nested_context):
+            pass
+
+        service.parent_repo.get_by_pk.assert_called_once()
 
     async def test_context_get_multi_checks_parent_exists(self, service, mock_async_session, nested_context):
         service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())

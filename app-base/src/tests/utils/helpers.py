@@ -3,9 +3,6 @@ Common test helper functions.
 """
 
 import uuid
-from typing import TypeVar
-
-T = TypeVar("T")
 
 
 def random_email() -> str:

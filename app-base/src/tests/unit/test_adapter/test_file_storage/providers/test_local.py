@@ -49,7 +49,7 @@ async def test_from_config_no_config_raises_error():
     mock_settings = MagicMock(spec=FileStorageSettings)
     mock_settings.provider = "local"
     mock_settings.config = None  # Set config to None for this test case
-    with pytest.raises(ValueError, match="Local storage settings are not configured."):
+    with pytest.raises(ValueError, match=r"Local storage settings are not configured."):
         await LocalStorageProvider.from_config(mock_settings)
 
 
@@ -61,7 +61,7 @@ def test_get_full_path_valid(local_storage_provider, test_root_path):
 
 def test_get_full_path_outside_root_raises_error(local_storage_provider, tmp_path):
     file_path = "../../evil.txt"
-    with pytest.raises(ValueError, match="File path is outside the allowed storage directory."):
+    with pytest.raises(ValueError, match=r"File path is outside the allowed storage directory."):
         local_storage_provider._get_full_path(file_path)
 
 
@@ -75,7 +75,7 @@ async def test_download_file_success(local_storage_provider, test_root_path):
 
 
 async def test_download_file_not_found(local_storage_provider):
-    with pytest.raises(FileNotFoundError, match="File not found at non_existent.txt"):
+    with pytest.raises(FileNotFoundError, match=r"File not found at non_existent.txt"):
         await local_storage_provider.download_file("non_existent.txt")
 
 
@@ -90,7 +90,7 @@ async def test_download_file_stream_success(local_storage_provider, test_root_pa
 
 
 async def test_download_file_stream_not_found(local_storage_provider):
-    with pytest.raises(FileNotFoundError, match="File not found at non_existent_stream.txt"):
+    with pytest.raises(FileNotFoundError, match=r"File not found at non_existent_stream.txt"):
         async for _ in local_storage_provider.download_file_stream("non_existent_stream.txt"):
             pass
 
@@ -167,7 +167,7 @@ async def test_get_file_metadata_success(local_storage_provider, test_root_path)
 
 
 async def test_get_file_metadata_not_found(local_storage_provider):
-    with pytest.raises(FileNotFoundError, match="File not found at non_existent_meta.txt"):
+    with pytest.raises(FileNotFoundError, match=r"File not found at non_existent_meta.txt"):
         await local_storage_provider.get_file_metadata("non_existent_meta.txt")
 
 

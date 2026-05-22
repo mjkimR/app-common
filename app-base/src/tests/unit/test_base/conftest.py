@@ -5,7 +5,7 @@ Provides mock models, repositories, and services for testing.
 
 import datetime
 import uuid
-from typing import Optional
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -26,7 +26,7 @@ class MockModel(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "mock_items"
 
     name: Mapped[str] = mapped_column(String(100))
-    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class MockSoftDeleteModel(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
@@ -46,14 +46,14 @@ class MockCreateSchema(BaseModel):
     """Schema for creating mock items."""
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class MockUpdateSchema(BaseModel):
     """Schema for updating mock items."""
 
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
 
 # =============================================================================
@@ -87,8 +87,8 @@ def mock_model():
         id=uuid.uuid4(),
         name="Test Item",
         description="Test Description",
-        created_at=datetime.datetime.now(datetime.timezone.utc),
-        updated_at=datetime.datetime.now(datetime.timezone.utc),
+        created_at=datetime.datetime.now(UTC),
+        updated_at=datetime.datetime.now(UTC),
     )
     return model
 

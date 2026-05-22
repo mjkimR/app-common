@@ -11,9 +11,8 @@ from tests.fixtures.db import (
 )
 
 __all__ = [
-    # Database fixtures
-    "db_url",
-    "setup_database",
     "async_engine",
+    "db_url",
     "session_fixture",
+    "setup_database",
 ]

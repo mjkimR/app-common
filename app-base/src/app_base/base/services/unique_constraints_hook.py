@@ -1,6 +1,7 @@
 import abc
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Generic, Tuple, Union
+from typing import Any
 
 from pydantic import BaseModel
 from sqlalchemy import and_
@@ -10,17 +11,14 @@ from sqlalchemy.sql.expression import ColumnElement
 from app_base.base.exceptions.basic import BadRequestException
 from app_base.base.repos.base import PrimaryKeyType
 from app_base.base.services.base import (
+    BaseContextKwargs,
     BaseCreateHooks,
     BaseUpdateHooks,
-    CreateSchemaType,
-    PatchSchemaType,
-    PutSchemaType,
-    TContextKwargs,
 )
 
 
-class UniqueConstraintHooksMixin(
-    BaseCreateHooks[TContextKwargs], BaseUpdateHooks[TContextKwargs], Generic[TContextKwargs], metaclass=abc.ABCMeta
+class UniqueConstraintHooksMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    BaseCreateHooks[ModelType, TContextKwargs], BaseUpdateHooks[ModelType, TContextKwargs], metaclass=abc.ABCMeta
 ):
     """
     Async Generator-based Unique Constraint Check Hook.
@@ -42,9 +40,9 @@ class UniqueConstraintHooksMixin(
     @abc.abstractmethod
     async def _unique_constraints(
         self,
-        obj_data: Union[CreateSchemaType, PutSchemaType, PatchSchemaType],
+        obj_data: BaseModel,
         context: TContextKwargs,
-    ) -> AsyncIterator[Tuple[ColumnElement[bool], str]]:
+    ) -> AsyncIterator[tuple[ColumnElement[bool], str]]:
         """
         [Override Required] Yields SQLAlchemy conditions to check for uniqueness.
 
@@ -76,7 +74,7 @@ class UniqueConstraintHooksMixin(
     async def _process_constraints(
         self,
         session: AsyncSession,
-        constraints: AsyncIterator[Tuple[ColumnElement[bool], str]],
+        constraints: AsyncIterator[tuple[ColumnElement[bool], str]],
         exclude_id: Any = None,
     ) -> None:
         """Iterates over the constraints generator and performs checks."""

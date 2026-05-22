@@ -1,17 +1,16 @@
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import Any
 
 from pydantic import BaseModel, computed_field
 
-PageItem = TypeVar("PageItem", bound=Any)
 
-
-class PaginatedList(BaseModel, Generic[PageItem]):
+class PaginatedList[PageItem: Any](BaseModel):
     """Offset Pagination Items"""
 
     items: Sequence[PageItem]
-    total_count: Optional[int] = None
+    total_count: int | None = None
     offset: int = 0
-    limit: Optional[int] = None
+    limit: int | None = None
 
     @computed_field
     @property

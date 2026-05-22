@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Union
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID, uuid4
 
 import jwt
@@ -51,7 +51,7 @@ class UserService(
     def jwt_algorithm(self) -> str:
         return self.settings.JWT_ALGORITHM
 
-    async def validate_email_exists(self, session: AsyncSession, email: Union[str, EmailStr]) -> None:
+    async def validate_email_exists(self, session: AsyncSession, email: str | EmailStr) -> None:
         """Validate if an email exists."""
         if await self.repo.exists(session, where=User.email == str(email)):
             raise UserAlreadyExistsException()
@@ -88,16 +88,20 @@ class UserService(
 
     async def authenticate(self, session: AsyncSession, email: str, password: str) -> User | None:
         user = await self.repo.get_by_email(session, email=email)
-        if user is not None and self.is_valid_password(password, user.hashed_password):
-            if user is not None:
-                if self.is_valid_password(password, user.hashed_password):
-                    return user
-            else:
-                self.context.dummy_verify()
+        if user is None:
+            self.context.dummy_verify()
+            return None
+
+        if user.hashed_password is None:
+            self.context.dummy_verify()
+            return None
+
+        if self.is_valid_password(password, user.hashed_password):
+            return user
         return None
 
     def create_access_token(self, user: User) -> str:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         expire = now + timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
         payload = {

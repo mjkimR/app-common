@@ -60,5 +60,5 @@ async def test_create_client_s3_provider(mock_s3_settings):
 
 
 async def test_create_client_unsupported_provider(mock_unsupported_settings):
-    with pytest.raises(ValueError, match="Unsupported file storage client: unsupported"):
+    with pytest.raises(ValueError, match=r"Unsupported file storage client: unsupported"):
         await FileStorageFactory.create_client(mock_unsupported_settings)

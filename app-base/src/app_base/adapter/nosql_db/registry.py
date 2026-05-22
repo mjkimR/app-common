@@ -1,13 +1,9 @@
-from typing import TypeVar
-
 from app_base.adapter.nosql_db.interface import NoSQLDBProvider
-
-T = TypeVar("T", bound=NoSQLDBProvider)
 
 _NOSQL_DB_REGISTRY: dict[str, type[NoSQLDBProvider]] = {}
 
 
-def register_nosql_db(kind: str):
+def register_nosql_db[T: NoSQLDBProvider](kind: str):
     def decorator(cls: type[T]) -> type[T]:
         _NOSQL_DB_REGISTRY[kind] = cls
         return cls

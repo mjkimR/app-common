@@ -1,19 +1,19 @@
 from abc import abstractmethod
 from contextlib import asynccontextmanager
-from typing import Any, Generic
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_base.base.repos.base import PrimaryKeyType
 from app_base.base.schemas.delete_resp import DeleteResponse
-from app_base.base.services.base import BaseDeleteHooks, TContextKwargs
+from app_base.base.services.base import BaseContextKwargs, BaseDeleteHooks
 
 
-class DetailDeleteResponseHookMixin(BaseDeleteHooks[TContextKwargs], Generic[TContextKwargs]):
+class DetailDeleteResponseHookMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseDeleteHooks[TContextKwargs]):
     _delete_represent_text: str | None = None
 
     @abstractmethod
-    def _parse_delete_represent_text(self, obj: Any) -> str:
+    def _parse_delete_represent_text(self, obj: ModelType) -> str:
         pass
 
     def _set_delete_represent_text(self, text: str) -> None:

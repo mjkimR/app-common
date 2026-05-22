@@ -1,10 +1,12 @@
 """Unit app_tests for app_base.base.services.base module."""
 
 import uuid
+from contextlib import asynccontextmanager
 from typing import TypedDict
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from app_base.base.repos.query_options import ListQueryOptions
 from app_base.base.schemas.paginated import PaginatedList
 from app_base.base.services.base import (
     BaseContextKwargs,
@@ -75,7 +77,7 @@ class TestEnsureContext:
     def test_ensure_context_with_invalid_type_raises_error(self):
         """Should raise ValueError when context doesn't match TypedDict."""
         # Missing required field user_id
-        with pytest.raises(ValueError, match="Invalid context provided"):
+        with pytest.raises(ValueError, match=r"Invalid context provided"):
             BaseServiceMixinInterface._ensure_context({}, CustomContextKwargs)
 
     def test_ensure_context_with_optional_fields(self):
@@ -156,6 +158,138 @@ class TestBaseCreateServiceMixin:
         # Verify extra fields were passed to repo.create
         call_kwargs = service.repo.create.call_args
         assert "extra_field" in call_kwargs.kwargs
+
+    async def test_create_multi_runs_single_hook_fallback_when_only_single_hook_overridden(
+        self, mock_async_session, mock_create_schema, mock_model
+    ):
+        """Should preserve per-item custom create hooks when no bulk hook exists."""
+
+        class TestService(BaseCreateServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_data = []
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            @asynccontextmanager
+            async def _context_create(self, session, obj_data, context):
+                self.seen_data.append(obj_data)
+                yield
+
+        service = TestService()
+        service.repo.create_multi.return_value = [mock_model]
+
+        await service.create_multi(mock_async_session, [mock_create_schema])
+
+        assert service.seen_data == [mock_create_schema]
+
+    async def test_create_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
+        self, mock_async_session, mock_create_schema, mock_model
+    ):
+        """Should let custom bulk hooks avoid the base per-item fallback."""
+
+        class TestService(BaseCreateServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_data = []
+                self.bulk_called = False
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            @asynccontextmanager
+            async def _context_create(self, session, obj_data, context):
+                self.seen_data.append(obj_data)
+                yield
+
+            @asynccontextmanager
+            async def _context_create_multi(self, session, obj_data_list, context):
+                self.bulk_called = True
+                async with super()._context_create_multi(session, obj_data_list, context):
+                    yield
+
+        service = TestService()
+        service.repo.create_multi.return_value = [mock_model]
+
+        await service.create_multi(mock_async_session, [mock_create_schema])
+
+        assert service.bulk_called is True
+        assert service.seen_data == []
+
+    async def test_post_create_multi_runs_single_hook_fallback_when_only_single_hook_overridden(
+        self, mock_async_session, mock_model
+    ):
+        """Should preserve per-item custom post-create hooks when no bulk hook exists."""
+
+        class TestService(BaseCreateServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_objs = []
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            async def _post_create(self, session, obj, context):
+                self.seen_objs.append(obj)
+                return obj
+
+        service = TestService()
+
+        result = await service._post_create_multi(mock_async_session, [mock_model], {})
+
+        assert result == [mock_model]
+        assert service.seen_objs == [mock_model]
+
+    async def test_post_create_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
+        self, mock_async_session, mock_model
+    ):
+        """Should let custom bulk post hooks avoid the base per-item fallback."""
+
+        class TestService(BaseCreateServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_objs = []
+                self.bulk_called = False
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            async def _post_create(self, session, obj, context):
+                self.seen_objs.append(obj)
+                return obj
+
+            async def _post_create_multi(self, session, objs, context):
+                self.bulk_called = True
+                return await super()._post_create_multi(session, objs, context)
+
+        service = TestService()
+
+        result = await service._post_create_multi(mock_async_session, [mock_model], {})
+
+        assert result == [mock_model]
+        assert service.bulk_called is True
+        assert service.seen_objs == []
 
 
 # =============================================================================
@@ -264,6 +398,164 @@ class TestBaseDeleteServiceMixin:
 
         assert result.success is False
 
+    async def test_delete_multi_runs_single_hook_fallback_when_only_single_hook_overridden(
+        self, mock_async_session, sample_uuid
+    ):
+        """Should preserve per-item custom delete hooks when no bulk hook exists."""
+
+        class TestService(BaseDeleteServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_pks = []
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            @asynccontextmanager
+            async def _context_delete(self, session, obj_pk, context):
+                self.seen_pks.append(obj_pk)
+                yield
+
+        service = TestService()
+        service.repo.delete_by_pk_multi.return_value = 1
+
+        await service.delete_multi(mock_async_session, [sample_uuid])
+
+        assert service.seen_pks == [sample_uuid]
+
+    async def test_delete_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
+        self, mock_async_session, sample_uuid
+    ):
+        """Should let custom bulk hooks avoid the base per-item fallback."""
+
+        class TestService(BaseDeleteServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_pks = []
+                self.bulk_called = False
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            @asynccontextmanager
+            async def _context_delete(self, session, obj_pk, context):
+                self.seen_pks.append(obj_pk)
+                yield
+
+            @asynccontextmanager
+            async def _context_delete_multi(self, session, obj_pks, context):
+                self.bulk_called = True
+                async with super()._context_delete_multi(session, obj_pks, context):
+                    yield
+
+        service = TestService()
+        service.repo.delete_by_pk_multi.return_value = 1
+
+        await service.delete_multi(mock_async_session, [sample_uuid])
+
+        assert service.bulk_called is True
+        assert service.seen_pks == []
+
+    async def test_post_delete_multi_runs_single_hook_fallback_when_all_requested_items_deleted(
+        self, mock_async_session, sample_uuid
+    ):
+        """Should preserve per-item custom post-delete hooks when all PKs were deleted."""
+
+        class TestService(BaseDeleteServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_pks = []
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            async def _post_delete(self, session, obj_pk, result, context):
+                self.seen_pks.append(obj_pk)
+                return result
+
+        service = TestService()
+        result = await service._post_delete_multi(mock_async_session, [sample_uuid], MagicMock(deleted_count=1), {})
+
+        assert result.deleted_count == 1
+        assert service.seen_pks == [sample_uuid]
+
+    async def test_post_delete_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
+        self, mock_async_session, sample_uuid
+    ):
+        """Should let custom bulk post hooks avoid the base per-item fallback."""
+
+        class TestService(BaseDeleteServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_pks = []
+                self.bulk_called = False
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            async def _post_delete(self, session, obj_pk, result, context):
+                self.seen_pks.append(obj_pk)
+                return result
+
+            async def _post_delete_multi(self, session, obj_pks, result, context):
+                self.bulk_called = True
+                return await super()._post_delete_multi(session, obj_pks, result, context)
+
+        service = TestService()
+        result = await service._post_delete_multi(mock_async_session, [sample_uuid], MagicMock(deleted_count=1), {})
+
+        assert result.deleted_count == 1
+        assert service.bulk_called is True
+        assert service.seen_pks == []
+
+    async def test_post_delete_multi_skips_single_hook_fallback_when_delete_result_is_partial(
+        self, mock_async_session, sample_uuid
+    ):
+        """Should not fabricate per-item post-delete success for partial bulk results."""
+
+        class TestService(BaseDeleteServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+                self.seen_pks = []
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+            async def _post_delete(self, session, obj_pk, result, context):
+                self.seen_pks.append(obj_pk)
+                return result
+
+        service = TestService()
+        result = await service._post_delete_multi(mock_async_session, [sample_uuid], MagicMock(deleted_count=0), {})
+
+        assert result.deleted_count == 0
+        assert service.seen_pks == []
+
 
 # =============================================================================
 # Tests for BaseGetServiceMixin
@@ -366,7 +658,10 @@ class TestBaseGetMultiServiceMixin:
         paginated = PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
         get_multi_service.repo.get_multi.return_value = paginated
 
-        result = await get_multi_service.get_multi(mock_async_session, offset=0, limit=10)
+        result = await get_multi_service.get_multi(
+            mock_async_session,
+            query_options=ListQueryOptions(offset=0, limit=10),
+        )
 
         assert result == paginated
         get_multi_service.repo.get_multi.assert_called_once()
@@ -377,10 +672,13 @@ class TestBaseGetMultiServiceMixin:
         get_multi_service.repo.get_multi.return_value = paginated
 
         where_conditions = [MagicMock()]
-        await get_multi_service.get_multi(mock_async_session, where=where_conditions)
+        await get_multi_service.get_multi(
+            mock_async_session,
+            query_options=ListQueryOptions(where=where_conditions),
+        )
 
         call_kwargs = get_multi_service.repo.get_multi.call_args.kwargs
-        assert "where" in call_kwargs
+        assert call_kwargs["query_options"].where == where_conditions
 
     async def test_get_multi_merges_extra_filters(self, mock_async_session, mock_model):
         """Should merge extra filters from _prepare_get_multi_filters hook."""
@@ -406,7 +704,7 @@ class TestBaseGetMultiServiceMixin:
         await service.get_multi(mock_async_session)
 
         call_kwargs = service.repo.get_multi.call_args.kwargs
-        assert len(call_kwargs["where"]) == 1
+        assert len(call_kwargs["query_options"].where) == 1
 
     async def test_get_multi_merges_where_list_with_extra_filters(self, mock_async_session, mock_model):
         """Should merge where list with extra filters."""
@@ -430,8 +728,11 @@ class TestBaseGetMultiServiceMixin:
 
         service = TestService()
         where_conditions = [MagicMock(name="user_filter")]
-        await service.get_multi(mock_async_session, where=where_conditions)
+        await service.get_multi(
+            mock_async_session,
+            query_options=ListQueryOptions(where=where_conditions),
+        )
 
         call_kwargs = service.repo.get_multi.call_args.kwargs
         # Should have both original and extra filters
-        assert len(call_kwargs["where"]) == 2
+        assert len(call_kwargs["query_options"].where) == 2

@@ -9,7 +9,7 @@ class UserCreate(BaseModel):
     firstname: str = Field(..., description="The user's first name.")
     lastname: str = Field(..., description="The user's last name.")
     email: EmailStr = Field(..., description="The user's email address.")
-    password: SecretStr = Field(..., description="The user's password.")
+    password: SecretStr = Field(..., min_length=8, description="The user's password.")
     profile_image_url: str | None = Field(default=None, description="URL of the user's profile image.")
     phone_number: str | None = Field(default=None, description="The user's phone number.")
     locale: str | None = Field(default=None, description="The user's preferred locale.")

@@ -1,12 +1,10 @@
-from typing import Optional
-
 import httpx
 
 from app_base.config import get_http_client_settings
 from app_base.core.log import logger
 
-_http_client: Optional[httpx.AsyncClient] = None
-_http_sync_client: Optional[httpx.Client] = None
+_http_client: httpx.AsyncClient | None = None
+_http_sync_client: httpx.Client | None = None
 
 
 def set_http_client(client: httpx.AsyncClient) -> None:

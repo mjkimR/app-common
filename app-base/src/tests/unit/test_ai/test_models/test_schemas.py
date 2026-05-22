@@ -189,19 +189,19 @@ def test_ai_model_group_item_from_data():
 
     # Test cases for validation errors
     # Missing name
-    with pytest.raises(ValueError, match="Model group is missing a 'name' field."):
+    with pytest.raises(ValueError, match=r"Model group is missing a 'name' field."):
         AIModelGroupItem.from_data({"type": AIModelType.LLM, "members": ["llm-1"]}, catalogs)
 
     # Missing type
-    with pytest.raises(ValueError, match="Model group 'test-group' is missing a 'type' field."):
+    with pytest.raises(ValueError, match=r"Model group 'test-group' is missing a 'type' field."):
         AIModelGroupItem.from_data({"name": "test-group", "members": ["llm-1"]}, catalogs)
 
     # Empty members
-    with pytest.raises(ValueError, match="Model group 'test-group' must have at least one member."):
+    with pytest.raises(ValueError, match=r"Model group 'test-group' must have at least one member."):
         AIModelGroupItem.from_data({"name": "test-group", "type": AIModelType.LLM, "members": []}, catalogs)
 
     # Unknown member
-    with pytest.raises(ValueError, match="Model group 'test-group' has unknown member 'non-existent'."):
+    with pytest.raises(ValueError, match=r"Model group 'test-group' has unknown member 'non-existent'."):
         AIModelGroupItem.from_data(
             {"name": "test-group", "type": AIModelType.LLM, "members": ["non-existent"]}, catalogs
         )
@@ -209,12 +209,12 @@ def test_ai_model_group_item_from_data():
     # Type mismatch for member
     with pytest.raises(
         ValueError,
-        match="does not match group type",
+        match=r"does not match group type",
     ):
         AIModelGroupItem.from_data({"name": "test-group", "type": AIModelType.LLM, "members": ["embed-1"]}, catalogs)
 
     # Default not in members
-    with pytest.raises(ValueError, match="not in its members list."):
+    with pytest.raises(ValueError, match=r"not in its members list."):
         AIModelGroupItem.from_data(
             {"name": "test-group", "type": AIModelType.LLM, "members": ["llm-1"], "default": "llm-3"}, catalogs
         )

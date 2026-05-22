@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import status
 
 
@@ -12,11 +10,11 @@ class CustomException(Exception):
 
     def __init__(
         self,
-        message: Optional[str] = None,
-        log_message: Optional[str] = None,
-        status_code: Optional[int] = None,
-        title: Optional[str] = None,
-        trace: Optional[bool] = None,
+        message: str | None = None,
+        log_message: str | None = None,
+        status_code: int | None = None,
+        title: str | None = None,
+        trace: bool | None = None,
     ):
         if message is not None:
             self.message = message

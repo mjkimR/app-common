@@ -1,6 +1,7 @@
 import asyncio
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import Any
 
 import aiofiles
 import aiofiles.os

@@ -1,11 +1,9 @@
-from typing import Optional
-
 from app_base.adapter.file_storage.factory import FileStorageFactory
 from app_base.adapter.file_storage.interface import FileStorageClient
 from app_base.config import FileStorageSettings
 from app_base.core.log import logger
 
-_file_storage_client: Optional[FileStorageClient] = None
+_file_storage_client: FileStorageClient | None = None
 
 
 def set_file_storage_client(client: FileStorageClient) -> None:

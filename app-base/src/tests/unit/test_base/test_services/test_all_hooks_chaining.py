@@ -12,9 +12,10 @@ To add a new Hook, simply append a HookCase entry to the HOOK_CASES list.
 """
 
 import uuid
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -50,7 +51,7 @@ from tests.unit.test_base.conftest import MockModel, MockRepository
 class MockChildModel(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "all_hooks_chain_mock_child"
     name: Mapped[str] = mapped_column(String(100))
-    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(nullable=True)
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
 
 
 class MockChildRepository(BaseRepository[MockChildModel, BaseModel, BaseModel, BaseModel]):
@@ -213,7 +214,7 @@ class HookCase:
 
     # Setup callables: (repo, parent_repo, pk) -> None
     ok_setup: Callable[..., None]
-    fail_setup: Optional[Callable[..., None]] = None  # None = no body-blocking scenario
+    fail_setup: Callable[..., None] | None = None  # None = no body-blocking scenario
     fail_exception: type = NotFoundException
 
     # Set True when a hook intentionally skips super() (e.g. bulk optimisation)
@@ -287,11 +288,10 @@ def _nested_ownership_fail(repo, parent_repo, pk):
 
 
 def _nested_multi_ok(repo, parent_repo, pk):
-    """delete_multi: individual ownership (get_by_pk) + bulk check (get_all) both pass."""
+    """delete_multi: bulk ownership check passes."""
     obj = MagicMock()
     obj.id = pk
     obj.parent_id = NESTED_PARENT_ID
-    repo.get_by_pk = AsyncMock(return_value=obj)
     repo.get_all = AsyncMock(return_value=[obj])
     parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
     parent_repo.normalize_pk_as_str = lambda p: (str(p),)
@@ -299,11 +299,11 @@ def _nested_multi_ok(repo, parent_repo, pk):
 
 
 def _nested_multi_fail(repo, parent_repo, pk):
-    """delete_multi: ownership fails for an individual object."""
+    """delete_multi: bulk ownership check fails."""
     wrong_obj = MagicMock()
     wrong_obj.id = pk
     wrong_obj.parent_id = uuid.uuid4()
-    repo.get_by_pk = AsyncMock(return_value=wrong_obj)
+    repo.get_all = AsyncMock(return_value=[wrong_obj])
     parent_repo.normalize_pk_as_str = lambda p: (str(p),)
     parent_repo.model_repr = MagicMock(return_value="Parent(id=...)")
 
@@ -547,7 +547,7 @@ class TestAllHooksChaining:
         case.ok_setup(mock_repo, mock_parent_repo, sample_uuid)
         service = case.make_service(mock_repo, mock_parent_repo)
 
-        with pytest.raises(RuntimeError, match="body error"):
+        with pytest.raises(RuntimeError, match=r"body error"):
             async with case.call_cm(service, mock_session, sample_uuid, case.context):
                 raise RuntimeError("body error")
 

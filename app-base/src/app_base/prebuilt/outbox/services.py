@@ -1,4 +1,5 @@
 import datetime
+from datetime import UTC
 from typing import Annotated
 from uuid import UUID
 
@@ -42,7 +43,7 @@ class OutboxService:
         """
         update_data = OutboxUpdate(status=status)
         if status == EventStatus.PUBLISHED:
-            update_data.processed_at = datetime.datetime.now(datetime.timezone.utc)
+            update_data.processed_at = datetime.datetime.now(UTC)
 
         if retry_count is not None:
             update_data.retry_count = retry_count

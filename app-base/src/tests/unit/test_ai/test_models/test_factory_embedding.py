@@ -82,7 +82,7 @@ class TestEmbeddingFactory:
         mock_model_item.provider = "unsupported"
         mock_model_item.args = {}
 
-        with pytest.raises(ValueError, match="Unsupported Embedding provider: unsupported"):
+        with pytest.raises(ValueError, match=r"Unsupported Embedding provider: unsupported"):
             embedding_factory.create_model(mock_model_item)
 
     def test_create_model_import_error(self, embedding_factory, mock_model_item, mock_langchain_embedding_imports):
@@ -92,7 +92,7 @@ class TestEmbeddingFactory:
         mock_model_item.provider = "openai"
         mock_model_item.args = {}
 
-        with pytest.raises(ImportError, match="Failed to import dependencies for provider 'openai'"):
+        with pytest.raises(ImportError, match=r"Failed to import dependencies for provider 'openai'"):
             embedding_factory.create_model(mock_model_item)
         mock_langchain_openai.OpenAIEmbeddings.assert_called_once()
 
@@ -129,6 +129,6 @@ class TestEmbeddingFactory:
 
         with pytest.raises(
             RuntimeError,
-            match="Failed to determine embedding dimension for 'test-embedding-model': Failed to create model",
+            match=r"Failed to determine embedding dimension for 'test-embedding-model': Failed to create model",
         ):
             embedding_factory.get_dimension(mock_model_item)

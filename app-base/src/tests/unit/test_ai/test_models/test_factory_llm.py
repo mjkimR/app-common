@@ -79,7 +79,7 @@ class TestLLMFactory:
         mock_model_item.provider = "unsupported"
         mock_model_item.get_mapped_args.return_value = {}
 
-        with pytest.raises(ValueError, match="Unsupported LLM provider: unsupported"):
+        with pytest.raises(ValueError, match=r"Unsupported LLM provider: unsupported"):
             llm_factory.create_model(mock_model_item)
 
     def test_create_model_import_error(self, llm_factory, mock_model_item, mock_langchain_llm_imports):
@@ -91,7 +91,7 @@ class TestLLMFactory:
         mock_model_item.provider = "openai"
         mock_model_item.get_mapped_args.return_value = {}
 
-        with pytest.raises(ImportError, match="Failed to import dependencies for provider 'openai'"):
+        with pytest.raises(ImportError, match=r"Failed to import dependencies for provider 'openai'"):
             llm_factory.create_model(mock_model_item)
 
         mock_langchain_openai.ChatOpenAI.assert_called_once()

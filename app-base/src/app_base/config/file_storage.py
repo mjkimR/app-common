@@ -1,10 +1,9 @@
 import functools
 import os
-from typing import Generic, Literal
+from typing import Literal
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import TypeVar
 
 from app_base.config.util import get_env_file_path
 
@@ -13,7 +12,6 @@ class FileProviderConfigs(BaseSettings):
     pass
 
 
-TFileProviderConfigs = TypeVar("TFileProviderConfigs", bound=FileProviderConfigs)
 FileProviderType = Literal["none", "local", "s3"]
 
 
@@ -46,7 +44,7 @@ class S3FileStorageSettings(FileProviderConfigs):
     model_config = SettingsConfigDict(env_prefix="FS_S3_")
 
 
-class FileStorageSettings(BaseSettings, Generic[TFileProviderConfigs]):
+class FileStorageSettings[TFileProviderConfigs: FileProviderConfigs](BaseSettings):
     """
     Main settings for file storage.
     Reads from environment variables.

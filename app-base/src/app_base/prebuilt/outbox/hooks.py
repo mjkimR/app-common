@@ -6,11 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_base.base.repos.base import PrimaryKeyType
 from app_base.base.services.base import (
+    BaseContextKwargs,
     BaseCreateHooks,
     BaseDeleteHooks,
     BaseUpdateHooks,
-    ModelType,
-    TContextKwargs,
 )
 
 from .repos import OutboxRepository
@@ -23,15 +22,15 @@ class OutboxHookEventTypeDict(TypedDict):
     DELETE: str
 
 
-class BaseOutboxHook(
-    BaseCreateHooks,
-    BaseUpdateHooks,
-    BaseDeleteHooks,
+class BaseOutboxHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    BaseCreateHooks[ModelType, TContextKwargs],
+    BaseUpdateHooks[ModelType, TContextKwargs],
+    BaseDeleteHooks[TContextKwargs],
 ):
     @abstractmethod
     def _get_outbox_payload(
         self,
-        obj: Any,
+        obj: ModelType,
         context: TContextKwargs,
         outbox_identity: OutboxIdentityDict,
     ) -> dict[str, Any]:
@@ -55,7 +54,7 @@ class BaseOutboxHook(
     # PK Helpers
     # ============================================================
 
-    def _get_pk_from_obj(self, obj: Any) -> PrimaryKeyType:
+    def _get_pk_from_obj(self, obj: ModelType) -> PrimaryKeyType:
         """Extracts the primary key value(s) from a given model object dynamically."""
         pk_cols = self.repo.primary_keys
         if len(pk_cols) == 1:
@@ -123,10 +122,7 @@ class BaseOutboxHook(
                 "event_type": self._event_type_dict["DELETE"],
             }
 
-            if obj:
-                payload = self._get_outbox_payload(obj, context, outbox_identity)
-            else:
-                payload = None
+            payload = self._get_outbox_payload(obj, context, outbox_identity) if obj else None
 
             yield
 

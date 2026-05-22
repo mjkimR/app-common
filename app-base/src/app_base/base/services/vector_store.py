@@ -1,18 +1,17 @@
 from abc import abstractmethod
-from typing import Generic
+from typing import Any
 
 from langchain_core.vectorstores import VectorStore
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app_base.base.services.base import BaseCreateHooks, BaseDeleteHooks, BaseUpdateHooks, TContextKwargs
+from app_base.base.services.base import BaseContextKwargs, BaseCreateHooks, BaseDeleteHooks, BaseUpdateHooks
 
 
-class VectorStoreHookMixin(
-    BaseCreateHooks[TContextKwargs],
-    BaseUpdateHooks[TContextKwargs],
+class VectorStoreHookMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    BaseCreateHooks[ModelType, TContextKwargs],
+    BaseUpdateHooks[ModelType, TContextKwargs],
     BaseDeleteHooks[TContextKwargs],
-    Generic[TContextKwargs],
 ):
     @property
     @abstractmethod

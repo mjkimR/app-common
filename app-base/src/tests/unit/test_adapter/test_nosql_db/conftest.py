@@ -1,5 +1,6 @@
 import sys
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -49,13 +50,12 @@ class MockNoSQLDBProvider(NoSQLDBProvider):
             match = True
             for field, op, value in filters:
                 doc_val = doc.get(field)
-                if op == "==" and doc_val != value:
-                    match = False
-                elif op == "!=" and doc_val == value:
-                    match = False
-                elif op == ">" and not (doc_val is not None and doc_val > value):
-                    match = False
-                elif op == "<" and not (doc_val is not None and doc_val < value):
+                if (
+                    (op == "==" and doc_val != value)
+                    or (op == "!=" and doc_val == value)
+                    or (op == ">" and not (doc_val is not None and doc_val > value))
+                    or (op == "<" and not (doc_val is not None and doc_val < value))
+                ):
                     match = False
                 if not match:
                     break

@@ -1,5 +1,5 @@
 import uuid
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -11,17 +11,17 @@ class Token(BaseModel):
 
 class TokenPayload(BaseModel):
     # Backward/compat field name used in this project
-    user_id: Optional[uuid.UUID] = None
+    user_id: uuid.UUID | None = None
 
     # Standard JWT-ish fields (kept optional to allow gradual rollout)
-    sub: Optional[str] = None
-    iss: Optional[str] = None
-    aud: Optional[str] = None
-    exp: Optional[int] = None
-    iat: Optional[int] = None
-    nbf: Optional[int] = None
-    jti: Optional[str] = None
-    typ: Optional[str] = Field(default=None, description="Token type, e.g. 'access' or 'refresh'")
+    sub: str | None = None
+    iss: str | None = None
+    aud: str | None = None
+    exp: int | None = None
+    iat: int | None = None
+    nbf: int | None = None
+    jti: str | None = None
+    typ: str | None = Field(default=None, description="Token type, e.g. 'access' or 'refresh'")
 
     @model_validator(mode="before")
     @classmethod

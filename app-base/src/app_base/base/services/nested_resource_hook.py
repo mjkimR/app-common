@@ -1,11 +1,11 @@
 from abc import abstractmethod
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
-from typing import Any, Generic, Required, Sequence, Union
+from typing import Any, Required
 
 from pydantic import BaseModel
 from sqlalchemy import tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing_extensions import TypeVar
 
 from app_base.base.exceptions.basic import NotFoundException
 from app_base.base.repos.base import BaseRepository, PrimaryKeyType
@@ -25,18 +25,12 @@ class NestedResourceContextKwargs(BaseContextKwargs):
     parent_id: Required[PrimaryKeyType]
 
 
-TNestedResourceContextKwargs = TypeVar(
-    "TNestedResourceContextKwargs", bound=NestedResourceContextKwargs, default=NestedResourceContextKwargs
-)
-
-
-class NestedResourceHooksMixin(
-    BaseCreateHooks[TNestedResourceContextKwargs],
-    BaseUpdateHooks[TNestedResourceContextKwargs],
-    BaseGetHooks[TNestedResourceContextKwargs],
-    BaseGetMultiHooks[TNestedResourceContextKwargs],
+class NestedResourceHooksMixin[ModelType: Any, TNestedResourceContextKwargs: NestedResourceContextKwargs](
+    BaseCreateHooks[ModelType, TNestedResourceContextKwargs],
+    BaseUpdateHooks[ModelType, TNestedResourceContextKwargs],
+    BaseGetHooks[ModelType, TNestedResourceContextKwargs],
+    BaseGetMultiHooks[ModelType, TNestedResourceContextKwargs],
     BaseDeleteHooks[TNestedResourceContextKwargs],
-    Generic[TNestedResourceContextKwargs],
 ):
     @property
     @abstractmethod
@@ -45,7 +39,7 @@ class NestedResourceHooksMixin(
         pass
 
     @property
-    def fk_name(self) -> Union[str, Sequence[str]]:
+    def fk_name(self) -> str | Sequence[str]:
         """
         The name of the foreign key field(s) in the child model that references the parent.
         Returns a string for a single foreign key, or a sequence of strings for composite foreign keys.
@@ -56,7 +50,7 @@ class NestedResourceHooksMixin(
     # Helpers
     # ============================================================
 
-    def _get_parent_pk_from_obj(self, obj: Any) -> tuple[str, ...]:
+    def _get_parent_pk_from_obj(self, obj: ModelType) -> tuple[str, ...]:
         """
         Extracts the parent's PK value(s) from the child object and
         returns them as a normalized string tuple for safe comparison.

@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, ClassVar
 
 from fastapi.params import Depends
 
@@ -8,7 +8,7 @@ from app_base.config import FileStorageSettings, get_file_storage_settings
 
 
 class FileStorageFactory:
-    _providers = {
+    _providers: ClassVar = {
         "local": LocalStorageProvider,
         "s3": S3StorageProvider,
     }

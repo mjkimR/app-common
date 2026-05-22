@@ -1,10 +1,9 @@
 import functools
 import os
-from typing import Generic, Literal
+from typing import Literal
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import TypeVar
 
 from app_base.config.util import get_env_file_path
 
@@ -13,7 +12,6 @@ class BrokerProviderConfigs(BaseSettings):
     pass
 
 
-TBrokerProviderConfigs = TypeVar("TBrokerProviderConfigs", bound=BrokerProviderConfigs)
 BrokerProviderType = Literal["none", "in_memory", "rabbitmq", "redis"]
 
 
@@ -67,7 +65,7 @@ class RedisBrokerSettings(BrokerProviderConfigs):
         return f"redis://{auth}{self.url}:{self.port}"
 
 
-class EventBrokerSettings(BaseSettings, Generic[TBrokerProviderConfigs]):
+class EventBrokerSettings[TBrokerProviderConfigs: BrokerProviderConfigs](BaseSettings):
     """
     Main settings for event broker.
     Reads from environment variables.

@@ -1,19 +1,21 @@
 import abc
-from typing import Any, Optional
+from typing import Any
 
 from app_base.adapter.nosql_db.hooks.base import (
+    BaseNoSQLContextKwargs,
     BaseNoSQLCreateHooks,
     BaseNoSQLDeleteHooks,
     BaseNoSQLUpdateHooks,
-    ModelType,
-    TContextKwargs,
 )
 from app_base.adapter.nosql_db.interface import NoSQLDBProvider
 from app_base.base.schemas.delete_resp import DeleteResponse
 
 
-class NoSQLDomainEventHooksMixin(
-    BaseNoSQLCreateHooks, BaseNoSQLUpdateHooks, BaseNoSQLDeleteHooks, metaclass=abc.ABCMeta
+class NoSQLDomainEventHooksMixin[ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](
+    BaseNoSQLCreateHooks[ModelType, TContextKwargs],
+    BaseNoSQLUpdateHooks[ModelType, TContextKwargs],
+    BaseNoSQLDeleteHooks[TContextKwargs],
+    metaclass=abc.ABCMeta,
 ):
     """
     A base hook that publishes domain events after NoSQL CUD (Create, Update, Delete) operations are completed.
@@ -23,7 +25,7 @@ class NoSQLDomainEventHooksMixin(
     async def publish_event(self, topic: str, payload: dict[str, Any]) -> None:
         pass
 
-    def _get_event_payload(self, event_type: str, document_id: str, obj: Optional[ModelType] = None) -> dict[str, Any]:
+    def _get_event_payload(self, event_type: str, document_id: str, obj: ModelType | None = None) -> dict[str, Any]:
         return {
             "resource_id": document_id,
             "resource_type": self.repo.model_name(),

@@ -1,24 +1,16 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from functools import lru_cache
-from typing import Any, Generic, Optional, TypedDict, Union
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
-from typing_extensions import TypeVar
 
 from app_base.adapter.nosql_db.interface import NoSQLDBProvider
-from app_base.adapter.nosql_db.repository import (
-    CreateSchemaType,
-    ModelType,
-    NoSQLRepository,
-    PatchSchemaType,
-    PutSchemaType,
-)
+from app_base.adapter.nosql_db.query_options import NoSQLListQueryOptions
+from app_base.adapter.nosql_db.repository import NoSQLRepository
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
-
-# Backward compatibility alias
-UpdateSchemaType = PutSchemaType
 
 
 class BaseNoSQLContextKwargs(TypedDict):
@@ -27,17 +19,13 @@ class BaseNoSQLContextKwargs(TypedDict):
     pass
 
 
-TNoSQLRepo = TypeVar("TNoSQLRepo", bound=NoSQLRepository)
-TContextKwargs = TypeVar("TContextKwargs", bound=BaseNoSQLContextKwargs, default=BaseNoSQLContextKwargs)
-
-
 class BaseNoSQLHooksInterface:
     """Base NoSQL Hooks Interface."""
 
     repo: NoSQLRepository
 
 
-class BaseNoSQLServiceMixinInterface:
+class BaseNoSQLServiceMixinInterface[TContextKwargs: BaseNoSQLContextKwargs]:
     """Base NoSQL Service class."""
 
     @property
@@ -58,7 +46,7 @@ class BaseNoSQLServiceMixinInterface:
     @classmethod
     def _ensure_context(
         cls,
-        context: Optional[TContextKwargs],
+        context: TContextKwargs | None,
         cast_to: Any = BaseNoSQLContextKwargs,
     ) -> TContextKwargs:
         _context = context if context is not None else {}
@@ -74,7 +62,7 @@ class BaseNoSQLServiceMixinInterface:
 # ============================================================
 
 
-class BaseNoSQLCreateHooks(BaseNoSQLHooksInterface):
+class BaseNoSQLCreateHooks[ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](BaseNoSQLHooksInterface):
     @asynccontextmanager
     async def _context_create(
         self, provider: NoSQLDBProvider, document_id: str, obj_data: BaseModel, context: TContextKwargs
@@ -90,18 +78,22 @@ class BaseNoSQLCreateHooks(BaseNoSQLHooksInterface):
         return obj
 
 
-class BaseNoSQLCreateServiceMixin(
+class BaseNoSQLCreateServiceMixin[
+    TNoSQLRepo: NoSQLRepository,
+    ModelType: Any,
+    CreateSchemaType: BaseModel,
+    TContextKwargs: BaseNoSQLContextKwargs,
+](
     ABC,
-    BaseNoSQLCreateHooks,
-    BaseNoSQLServiceMixinInterface,
-    Generic[TNoSQLRepo, ModelType, CreateSchemaType, TContextKwargs],
+    BaseNoSQLCreateHooks[ModelType, TContextKwargs],
+    BaseNoSQLServiceMixinInterface[TContextKwargs],
 ):
     async def create(
         self,
         provider: NoSQLDBProvider,
         document_id: str,
         obj_data: CreateSchemaType,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType:
         ctx = self._ensure_context(context, self.context_model)
@@ -116,7 +108,7 @@ class BaseNoSQLCreateServiceMixin(
 # ============================================================
 
 
-class BaseNoSQLUpdateHooks(BaseNoSQLHooksInterface):
+class BaseNoSQLUpdateHooks[ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](BaseNoSQLHooksInterface):
     @asynccontextmanager
     async def _context_update(
         self,
@@ -139,18 +131,23 @@ class BaseNoSQLUpdateHooks(BaseNoSQLHooksInterface):
         return obj
 
 
-class BaseNoSQLUpdateServiceMixin(
+class BaseNoSQLUpdateServiceMixin[
+    TNoSQLRepo: NoSQLRepository,
+    ModelType: Any,
+    PutSchema: BaseModel,
+    PatchSchema: BaseModel,
+    TContextKwargs: BaseNoSQLContextKwargs,
+](
     ABC,
-    BaseNoSQLUpdateHooks,
-    BaseNoSQLServiceMixinInterface,
-    Generic[TNoSQLRepo, ModelType, PutSchemaType, PatchSchemaType, TContextKwargs],
+    BaseNoSQLUpdateHooks[ModelType, TContextKwargs],
+    BaseNoSQLServiceMixinInterface[TContextKwargs],
 ):
     async def put(
         self,
         provider: NoSQLDBProvider,
         document_id: str,
-        obj_data: PutSchemaType,
-        context: Optional[TContextKwargs] = None,
+        obj_data: PutSchema,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType | None:
         """Full update (PUT) of a document."""
@@ -162,8 +159,8 @@ class BaseNoSQLUpdateServiceMixin(
         self,
         provider: NoSQLDBProvider,
         document_id: str,
-        obj_data: PatchSchemaType,
-        context: Optional[TContextKwargs] = None,
+        obj_data: PatchSchema,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType | None:
         """Partial update (PATCH) of a document."""
@@ -175,9 +172,9 @@ class BaseNoSQLUpdateServiceMixin(
         self,
         provider: NoSQLDBProvider,
         document_id: str,
-        obj_data: Union[PutSchemaType, PatchSchemaType],
+        obj_data: PutSchema | PatchSchema,
         partial: bool,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
         **update_fields: Any,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
@@ -195,7 +192,7 @@ class BaseNoSQLUpdateServiceMixin(
 # ============================================================
 
 
-class BaseNoSQLDeleteHooks(BaseNoSQLHooksInterface):
+class BaseNoSQLDeleteHooks[TContextKwargs: BaseNoSQLContextKwargs](BaseNoSQLHooksInterface):
     @asynccontextmanager
     async def _context_delete(self, provider: NoSQLDBProvider, document_id: str, context: TContextKwargs):
         yield
@@ -210,17 +207,16 @@ class BaseNoSQLDeleteHooks(BaseNoSQLHooksInterface):
         return result
 
 
-class BaseNoSQLDeleteServiceMixin(
+class BaseNoSQLDeleteServiceMixin[TNoSQLRepo: NoSQLRepository, ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](
     ABC,
-    BaseNoSQLDeleteHooks,
-    BaseNoSQLServiceMixinInterface,
-    Generic[TNoSQLRepo, ModelType, TContextKwargs],
+    BaseNoSQLDeleteHooks[TContextKwargs],
+    BaseNoSQLServiceMixinInterface[TContextKwargs],
 ):
     async def delete(
         self,
         provider: NoSQLDBProvider,
         document_id: str,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
     ) -> DeleteResponse:
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_delete(provider, document_id, context=ctx):
@@ -235,7 +231,7 @@ class BaseNoSQLDeleteServiceMixin(
 # ============================================================
 
 
-class BaseNoSQLGetHooks(BaseNoSQLHooksInterface):
+class BaseNoSQLGetHooks[ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](BaseNoSQLHooksInterface):
     @asynccontextmanager
     async def _context_get(self, provider: NoSQLDBProvider, document_id: str, context: TContextKwargs):
         yield
@@ -246,17 +242,16 @@ class BaseNoSQLGetHooks(BaseNoSQLHooksInterface):
         return obj
 
 
-class BaseNoSQLGetServiceMixin(
+class BaseNoSQLGetServiceMixin[TNoSQLRepo: NoSQLRepository, ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](
     ABC,
-    BaseNoSQLGetHooks,
-    BaseNoSQLServiceMixinInterface,
-    Generic[TNoSQLRepo, ModelType, TContextKwargs],
+    BaseNoSQLGetHooks[ModelType, TContextKwargs],
+    BaseNoSQLServiceMixinInterface[TContextKwargs],
 ):
     async def get(
         self,
         provider: NoSQLDBProvider,
         document_id: str,
-        context: Optional[TContextKwargs] = None,
+        context: TContextKwargs | None = None,
     ) -> ModelType | None:
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_get(provider, document_id, context=ctx):
@@ -269,7 +264,7 @@ class BaseNoSQLGetServiceMixin(
 # ============================================================
 
 
-class BaseNoSQLGetMultiHooks(BaseNoSQLHooksInterface):
+class BaseNoSQLGetMultiHooks[ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](BaseNoSQLHooksInterface):
     @asynccontextmanager
     async def _context_get_multi(self, provider: NoSQLDBProvider, context: TContextKwargs):
         yield
@@ -286,23 +281,25 @@ class BaseNoSQLGetMultiHooks(BaseNoSQLHooksInterface):
         return result
 
 
-class BaseNoSQLGetMultiServiceMixin(
+class BaseNoSQLGetMultiServiceMixin[
+    TNoSQLRepo: NoSQLRepository,
+    ModelType: Any,
+    TContextKwargs: BaseNoSQLContextKwargs,
+](
     ABC,
-    BaseNoSQLGetMultiHooks,
-    BaseNoSQLServiceMixinInterface,
-    Generic[TNoSQLRepo, ModelType, TContextKwargs],
+    BaseNoSQLGetMultiHooks[ModelType, TContextKwargs],
+    BaseNoSQLServiceMixinInterface[TContextKwargs],
 ):
     async def get_multi(
         self,
         provider: NoSQLDBProvider,
-        offset: int = 0,
-        limit: int = 100,
-        filters: list[tuple[str, str, Any]] | None = None,
-        context: Optional[TContextKwargs] = None,
+        query_options: NoSQLListQueryOptions | None = None,
+        context: TContextKwargs | None = None,
     ) -> PaginatedList[ModelType]:
+        query_options = query_options or NoSQLListQueryOptions()
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_get_multi(provider, context=ctx):
             extra_filters = self._prepare_get_multi_filters(context=ctx)
-            all_filters = (filters or []) + extra_filters
-            result = await self.repo.get_multi(provider, filters=all_filters, offset=offset, limit=limit)
+            query_options = replace(query_options, filters=[*query_options.filters, *extra_filters])
+            result = await self.repo.get_multi(provider, query_options=query_options)
             return await self._post_get_multi(provider, result, context=ctx)

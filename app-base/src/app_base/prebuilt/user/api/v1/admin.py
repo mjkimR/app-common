@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 
 from app_base.base.deps.params.page import PaginationParam
+from app_base.base.repos.query_options import ListQueryOptions
 from app_base.base.schemas.delete_resp import DeleteResponse
 from app_base.base.schemas.paginated import PaginatedList
 from app_base.prebuilt.user.deps import get_current_user, on_superuser
@@ -45,7 +46,8 @@ async def read_users(
     use_case: Annotated[GetMultiUserUseCase, Depends()],
 ):
     """Get user list."""
-    users = await use_case.execute(**pagination)
+    query_options = ListQueryOptions(offset=pagination.offset, limit=pagination.limit)
+    users = await use_case.execute(query_options=query_options)
     return users
 
 

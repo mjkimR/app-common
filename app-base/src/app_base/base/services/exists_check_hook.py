@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
-from typing import Generic, Sequence
+from typing import Any
 
 from pydantic import BaseModel
 from sqlalchemy import tuple_
@@ -7,10 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_base.base.exceptions.basic import NotFoundException
 from app_base.base.repos.base import PrimaryKeyType
-from app_base.base.services.base import BaseDeleteHooks, BaseUpdateHooks, TContextKwargs
+from app_base.base.services.base import BaseContextKwargs, BaseDeleteHooks, BaseUpdateHooks
 
 
-class ExistsCheckHooksMixin(BaseUpdateHooks[TContextKwargs], BaseDeleteHooks[TContextKwargs], Generic[TContextKwargs]):
+class ExistsCheckHooksMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    BaseUpdateHooks[ModelType, TContextKwargs], BaseDeleteHooks[TContextKwargs]
+):
     @asynccontextmanager
     async def _context_update(
         self,

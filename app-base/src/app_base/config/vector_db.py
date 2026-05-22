@@ -1,10 +1,9 @@
 import functools
 import os
-from typing import Generic, Literal
+from typing import Literal
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import TypeVar
 
 from app_base.config.util import get_env_file_path
 
@@ -13,9 +12,6 @@ VectorDBProviderType = Literal["none", "qdrant", "milvus"]
 
 class VectorDBProviderConfigs(BaseSettings):
     pass
-
-
-TVectorDBProviderConfigs = TypeVar("TVectorDBProviderConfigs", bound=VectorDBProviderConfigs)
 
 
 class NoneVectorDBSettings(VectorDBProviderConfigs):
@@ -34,7 +30,7 @@ class MilvusSettings(VectorDBProviderConfigs):
     model_config = SettingsConfigDict(env_prefix="VECTOR_DB_MILVUS_")
 
 
-class VectorDBSettings(BaseSettings, Generic[TVectorDBProviderConfigs]):
+class VectorDBSettings[TVectorDBProviderConfigs: VectorDBProviderConfigs](BaseSettings):
     provider: VectorDBProviderType = Field(
         default="qdrant",
         alias="VECTOR_DB_PROVIDER",

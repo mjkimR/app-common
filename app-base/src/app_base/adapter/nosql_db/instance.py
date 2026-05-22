@@ -1,11 +1,9 @@
-from typing import Optional
-
 from app_base.adapter.nosql_db.interface import NoSQLDBProvider
 from app_base.adapter.nosql_db.registry import get_provider_cls
 from app_base.config.nosql_db import NoSQLDBSettings
 from app_base.core.log import logger
 
-_nosql_db_provider: Optional[NoSQLDBProvider] = None
+_nosql_db_provider: NoSQLDBProvider | None = None
 
 
 def set_nosql_db_provider(provider: NoSQLDBProvider) -> None:

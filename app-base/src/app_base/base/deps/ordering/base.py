@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from sqlalchemy.sql import ColumnElement
 
@@ -9,7 +9,7 @@ OrderByLogicFunc = Callable[[bool], ColumnElement]
 class OrderByCriteria:
     """Container for individual ordering logic."""
 
-    def __init__(self, alias: str, func: OrderByLogicFunc, description: Optional[str] = None):
+    def __init__(self, alias: str, func: OrderByLogicFunc, description: str | None = None):
         self.alias = alias
         self.func = func
         self.description = description
@@ -22,7 +22,7 @@ class OrderByCriteria:
 
 
 def order_by_for(
-    alias: Optional[str] = None, description: Optional[str] = None
+    alias: str | None = None, description: str | None = None
 ) -> Callable[[OrderByLogicFunc], OrderByCriteria]:
     """Decorator to create an OrderByCriteria instance from a sorting logic function.
 

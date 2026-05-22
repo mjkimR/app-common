@@ -1,13 +1,16 @@
 from contextlib import asynccontextmanager
+from typing import Any
 
 from pydantic import BaseModel
 
-from app_base.adapter.nosql_db.hooks.base import BaseNoSQLDeleteHooks, BaseNoSQLUpdateHooks, TContextKwargs
+from app_base.adapter.nosql_db.hooks.base import BaseNoSQLContextKwargs, BaseNoSQLDeleteHooks, BaseNoSQLUpdateHooks
 from app_base.adapter.nosql_db.interface import NoSQLDBProvider
 from app_base.base.exceptions.basic import NotFoundException
 
 
-class NoSQLExistsCheckHooksMixin(BaseNoSQLUpdateHooks, BaseNoSQLDeleteHooks):
+class NoSQLExistsCheckHooksMixin[ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](
+    BaseNoSQLUpdateHooks[ModelType, TContextKwargs], BaseNoSQLDeleteHooks[TContextKwargs]
+):
     @asynccontextmanager
     async def _context_update(
         self,

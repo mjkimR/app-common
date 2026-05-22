@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app_base.core.database import engine
@@ -18,7 +16,7 @@ class AsyncTransaction:
             await session.execute(...)
     """
 
-    def __init__(self, session_maker: Optional[async_sessionmaker] = None) -> None:
+    def __init__(self, session_maker: async_sessionmaker | None = None) -> None:
         """Initialize AsyncTransaction with an async session maker.
 
         Args:
@@ -26,7 +24,7 @@ class AsyncTransaction:
                 provided, uses ``app_base.core.database.async_session``.
         """
         self._session_maker: async_sessionmaker = session_maker or engine.get_session_maker()
-        self._session: Optional[AsyncSession] = None
+        self._session: AsyncSession | None = None
 
     async def __aenter__(self) -> AsyncSession:
         """Create and return a new AsyncSession instance."""

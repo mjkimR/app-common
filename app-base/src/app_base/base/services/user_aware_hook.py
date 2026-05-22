@@ -1,7 +1,5 @@
 import uuid
-from typing import Any, Generic, Required
-
-from typing_extensions import TypeVar
+from typing import Any, Required
 
 from app_base.base.services.base import BaseContextKwargs, BaseCreateHooks, BaseUpdateHooks
 
@@ -12,11 +10,8 @@ class UserContextKwargs(BaseContextKwargs):
     user_id: Required[uuid.UUID]
 
 
-TUserContextKwargs = TypeVar("TUserContextKwargs", bound=UserContextKwargs, default=UserContextKwargs)
-
-
-class UserAwareHooksMixin(
-    BaseCreateHooks[TUserContextKwargs], BaseUpdateHooks[TUserContextKwargs], Generic[TUserContextKwargs]
+class UserAwareHooksMixin[ModelType: Any, TUserContextKwargs: UserContextKwargs](
+    BaseCreateHooks[ModelType, TUserContextKwargs], BaseUpdateHooks[ModelType, TUserContextKwargs]
 ):
     def _prepare_create_fields(self, obj_data, context: TUserContextKwargs, **update_fields: Any) -> dict[str, Any]:
         base = super()._prepare_create_fields(obj_data, context, **update_fields)

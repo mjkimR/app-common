@@ -1,6 +1,7 @@
 """Tests for NoSQLRepository (repository.py)."""
 
 import pytest
+from app_base.adapter.nosql_db.query_options import NoSQLListQueryOptions
 from app_base.adapter.nosql_db.repository import NoSQLRepository
 from app_base.base.schemas.paginated import PaginatedList
 from pydantic import BaseModel
@@ -133,7 +134,7 @@ async def test_get_multi_with_offset_limit(user_repo, mock_provider):
         obj_in = UserCreateSchema(id=f"p{i}", name=f"User{i}", email=f"u{i}@example.com")
         await user_repo.create(mock_provider, f"p{i}", obj_in)
 
-    result = await user_repo.get_multi(mock_provider, offset=3, limit=4)
+    result = await user_repo.get_multi(mock_provider, query_options=NoSQLListQueryOptions(offset=3, limit=4))
     assert result.total_count == 10
     assert len(result.items) == 4
     assert result.offset == 3
@@ -145,7 +146,10 @@ async def test_get_multi_with_filter(user_repo, mock_provider):
     await user_repo.create(mock_provider, "f2", UserCreateSchema(id="f2", name="Bob", email="b@example.com"))
     await user_repo.create(mock_provider, "f3", UserCreateSchema(id="f3", name="Alice", email="c@example.com"))
 
-    result = await user_repo.get_multi(mock_provider, filters=[("name", "==", "Alice")])
+    result = await user_repo.get_multi(
+        mock_provider,
+        query_options=NoSQLListQueryOptions(filters=[("name", "==", "Alice")]),
+    )
     assert result.total_count == 2
     assert all(item.name == "Alice" for item in result.items)
 

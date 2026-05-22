@@ -1,6 +1,6 @@
 import datetime
 import enum
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import JSON, DateTime, String
 from sqlalchemy import Enum as EnumColumn
@@ -45,7 +45,7 @@ class Outbox(Base, UUIDMixin, TimestampMixin):
     retry_count: Mapped[int] = mapped_column(
         default=0, comment="Number of times the event publication has been retried"
     )
-    processed_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    processed_at: Mapped[datetime.datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         comment="Timestamp when the event was last processed or attempted to be published",

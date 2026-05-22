@@ -1,6 +1,7 @@
 import abc
 from abc import ABCMeta
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 from fastapi import Query
 from sqlalchemy import ColumnElement
@@ -20,7 +21,7 @@ class SqlFilterCriteriaBase(metaclass=ABCMeta):
     @abc.abstractmethod
     def build_filter(
         self,
-    ) -> Callable[..., Optional[Union[ColumnElement, list[ColumnElement]]]]:
+    ) -> Callable[..., ColumnElement | list[ColumnElement] | None]:
         """Creates a FastAPI dependency that generates a filter condition.
 
         This abstract method must be implemented by all subclasses. The
@@ -49,7 +50,7 @@ class SimpleFilterCriteriaBase(SqlFilterCriteriaBase):
         self,
         alias: str,
         bound_type: type,
-        description: Optional[str] = None,
+        description: str | None = None,
         **query_params: Any,
     ):
         """
@@ -98,13 +99,13 @@ class SimpleFilterCriteriaBase(SqlFilterCriteriaBase):
         description = self.description or f"Filter query parameter ({self.alias})"
 
         def filter_dependency(
-            value: Optional[self.bound_type] = Query(  # type: ignore  # noqa: B008
+            value: self.bound_type | None = Query(  # type: ignore  # noqa: B008
                 default=None,
                 alias=self.alias,
                 description=description,
                 **self.query_params,
             ),
-        ) -> Optional[ColumnElement]:
+        ) -> ColumnElement | None:
             """
             FastAPI dependency that returns the filter expression for this criterion.
 

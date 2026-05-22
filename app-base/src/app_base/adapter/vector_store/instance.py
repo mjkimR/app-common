@@ -1,5 +1,3 @@
-from typing import Optional
-
 import langchain_core.vectorstores
 
 from app_base.adapter.vector_store.factory import VectorStoreFactory
@@ -8,7 +6,7 @@ from app_base.adapter.vector_store.registry import get_provider_cls
 from app_base.config import VectorDBSettings
 from app_base.core.log import logger
 
-_vector_store_provider: Optional[VectorStoreProvider] = None
+_vector_store_provider: VectorStoreProvider | None = None
 
 
 def set_vector_store_provider(provider: VectorStoreProvider) -> None:

@@ -109,7 +109,7 @@ class TestSimpleFilterCriteriaBase:
         column = MockColumn("name")
         filter_criteria = EqualFilterCriteria(column=column, alias="", bound_type=str)
 
-        with pytest.raises(ConfigurationError, match="missing an 'alias'"):
+        with pytest.raises(ConfigurationError, match=r"missing an 'alias'"):
             filter_criteria.build_filter()
 
     def test_build_filter_raises_error_without_bound_type(self):
@@ -118,7 +118,7 @@ class TestSimpleFilterCriteriaBase:
         filter_criteria = EqualFilterCriteria(column=column, alias="name", bound_type=str)
         filter_criteria.bound_type = None  # type: ignore
 
-        with pytest.raises(ConfigurationError, match="missing a 'bound_type'"):
+        with pytest.raises(ConfigurationError, match=r"missing a 'bound_type'"):
             filter_criteria.build_filter()
 
     def test_build_filter_returns_callable(self):

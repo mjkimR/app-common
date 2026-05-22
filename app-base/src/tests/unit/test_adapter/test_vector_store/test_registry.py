@@ -63,7 +63,7 @@ def test_get_provider_cls_existing():
 
 
 def test_get_provider_cls_non_existing():
-    with pytest.raises(ValueError, match="Vector Store provider for kind 'non_existing' is not registered."):
+    with pytest.raises(ValueError, match=r"Vector Store provider for kind 'non_existing' is not registered."):
         get_provider_cls("non_existing")
 
 

@@ -34,7 +34,7 @@ def test_set_file_storage_client(mock_client):
 
 
 def test_get_storage_client_not_initialized():
-    with pytest.raises(RuntimeError, match="File storage client is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"File storage client is not initialized. Check lifespan."):
         get_storage_client()
 
 
@@ -65,12 +65,12 @@ async def test_setup_storage_client_already_initialized(mock_client):
 async def test_close_storage_client(mock_client):
     set_file_storage_client(mock_client)
     await close_storage_client()
-    with pytest.raises(RuntimeError, match="File storage client is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"File storage client is not initialized. Check lifespan."):
         get_storage_client()
 
 
 async def test_close_storage_client_not_initialized():
     # Should not raise an error if client is not initialized
     await close_storage_client()
-    with pytest.raises(RuntimeError, match="File storage client is not initialized. Check lifespan."):
+    with pytest.raises(RuntimeError, match=r"File storage client is not initialized. Check lifespan."):
         get_storage_client()

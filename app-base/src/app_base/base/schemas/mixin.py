@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -16,13 +15,13 @@ class TimestampSchemaMixin(BaseModel):
 
 class AuditSchemaMixin(BaseModel):
     created_by: uuid.UUID
-    updated_by: Optional[uuid.UUID] = None
+    updated_by: uuid.UUID | None = None
 
 
 class SoftDeleteSchemaMixin(BaseModel):
     is_deleted: bool
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
 
 
 class TaggableSchemaMixin(BaseModel):
-    tags: Optional[list[str]] = None
+    tags: list[str] | None = None

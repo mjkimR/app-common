@@ -17,24 +17,22 @@ if TYPE_CHECKING:
     from .vector_db import VectorDBSettings, get_vector_db_settings
 
 __all__ = [
-    # util functions,
-    "get_project_root",
-    "get_env_filename",
-    # settings classes,
     "AppSettings",
-    "get_app_settings",
     "AuthSettings",
-    "get_auth_settings",
-    "VectorDBSettings",
-    "get_vector_db_settings",
-    "FileStorageSettings",
-    "get_file_storage_settings",
-    "NoSQLDBSettings",
-    "get_nosql_db_settings",
     "EventBrokerSettings",
-    "get_event_broker_settings",
+    "FileStorageSettings",
     "HTTPClientSettings",
+    "NoSQLDBSettings",
+    "VectorDBSettings",
+    "get_app_settings",
+    "get_auth_settings",
+    "get_env_filename",
+    "get_event_broker_settings",
+    "get_file_storage_settings",
     "get_http_client_settings",
+    "get_nosql_db_settings",
+    "get_project_root",
+    "get_vector_db_settings",
 ]
 
 _lazy_imports: dict[str, str] = {
