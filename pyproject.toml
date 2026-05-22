@@ -31,4 +31,5 @@ extraPaths = ["./app-base/src", "./app-tools/src"]
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.0",
+    "pyright>=1.1.409",
 ]

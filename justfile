@@ -21,6 +21,10 @@ lint:
     uv run ruff format
     uv run ruff check --fix
 
+# Run pyright static type checking
+check:
+    uv run pyright
+
 # Run ruff format and lint checks without modifying files
 lint-check:
     uv run ruff format --check .
