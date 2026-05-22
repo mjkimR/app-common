@@ -112,25 +112,44 @@ class BaseCreateHooks(BaseHooksInterface, Generic[TContextKwargs]):
         self, session: AsyncSession, obj_data_list: Sequence[BaseModel], context: TContextKwargs
     ):
         """Hook executed within a context before create_multi.
-        Defaults to running _context_create for each item sequentially.
+        Defaults to running _context_create for each item sequentially when
+        only the single-item hook has been customized.
         Override to replace with bulk-level context handling.
         """
-        for obj_data in obj_data_list:
-            async with self._context_create(session, obj_data, context=context):
-                pass
+        single_hook_overridden = type(self)._context_create is not BaseCreateHooks._context_create
+        bulk_hook_owner = next(cls for cls in type(self).__mro__ if "_context_create_multi" in cls.__dict__)
+
+        # If a subclass only overrides the single-item hook, keep the previous
+        # per-item behavior so existing custom create validation still runs.
+        # When a class provides its own bulk hook, that hook is responsible for
+        # bulk-level handling and this method skips the N+1 fallback.
+        if single_hook_overridden and bulk_hook_owner is BaseCreateHooks:
+            for obj_data in obj_data_list:
+                async with self._context_create(session, obj_data, context=context):
+                    pass
         yield
 
     async def _post_create_multi(
         self, session: AsyncSession, objs: Sequence[ModelType], context: TContextKwargs
     ) -> Sequence[ModelType]:
         """Hook executed after create_multi.
-        Defaults to running _post_create for each item sequentially.
+        Defaults to running _post_create for each item sequentially when
+        only the single-item hook has been customized.
         Override to replace with bulk-level post processing.
         """
-        results = []
-        for obj in objs:
-            results.append(await self._post_create(session, obj, context=context))
-        return results
+        single_hook_overridden = type(self)._post_create is not BaseCreateHooks._post_create
+        bulk_hook_owner = next(cls for cls in type(self).__mro__ if "_post_create_multi" in cls.__dict__)
+
+        # If a subclass only overrides the single-item hook, keep the previous
+        # per-item behavior so existing custom create post-processing still runs.
+        # When a class provides its own bulk hook, that hook is responsible for
+        # bulk-level handling and this method skips the N+1 fallback.
+        if single_hook_overridden and bulk_hook_owner is BaseCreateHooks:
+            results = []
+            for obj in objs:
+                results.append(await self._post_create(session, obj, context=context))
+            return results
+        return objs
 
 
 class BaseCreateServiceMixin(
@@ -287,12 +306,21 @@ class BaseDeleteHooks(BaseHooksInterface, Generic[TContextKwargs]):
         self, session: AsyncSession, obj_pks: Sequence[PrimaryKeyType], context: TContextKwargs
     ):
         """Hook executed within a context before delete_multi.
-        Defaults to running _context_delete for each item sequentially.
+        Defaults to running _context_delete for each item sequentially when
+        only the single-item hook has been customized.
         Override to replace with bulk-level context handling.
         """
-        for obj_pk in obj_pks:
-            async with self._context_delete(session, obj_pk, context=context):
-                pass
+        single_hook_overridden = type(self)._context_delete is not BaseDeleteHooks._context_delete
+        bulk_hook_owner = next(cls for cls in type(self).__mro__ if "_context_delete_multi" in cls.__dict__)
+
+        # If a subclass only overrides the single-item hook, keep the previous
+        # per-item behavior so existing custom delete validation still runs.
+        # When a class provides its own bulk hook, that hook is responsible for
+        # bulk-level handling and this method skips the N+1 fallback.
+        if single_hook_overridden and bulk_hook_owner is BaseDeleteHooks:
+            for obj_pk in obj_pks:
+                async with self._context_delete(session, obj_pk, context=context):
+                    pass
         yield
 
     async def _post_delete_multi(
@@ -303,9 +331,19 @@ class BaseDeleteHooks(BaseHooksInterface, Generic[TContextKwargs]):
         context: TContextKwargs,
     ) -> MultipleDeleteResponse:
         """Hook executed after delete_multi.
-        Defaults to returning the result as-is.
+        Defaults to running _post_delete for each item sequentially only when
+        all requested items were deleted and only the single-item hook has been customized.
         Override for bulk-level post processing.
         """
+        single_hook_overridden = type(self)._post_delete is not BaseDeleteHooks._post_delete
+        bulk_hook_owner = next(cls for cls in type(self).__mro__ if "_post_delete_multi" in cls.__dict__)
+
+        # MultipleDeleteResponse does not expose per-item success. Run the
+        # single-item fallback only when the count proves every requested PK was
+        # deleted; otherwise, the bulk hook must handle any partial-success logic.
+        if single_hook_overridden and bulk_hook_owner is BaseDeleteHooks and result.deleted_count == len(obj_pks):
+            for obj_pk in obj_pks:
+                await self._post_delete(session, obj_pk, DeleteResponse(success=True, identity=obj_pk), context=context)
         return result
 
 
