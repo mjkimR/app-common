@@ -36,16 +36,17 @@ We use **just** as a command runner.
 - **Initialize**: `just init` (or `just init-dev` for all extras)
 - **Lint & Format**: `just lint` (Runs Ruff)
 - **Test**: `just test` (Runs Pytest)
-- **Type Check**: `pyright` (Runs manually or via IDE)
+- **Targeted Test**: `just test <path>` (Runs Pytest for specific files/directories via `+paths`; use this instead of
+  calling `uv run pytest` directly for individual file tests)
 
 ## CRITICAL CONSTRAINTS (DO NOT IGNORE)
 
 1. **Surgical Edits**: Only modify what is requested. Avoid unrelated refactors.
-2. **Type Safety**: Maintain strict type hinting. Use `pyright` to verify.
-3. **DI Consistency**: Use `Annotated[T, Depends(func)]` for FastAPI dependencies.
-4. **Testing**: Always check if new code requires tests. Run `just test` before finalizing.
-5. **No Emojis**: Do not use emojis in commit messages or code comments.
-6. **Security**: Never commit `.env` or log sensitive PII/secrets.
+2. **DI Consistency**: Use `Annotated[T, Depends(func)]` for FastAPI dependencies.
+3. **Testing**: Always check if new code requires tests. Run `just test` before finalizing. For focused verification,
+   use `just test <path>` because the recipe supports `+paths`.
+4. **No Emojis**: Do not use emojis in commit messages or code comments.
+5. **Security**: Never commit `.env` or log sensitive PII/secrets.
 
 ## Further Reading
 
