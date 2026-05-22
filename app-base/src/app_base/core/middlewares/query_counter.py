@@ -55,11 +55,12 @@ class QueryCounterMiddleware:
 
             await send(message)
 
-            if message["type"] == "http.response.body":
-                if not message.get("more_body", False):
-                    # Log warning if too many queries (for detecting N+1 problems)
-                    if query_count > self.QUERY_COUNT_WARNING_THRESHOLD:
-                        logger.warning(f"Too many queries ({query_count}) in request: {method} {path}")
+            if (
+                message["type"] == "http.response.body"
+                and not message.get("more_body", False)
+                and query_count > self.QUERY_COUNT_WARNING_THRESHOLD
+            ):
+                logger.warning(f"Too many queries ({query_count}) in request: {method} {path}")
 
         try:
             # 2. Process request (DB queries that occur here are counted)

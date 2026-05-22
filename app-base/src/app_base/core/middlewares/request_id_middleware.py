@@ -54,12 +54,11 @@ class RequestIDMiddleware:
             await send(message)
 
             # Log request completion when response body is sent
-            if message["type"] == "http.response.body":
-                if not message.get("more_body", False):
-                    logger.debug(
-                        f"Request completed: {method} {path} - Status: {status_code}",
-                        extra={"request_id": request_id},
-                    )
+            if message["type"] == "http.response.body" and not message.get("more_body", False):
+                logger.debug(
+                    f"Request completed: {method} {path} - Status: {status_code}",
+                    extra={"request_id": request_id},
+                )
 
         await self.app(scope, receive, send_wrapper)
 

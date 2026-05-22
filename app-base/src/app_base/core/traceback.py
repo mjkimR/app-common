@@ -1,3 +1,4 @@
+import itertools
 import os
 import traceback
 
@@ -26,6 +27,16 @@ def _is_whitelisted(filename: str, whitelist: list[str]) -> bool:
         if dir_pattern in filename or filename.endswith(file_pattern):
             return True
     return False
+
+
+def _get_chaining_message(previous: BaseException, current: BaseException) -> str | None:
+    if getattr(previous, "__cause__", None) is current:
+        return "\nThe above exception was the direct cause of the following exception:\n\n"
+
+    if getattr(previous, "__context__", None) is current:
+        return "\nDuring handling of the above exception, another exception occurred:\n\n"
+
+    return None
 
 
 def get_exception_traceback_str(exc: Exception) -> str:
@@ -62,12 +73,11 @@ def get_exception_traceback_str(exc: Exception) -> str:
 
             # 3. Whitelist logic (filter site-packages, keep whitelisted ones)
             is_external_lib = "site-packages" in filename or "dist-packages" in filename
-            if is_external_lib:
-                if _is_whitelisted(filename, settings.LOG_TRACEBACK_WHITELIST):
-                    filtered_frames.append(frame)
-            else:
-                # Project code or standard library
-                filtered_frames.append(frame)
+            if is_external_lib and not _is_whitelisted(filename, settings.LOG_TRACEBACK_WHITELIST):
+                continue
+
+            # Project code, standard library, or whitelisted external library
+            filtered_frames.append(frame)
 
         # Format filtered frames into a string
         stack_str = "".join(traceback.format_list(filtered_frames))
@@ -95,17 +105,16 @@ def get_exception_traceback_str(exc: Exception) -> str:
 
     # 2. Assemble formatted blocks in reverse order (root cause first, latest exception last)
     blocks = ["Traceback (Filtered):\n"]
-    for i in range(len(exceptions) - 1, -1, -1):
-        e = exceptions[i]
+    ordered_exceptions = list(reversed(exceptions))
+    for e, next_e in itertools.pairwise(ordered_exceptions):
+        blocks.append(_format_single_exception(e))
 
         # Add chaining messages between exceptions (mirrors standard Python behavior)
-        if i < len(exceptions) - 1:
-            prev_e = exceptions[i + 1]
-            if getattr(prev_e, "__cause__", None) is e:
-                blocks.append("\nThe above exception was the direct cause of the following exception:\n\n")
-            elif getattr(prev_e, "__context__", None) is e:
-                blocks.append("\nDuring handling of the above exception, another exception occurred:\n\n")
+        message = _get_chaining_message(next_e, e)
+        if message is not None:
+            blocks.append(message)
 
-        blocks.append(_format_single_exception(e))
+    if ordered_exceptions:
+        blocks.append(_format_single_exception(ordered_exceptions[-1]))
 
     return "".join(blocks)

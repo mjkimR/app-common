@@ -36,10 +36,8 @@ class S3FileStorageSettings(FileProviderConfigs):
     endpoint_url: str = Field(
         default="http://localhost:9000", description="S3-compatible endpoint URL (e.g. MinIO or AWS S3)"
     )
-    access_key: SecretStr = Field(default=SecretStr("minioadmin"), description="S3 access key ID for authentication")
-    secret_key: SecretStr = Field(
-        default=SecretStr("minioadmin"), description="S3 secret access key for authentication"
-    )
+    access_key: SecretStr = Field(description="S3 access key ID for authentication")
+    secret_key: SecretStr = Field(description="S3 secret access key for authentication")
     bucket_name: str = Field(default="my-bucket", description="Name of the S3 bucket to use for file storage")
     region_name: str | None = Field(
         default=None, description="AWS region name (required for AWS S3, optional for S3-compatible providers)"

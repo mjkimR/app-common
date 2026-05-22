@@ -67,12 +67,7 @@ class UniqueConstraintHooksMixin(
         exclude_id: Any = None,
     ) -> None:
         """Executes the DB query to check if the unique condition is violated."""
-        if exclude_id is not None:
-            # For updates: Check if record exists matching the condition BUT has a different ID.
-            query_condition = and_(condition, self.repo.model.id != exclude_id)
-        else:
-            # For creates: Just check if the condition matches any record.
-            query_condition = condition
+        query_condition = and_(condition, self.repo.model.id != exclude_id) if exclude_id is not None else condition
 
         is_exists = await self.repo.exists(session, query_condition)
         if is_exists:
