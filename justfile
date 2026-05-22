@@ -1,4 +1,6 @@
 default_test_path := "app-base/src"
+default_pytest_options := "-q --tb=short --disable-warnings --no-header"
+default_pytest_progress_line_filter := "^[\\.sFxFw]*\\s+\\[.*\\]$"
 
 # Print available commands
 default:
@@ -34,12 +36,19 @@ hooks-run:
 
 # Run tests with specified database type and paths
 _run_tests db_type +paths: init-dev
-    uv run pytest --db-type {{db_type}} {{paths}}
+    #!/usr/bin/env bash
+    set -u
+    tmp="$(mktemp)"
+    trap 'rm -f "$tmp"' EXIT
+    status=0
+    uv run pytest {{default_pytest_options}} --db-type {{db_type}} {{paths}} >"$tmp" 2>&1 || status=$?
+    grep -vE '{{default_pytest_progress_line_filter}}' "$tmp" || true
+    exit "$status"
 
 # Run tests with SQLite (default)
-test +paths=default_test_path: init-dev
+test +paths=default_test_path:
     @just _run_tests sqlite {{paths}}
 
 # Run tests with PostgreSQL
-test-pg +paths=default_test_path: init-dev
+test-pg +paths=default_test_path:
     @just _run_tests postgres {{paths}}
