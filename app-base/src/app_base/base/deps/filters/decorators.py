@@ -27,14 +27,14 @@ def filter_for(
         #    - Parameter alias defaults to the function name (e.g., "name", "age").
         #    - Parameter description is automatically taken from the function's docstring.
         @filter_for(bound_type=str)
-        def filter_by_name(value: str):
+        def filter_by_name(value: str | None):
             \"\"\"Filter by user name\"\"\"
             if value:
                 return User.name == value
             return None
 
         @filter_for(bound_type=int)
-        def filter_by_age(value: int):
+        def filter_by_age(value: int | None):
             \"\"\"Filter by user age\"\"\"
             if value is not None:
                 return User.age == value
