@@ -32,6 +32,42 @@ def order_by_for(
 
     Returns:
         Callable[[OrderByLogicFunc], OrderByCriteria]: The decorated function as an OrderByCriteria instance.
+
+    Example:
+        ```python
+        from app_base.base.deps.ordering.base import order_by_for
+        from app_base.base.deps.ordering.combine import create_order_by_dependency
+        from fastapi import FastAPI, Depends
+        from typing import Annotated
+
+        # 1. Define order logic functions using the decorator.
+        #    - Alias defaults to the function name (e.g. "name", "created_at").
+        #    - Description defaults to the function's docstring.
+        @order_by_for()
+        def name(desc: bool):
+            \"\"\"Sort by name\"\"\"
+            return User.name.desc() if desc else User.name.asc()
+
+        @order_by_for()
+        def created_at(desc: bool):
+            \"\"\"Sort by creation time\"\"\"
+            return User.created_at.desc() if desc else User.created_at.asc()
+
+        # 2. Combine individual sort criteria into a single dependency
+        ordering_dep = create_order_by_dependency(
+            name, created_at, default_order="-created_at"
+        )
+
+        # 3. Use in a FastAPI route
+        app = FastAPI()
+
+        @app.get("/users")
+        async def list_users(order_by: Annotated[list, Depends(ordering_dep)]):
+            # order_by will be a list of SQLAlchemy ordering expressions
+            # e.g., [User.created_at.desc()]
+            # query = select(User).order_by(*order_by)
+            return {"order_by": [str(o) for o in order_by]}
+        ```
     """
 
     def decorator(func: OrderByLogicFunc) -> OrderByCriteria:

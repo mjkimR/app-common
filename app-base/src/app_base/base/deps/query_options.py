@@ -41,16 +41,40 @@ def create_list_query_options_dependency(
         A FastAPI dependency callable suitable for `Depends(...)`.
 
     Example:
-        query_options_dep = create_list_query_options_dependency(
-            filters_dependency=filters_dep,
-            order_by_dependency=order_by_dep,
+        ```python
+        from typing import Annotated
+        from fastapi import FastAPI, Depends, APIRouter
+        from app_base.base.deps.query_options import create_list_query_options_dependency
+        from app_base.base.repos.query_options import ListQueryOptions
+
+        # Assuming combined_filters and ordering_dep are defined using:
+        # - create_combined_filter_dependency(...)
+        # - create_order_by_dependency(...)
+
+        list_query_options_dep = create_list_query_options_dependency(
+            filters_dependency=combined_filters,
+            order_by_dependency=ordering_dep,
         )
 
-        @router.get("")
+        app = FastAPI()
+        router = APIRouter()
+
+        @router.get("/items")
         async def list_items(
-            query_options: Annotated[ListQueryOptions, Depends(query_options_dep)],
+            query_options: Annotated[ListQueryOptions, Depends(list_query_options_dep)],
         ):
-            return await use_case.execute(query_options=query_options)
+            # query_options contains:
+            # - query_options.offset (default: 0)
+            # - query_options.limit (default: 20)
+            # - query_options.where (tuple of filter expressions)
+            # - query_options.order_by (tuple of ordering expressions)
+            return {
+                "offset": query_options.offset,
+                "limit": query_options.limit,
+                "where": [str(w) for w in query_options.where],
+                "order_by": [str(o) for o in query_options.order_by],
+            }
+        ```
     """
 
     def dependency(**params: Any) -> ListQueryOptions:
