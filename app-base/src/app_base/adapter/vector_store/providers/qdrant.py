@@ -2,7 +2,7 @@ from typing import Any
 
 from app_base.adapter.vector_store.interface import VectorStoreProvider, import_error_handler
 from app_base.adapter.vector_store.registry import register_vector_store
-from app_base.ai.models import AIModelFactory
+from app_base.ai.models import get_ai_client
 from app_base.config import VectorDBSettings
 from app_base.config.vector_db import QdrantSettings
 
@@ -21,18 +21,17 @@ class QdrantProvider(VectorStoreProvider):
         if self.client:
             self.client.close()
 
-    def create_vector_store(self, collection_name: str, model_name: str) -> Any:
+    async def create_vector_store(self, collection_name: str, model_name: str) -> Any:
         with import_error_handler("qdrant"):
             from langchain_qdrant import QdrantVectorStore
             from qdrant_client.http import models as conf
             from qdrant_client.http.exceptions import ApiException
 
-        model_factory = AIModelFactory()
-        # AIModelFactory internally caches embeddings
-        embeddings = model_factory.get_embedding(model_name)
+        ai_client = get_ai_client()
+        embeddings = ai_client.get_embedding(model_name)
 
         if not self.client.collection_exists(collection_name=collection_name):
-            dimension = model_factory.get_embedding_dimension(model_name)
+            dimension = await ai_client.aget_embedding_dimension(model_name)
             try:
                 self.client.create_collection(
                     collection_name=collection_name,
