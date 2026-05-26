@@ -219,8 +219,8 @@ class BaseUpdateHooks[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHoo
         return update_fields
 
     async def _post_update(
-        self, session: AsyncSession, obj: ModelType, context: TContextKwargs, partial: bool = True
-    ) -> ModelType:
+        self, session: AsyncSession, obj: ModelType | None, context: TContextKwargs, partial: bool = True
+    ) -> ModelType | None:
         """Hook executed after update."""
         return obj
 

@@ -12,7 +12,7 @@ class VectorStoreFactory:
     def __init__(self, provider: VectorStoreProvider):
         self.provider = provider
 
-    def get_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
+    async def get_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
         """
         Returns a VectorStore implementation suitable for the client type.
 
@@ -22,6 +22,6 @@ class VectorStoreFactory:
         cache_key = (settings.provider, collection_name, model_name)
         if cache_key in vector_store_cache:
             return vector_store_cache[cache_key]
-        store = self.provider.create_vector_store(collection_name, model_name)
+        store = await self.provider.create_vector_store(collection_name, model_name)
         vector_store_cache[cache_key] = store
         return store

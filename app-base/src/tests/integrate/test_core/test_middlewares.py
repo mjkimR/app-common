@@ -66,7 +66,7 @@ async def test_request_id_is_outermost(client):
 
     app = FastAPI()
 
-    inner_request_id = {"value": None}
+    inner_request_id: dict[str, str | None] = {"value": None}
 
     class CheckIDMiddleware:
         def __init__(self, app: ASGIApp):

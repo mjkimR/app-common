@@ -74,7 +74,7 @@ class NoSQLRepository[
         self,
         provider: NoSQLDBProvider,
         document_id: str,
-        obj_in: PutSchemaType,
+        obj_in: PatchSchemaType,
         **extra_fields: Any,
     ) -> ModelType | None:
         """Deprecated: use put() or patch() instead."""

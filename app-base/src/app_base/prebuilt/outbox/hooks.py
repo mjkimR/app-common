@@ -66,8 +66,10 @@ class BaseOutboxHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
         Converts a single or composite primary key into a string for event payloads.
         Composite keys will be comma-separated.
         """
-        pk_tuple = self.repo.normalize_pk_as_str(pk)
-        return ",".join(pk_tuple) if len(pk_tuple) > 1 else pk_tuple[0]
+        pk_values = list(self.repo.normalize_pk_as_str(pk))
+        if not pk_values:
+            raise ValueError("Primary key value is required.")
+        return ",".join(pk_values) if len(pk_values) > 1 else pk_values[0]
 
     # ============================================================
     # Hooks
@@ -93,7 +95,7 @@ class BaseOutboxHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
 
     async def _post_update(
         self, session: AsyncSession, obj: ModelType, context: TContextKwargs, partial: bool = True
-    ) -> ModelType:
+    ) -> ModelType | None:
         """Create outbox event after update."""
         obj_pk = self._get_pk_from_obj(obj)
         outbox_identity: OutboxIdentityDict = {

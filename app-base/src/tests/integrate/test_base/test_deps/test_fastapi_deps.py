@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 import pytest
 from app_base.base.deps.filters.combine import create_combined_filter_dependency
@@ -52,12 +52,12 @@ combined_filters = create_combined_filter_dependency(filter_by_name, filter_by_a
 
 # 2. Ordering Setup
 @order_by_for(alias="name")
-def order_by_name(desc: bool):
+def order_by_name(desc: bool) -> Any:
     return dummy_name_col.desc() if desc else dummy_name_col.asc()
 
 
 @order_by_for(alias="created_at")
-def order_by_created_at(desc: bool):
+def order_by_created_at(desc: bool) -> Any:
     return dummy_created_at_col.desc() if desc else dummy_created_at_col.asc()
 
 

@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Callable
 from types import SimpleNamespace
-from typing import Annotated, Any, get_args, get_origin
+from typing import Annotated, Any, cast, get_args, get_origin
 
 from fastapi import Request
 from fastapi.params import Depends
@@ -34,12 +34,12 @@ def resolve_dependency[T](
 
     # 1. Check overrides (highest priority)
     if target in overrides:
-        return overrides[target]
+        return cast(T, overrides[target])
 
     # 2. Inject MockRequest when Request object is needed
     # (Type hint is Request or FastAPI Request class itself)
     if target is Request:
-        return MockRequest(state)
+        return cast(T, MockRequest(state))
 
     # 3. Check if callable (Function or Class)
     if inspect.isclass(target):
@@ -47,7 +47,7 @@ def resolve_dependency[T](
     elif callable(target):
         func = target
     else:
-        return target  # Return if already an instance
+        return cast(T, target)  # Return if already an instance
 
     sig = inspect.signature(func)
     kwargs = {}
@@ -86,6 +86,5 @@ def resolve_dependency[T](
 
     # 4. Instantiate and return object
     if inspect.isclass(target):
-        return target(**kwargs)
-    else:
-        return func(**kwargs)
+        return cast(T, cast(Any, target)(**kwargs))
+    return cast(T, cast(Any, func)(**kwargs))

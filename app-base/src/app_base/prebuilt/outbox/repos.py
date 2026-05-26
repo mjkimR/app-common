@@ -10,7 +10,7 @@ from .models import EventStatus, Outbox
 from .schemas import OutboxCreate, OutboxUpdate
 
 
-class OutboxRepository(BaseRepository[Outbox, OutboxCreate, OutboxUpdate]):
+class OutboxRepository(BaseRepository[Outbox, OutboxCreate, OutboxUpdate, OutboxUpdate]):
     model = Outbox
 
     async def get_and_lock_pending_events(self, session: AsyncSession, limit: int = 100) -> Sequence[Outbox]:

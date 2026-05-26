@@ -4,7 +4,7 @@ from .models import User
 from .schemas import UserDbCreate, UserDbUpdate
 
 
-class UserRepository(BaseRepository[User, UserDbCreate, UserDbUpdate]):
+class UserRepository(BaseRepository[User, UserDbCreate, UserDbUpdate, UserDbUpdate]):
     """Repository for User model."""
 
     model = User

@@ -17,7 +17,7 @@ class MockVectorStoreProvider1(VectorStoreProvider):
     def close(self) -> None:
         pass
 
-    def create_vector_store(self, collection_name: str, model_name: str):
+    async def create_vector_store(self, collection_name: str, model_name: str):
         pass
 
 
@@ -32,7 +32,7 @@ class MockVectorStoreProvider2(VectorStoreProvider):
     def close(self) -> None:
         pass
 
-    def create_vector_store(self, collection_name: str, model_name: str):
+    async def create_vector_store(self, collection_name: str, model_name: str):
         pass
 
 

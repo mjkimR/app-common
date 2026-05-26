@@ -34,7 +34,7 @@ class MockVectorStoreProvider(VectorStoreProvider):
     def close(self) -> None:
         pass
 
-    def create_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
+    async def create_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
         return MockVectorStore(collection_name, model_name)
 
 
@@ -56,7 +56,7 @@ async def test_get_vector_store_new_instance(vector_store_factory):
     model_name = "test_model_new"
     with patch("app_base.adapter.vector_store.factory.get_vector_db_settings") as mock_get_settings:
         mock_get_settings.return_value = MagicMock(provider="mock")
-        store = vector_store_factory.get_vector_store(collection_name, model_name)
+        store = await vector_store_factory.get_vector_store(collection_name, model_name)
         assert isinstance(store, MockVectorStore)
         assert store.collection_name == collection_name
         assert store.model_name == model_name
@@ -69,9 +69,9 @@ async def test_get_vector_store_cached_instance(vector_store_factory):
     with patch("app_base.adapter.vector_store.factory.get_vector_db_settings") as mock_get_settings:
         mock_get_settings.return_value = MagicMock(provider="mock")
         # First call, should create and cache
-        store1 = vector_store_factory.get_vector_store(collection_name, model_name)
+        store1 = await vector_store_factory.get_vector_store(collection_name, model_name)
         # Second call, should retrieve from cache
-        store2 = vector_store_factory.get_vector_store(collection_name, model_name)
+        store2 = await vector_store_factory.get_vector_store(collection_name, model_name)
         assert store1 is store2
         assert (mock_get_settings.return_value.provider, collection_name, model_name) in vector_store_cache
 
@@ -79,9 +79,9 @@ async def test_get_vector_store_cached_instance(vector_store_factory):
 async def test_vector_store_cache_different_params(vector_store_factory):
     with patch("app_base.adapter.vector_store.factory.get_vector_db_settings") as mock_get_settings:
         mock_get_settings.return_value = MagicMock(provider="mock")
-        store1 = vector_store_factory.get_vector_store("collection1", "model1")
-        store2 = vector_store_factory.get_vector_store("collection2", "model1")
-        store3 = vector_store_factory.get_vector_store("collection1", "model2")
+        store1 = await vector_store_factory.get_vector_store("collection1", "model1")
+        store2 = await vector_store_factory.get_vector_store("collection2", "model1")
+        store3 = await vector_store_factory.get_vector_store("collection1", "model2")
 
         assert store1 is not store2
         assert store1 is not store3

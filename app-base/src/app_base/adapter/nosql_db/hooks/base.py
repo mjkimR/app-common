@@ -126,8 +126,8 @@ class BaseNoSQLUpdateHooks[ModelType: Any, TContextKwargs: BaseNoSQLContextKwarg
         return update_fields
 
     async def _post_update(
-        self, provider: NoSQLDBProvider, obj: ModelType, context: TContextKwargs, partial: bool = True
-    ) -> ModelType:
+        self, provider: NoSQLDBProvider, obj: ModelType | None, context: TContextKwargs, partial: bool = True
+    ) -> ModelType | None:
         return obj
 
 

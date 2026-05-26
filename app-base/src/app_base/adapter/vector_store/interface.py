@@ -22,7 +22,7 @@ class VectorStoreProvider(ABC):
         pass
 
     @abstractmethod
-    def create_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
+    async def create_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
         """Create and return a VectorStore instance."""
         pass
 

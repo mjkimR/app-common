@@ -29,10 +29,10 @@ def get_vector_store_factory() -> VectorStoreFactory:
     return VectorStoreFactory(get_vector_store_provider())
 
 
-def get_vector_store(collection_name: str, model_name: str) -> langchain_core.vectorstores.VectorStore:
+async def get_vector_store(collection_name: str, model_name: str) -> langchain_core.vectorstores.VectorStore:
     """Get a LangChain VectorStore instance."""
     factory = get_vector_store_factory()
-    return factory.get_vector_store(collection_name, model_name)
+    return await factory.get_vector_store(collection_name, model_name)
 
 
 async def setup_vector_store_provider(settings: VectorDBSettings) -> None:

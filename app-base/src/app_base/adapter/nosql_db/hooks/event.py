@@ -42,9 +42,11 @@ class NoSQLDomainEventHooksMixin[ModelType: Any, TContextKwargs: BaseNoSQLContex
         return obj
 
     async def _post_update(
-        self, provider: NoSQLDBProvider, obj: ModelType, context: TContextKwargs, partial: bool = True
-    ) -> ModelType:
+        self, provider: NoSQLDBProvider, obj: ModelType | None, context: TContextKwargs, partial: bool = True
+    ) -> ModelType | None:
         obj = await super()._post_update(provider, obj, context, partial)
+        if obj is None:
+            return None
 
         topic = f"{self.repo.model_name()}.updated"
         doc_id = getattr(obj, "id", "unknown")

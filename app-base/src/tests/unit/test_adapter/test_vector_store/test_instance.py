@@ -56,7 +56,7 @@ class MockVectorStoreProvider(VectorStoreProvider):
     def close(self) -> None:
         self.close_called = True
 
-    def create_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
+    async def create_vector_store(self, collection_name: str, model_name: str) -> VectorStore:
         self.create_vector_store_called_with = (collection_name, model_name)
         return MockVectorStore(collection_name, model_name)
 
@@ -92,7 +92,7 @@ async def test_get_vector_store():
     set_vector_store_provider(mock_provider)
     collection_name = "test_collection"
     model_name = "test_model"
-    store = get_vector_store(collection_name, model_name)
+    store = await get_vector_store(collection_name, model_name)
     assert isinstance(store, MockVectorStore)
     assert mock_provider.create_vector_store_called_with == (collection_name, model_name)
 
