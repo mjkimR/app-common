@@ -1,8 +1,8 @@
 [tool.uv.workspace]
-members = ["app-base", "app-tools"]
+members = ["app-base", "app-tools", "app-helper"]
 
 [tool.rye.workspace]
-members = ["app-base", "app-tools"]
+members = ["app-base", "app-tools", "app-helper"]
 
 [tool.ruff]
 exclude = [".git", ".venv", "migrations"]
@@ -26,7 +26,7 @@ venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
-extraPaths = ["./app-base/src", "./app-tools/src"]
+extraPaths = ["./app-base/src", "./app-tools/src", "./app-helper/src"]
 
 [dependency-groups]
 dev = [

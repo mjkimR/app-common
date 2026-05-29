@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from app_tools.prompts.templates import CODE_REVIEW_PROMPT_TEMPLATE, COMMIT_MESSAGE_PROMPT_TEMPLATE
+from app_helper.prompts.templates import CODE_REVIEW_PROMPT_TEMPLATE, COMMIT_MESSAGE_PROMPT_TEMPLATE
 
 
 def _get_git_diff_output(args: list[str]) -> str:

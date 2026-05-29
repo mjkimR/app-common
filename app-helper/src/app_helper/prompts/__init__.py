@@ -2,7 +2,7 @@ import functools
 
 import click
 
-from app_tools.prompts.git_diff import build_prompt, build_review_prompt, copy_to_clipboard
+from app_helper.prompts.git_diff import build_prompt, build_review_prompt, copy_to_clipboard
 
 
 def _handle_prompt_errors(func):

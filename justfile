@@ -57,6 +57,13 @@ lint module="all":
         uv run ruff check --fix "$path"
     fi
 
+    if should_run "$target" "app-helper"; then
+        path=$(resolve_module_path "app-helper")
+        echo "Linting app-helper ($path)..."
+        uv run ruff format "$path"
+        uv run ruff check --fix "$path"
+    fi
+
 # Run pyright static type checking for a specific module (all, app-base, or app-tools)
 check module="all":
     #!/usr/bin/env bash
@@ -73,6 +80,12 @@ check module="all":
     if should_run "$target" "app-tools"; then
         path=$(resolve_module_path "app-tools")
         echo "Type checking app-tools ($path)..."
+        uv run pyright "$path/src"
+    fi
+
+    if should_run "$target" "app-helper"; then
+        path=$(resolve_module_path "app-helper")
+        echo "Type checking app-helper ($path)..."
         uv run pyright "$path/src"
     fi
 
@@ -93,6 +106,13 @@ lint-check module="all":
     if should_run "$target" "app-tools"; then
         path=$(resolve_module_path "app-tools")
         echo "Checking lint for app-tools ($path)..."
+        uv run ruff format --check "$path"
+        uv run ruff check "$path"
+    fi
+
+    if should_run "$target" "app-helper"; then
+        path=$(resolve_module_path "app-helper")
+        echo "Checking lint for app-helper ($path)..."
         uv run ruff format --check "$path"
         uv run ruff check "$path"
     fi

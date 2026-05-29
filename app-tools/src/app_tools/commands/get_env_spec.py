@@ -4,33 +4,15 @@ from typing import Any
 
 import click
 
-# Assume app_base is installed and importable
-try:
-    from app_base.config.auth import AuthSettings
-    from app_base.config.config import AppSettings
-    from app_base.config.event_broker import (
-        EventBrokerSettings,
-    )
-    from app_base.config.file_storage import (
-        FileStorageSettings,
-    )
-    from app_base.config.util import get_env_file_path  # This is important for the _env_file parameter
-    from app_base.config.vector_db import (
-        VectorDBSettings,
-    )
-except ImportError:
-    print(
-        "Error: Could not import 'app_base.config' modules. Please ensure 'app-base' is installed (e.g., 'pip install app-base') in your Python environment.",
-        file=sys.stderr,
-    )
-    sys.exit(1)
 
-
+# Assume app_base is installed and importable during execution
 def get_env_variable_specs(settings_class: type[Any], provider_type: str | None = None) -> dict[str, str]:
     """
     Extracts environment variable specifications from a Pydantic BaseSettings class.
     Handles aliases, env_prefix, and nested delimiters.
     """
+    from app_base.config.util import get_env_file_path  # Defer import to prevent startup crash
+
     specs = {}
 
     # Temporarily load .env file path to pass to settings, as it's required by Pydantic_settings
@@ -146,6 +128,18 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
 )
 def get_env_spec(type: str):
     """List environment variable specifications for app-base configurations."""
+    try:
+        from app_base.config.auth import AuthSettings
+        from app_base.config.config import AppSettings
+        from app_base.config.event_broker import EventBrokerSettings
+        from app_base.config.file_storage import FileStorageSettings
+        from app_base.config.vector_db import VectorDBSettings
+    except ImportError as e:
+        raise click.ClickException(
+            "Error: Could not import 'app_base.config' modules. Please ensure 'app-base' is installed "
+            "(e.g., 'pip install app-base') in your Python environment."
+        ) from e
+
     settings_map = {
         "auth": (AuthSettings, None),
         "app": (AppSettings, None),
