@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 import sys
 
@@ -37,8 +38,29 @@ def build_review_prompt(language: str = "English", staged_only: bool = False) ->
 
 
 def copy_to_clipboard(text: str) -> None:
-    encoded = text.encode("utf-8")
     try:
+        # Check if running in WSL (Windows Subsystem for Linux)
+        if sys.platform.startswith("linux"):
+            is_wsl = False
+            try:
+                with open("/proc/version") as f:
+                    if "microsoft" in f.read().lower():
+                        is_wsl = True
+            except FileNotFoundError:
+                pass
+
+            if is_wsl:
+                # clip.exe is the Windows utility that copies stdin to the Windows clipboard
+                clip_path = shutil.which("clip.exe") or "/mnt/c/Windows/System32/clip.exe"
+                try:
+                    # Windows clip.exe handles UTF-16LE input perfectly for all characters
+                    subprocess.run([clip_path], input=text.encode("utf-16le"), check=True)
+                    return
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    # Fallback to standard Linux tools if clip.exe fails or is not found
+                    pass
+
+        encoded = text.encode("utf-8")
         if sys.platform == "darwin":
             subprocess.run(["pbcopy"], input=encoded, check=True)
         elif sys.platform.startswith("linux"):
