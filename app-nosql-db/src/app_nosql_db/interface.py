@@ -3,8 +3,6 @@ from collections.abc import Mapping
 from contextlib import contextmanager
 from typing import Any
 
-from app_nosql_db.config import NoSQLDBSettings
-
 
 class NoSQLDBProvider(ABC):
     def __init__(self, client: Any):
@@ -12,7 +10,7 @@ class NoSQLDBProvider(ABC):
 
     @classmethod
     @abstractmethod
-    def from_config(cls, settings: NoSQLDBSettings) -> "NoSQLDBProvider":
+    def from_env(cls) -> "NoSQLDBProvider":
         pass
 
     @abstractmethod

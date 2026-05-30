@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 async def test_lifespan_file_storage_initializes_and_cleans_up():
     mock_app = FastAPI()  # FastAPI app is not actually used, but passed for type hint
-    mock_settings = FileStorageSettings(FS_PROVIDER="local", **{})
+    mock_settings = FileStorageSettings(FS_PROVIDER="local", **{})  # type: ignore
 
     with (
         patch(

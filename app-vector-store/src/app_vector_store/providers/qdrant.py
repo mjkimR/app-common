@@ -1,20 +1,25 @@
 from typing import Any
 
 from app_ai_catalog.models import get_ai_client
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app_vector_store.config import QdrantSettings, VectorDBSettings
 from app_vector_store.interface import VectorStoreProvider, import_error_handler
-from app_vector_store.registry import register_vector_store
 
 
-@register_vector_store("qdrant")
+class QdrantSettings(BaseSettings):
+    url: str = Field(default="http://localhost:6333", description="Qdrant server URL")
+    api_key: SecretStr = Field(description="API key for Qdrant authentication")
+    model_config = SettingsConfigDict(env_prefix="VECTOR_DB_QDRANT_")
+
+
 class QdrantProvider(VectorStoreProvider):
     @classmethod
-    def from_config(cls, settings: VectorDBSettings[QdrantSettings]) -> VectorStoreProvider:
+    def from_env(cls) -> VectorStoreProvider:
         with import_error_handler("qdrant"):
             from qdrant_client import QdrantClient
-        config: QdrantSettings = settings.config
-        client = QdrantClient(url=config.url, api_key=config.api_key.get_secret_value() if config.api_key else None)
+        config = QdrantSettings()  # type: ignore
+        client = QdrantClient(url=config.url, api_key=config.api_key.get_secret_value())
         return QdrantProvider(client)
 
     def close(self) -> None:

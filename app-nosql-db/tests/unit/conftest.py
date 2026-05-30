@@ -4,7 +4,6 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from app_nosql_db.config import NoSQLDBSettings
 from app_nosql_db.interface import NoSQLDBProvider
 
 
@@ -17,7 +16,7 @@ class MockNoSQLDBProvider(NoSQLDBProvider):
         self._store: dict[str, dict[str, Any]] = {}  # {collection: {doc_id: data}}
 
     @classmethod
-    def from_config(cls, settings: NoSQLDBSettings) -> "MockNoSQLDBProvider":
+    def from_env(cls) -> "MockNoSQLDBProvider":
         return cls(MagicMock())
 
     def close(self) -> None:

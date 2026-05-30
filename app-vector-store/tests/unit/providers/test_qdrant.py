@@ -21,12 +21,12 @@ def mock_ai_model_factory():
     return mock_factory
 
 
-async def test_qdrant_provider_from_config_import_error(mock_qdrant_settings):
+async def test_qdrant_provider_from_env_import_error():
     with (
         patch.dict("sys.modules", {"qdrant_client": None}),
         pytest.raises(ImportError, match=r"Failed to import dependencies for vector store kind 'qdrant'"),
     ):
-        QdrantProvider.from_config(mock_qdrant_settings)
+        QdrantProvider.from_env()
 
 
 def test_qdrant_provider_close(mock_qdrant_client):

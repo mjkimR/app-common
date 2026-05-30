@@ -1,38 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from app_file_storage.config import FileStorageSettings, S3FileStorageSettings
 from app_file_storage.providers.s3 import S3StorageProvider
 from botocore.exceptions import ClientError
-from pydantic import SecretStr
-
-
-@pytest.fixture
-def mock_s3_settings():
-    mock_settings = MagicMock(spec=FileStorageSettings)
-    mock_settings.provider = "s3"
-    mock_settings.config = S3FileStorageSettings(
-        bucket_name="test-bucket",
-        access_key=SecretStr("test_access_key"),
-        secret_key=SecretStr("test_secret_key"),
-        region_name="us-east-1",
-        endpoint_url="http://localhost:9000",
-    )
-    return mock_settings
-
-
-@pytest.fixture
-def mock_s3_settings_no_api_key():
-    mock_settings = MagicMock(spec=FileStorageSettings)
-    mock_settings.provider = "s3"
-    mock_settings.config = S3FileStorageSettings(
-        bucket_name="test-bucket",
-        access_key=None,  # type: ignore
-        secret_key=None,  # type: ignore
-        region_name="us-east-1",
-        endpoint_url="http://localhost:9000",
-    )
-    return mock_settings
 
 
 @pytest.fixture
@@ -60,13 +30,22 @@ def mock_aiobotocore_client():
     return mock_client
 
 
-async def test_from_config_success(mock_s3_settings, mock_aiobotocore_client):
+async def test_from_env_success(mock_aiobotocore_client):
     with patch("aiobotocore.session.get_session") as mock_get_session:
         mock_session = MagicMock()
         mock_session.create_client.return_value.__aenter__.return_value = mock_aiobotocore_client
         mock_get_session.return_value = mock_session
 
-        provider = await S3StorageProvider.from_config(mock_s3_settings)
+        with patch("app_file_storage.providers.s3.S3FileStorageSettings") as mock_settings_class:
+            mock_settings_instance = MagicMock()
+            mock_settings_instance.access_key.get_secret_value.return_value = "test_access_key"
+            mock_settings_instance.secret_key.get_secret_value.return_value = "test_secret_key"
+            mock_settings_instance.region_name = "us-east-1"
+            mock_settings_instance.endpoint_url = "http://localhost:9000"
+            mock_settings_instance.bucket_name = "test-bucket"
+            mock_settings_class.return_value = mock_settings_instance
+
+            provider = await S3StorageProvider.from_env()
 
         mock_get_session.assert_called_once()
         mock_session.create_client.assert_called_once_with(
@@ -80,18 +59,11 @@ async def test_from_config_success(mock_s3_settings, mock_aiobotocore_client):
         assert provider.bucket_name == "test-bucket"
 
 
-async def test_from_config_no_config_raises_error():
-    mock_settings = MagicMock(spec=FileStorageSettings)
-    mock_settings.provider = "s3"
-    mock_settings.config = None  # Set config to None for this test case
-    with pytest.raises(ValueError, match=r"S3 storage settings are not configured."):
-        await S3StorageProvider.from_config(mock_settings)
-
-
 async def test_close(mock_aiobotocore_client):
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    mock_context = AsyncMock()
+    provider = S3StorageProvider(mock_context, mock_aiobotocore_client, "test-bucket")
     await provider.close()
-    mock_aiobotocore_client.close.assert_called_once()
+    mock_context.__aexit__.assert_called_once_with(None, None, None)
 
 
 async def test_download_file_success(mock_aiobotocore_client):
@@ -104,7 +76,7 @@ async def test_download_file_success(mock_aiobotocore_client):
     mock_body.__aexit__.return_value = None
 
     mock_aiobotocore_client.get_object.return_value = {"Body": mock_body}
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     content = await provider.download_file("test.txt")
     mock_aiobotocore_client.get_object.assert_called_once_with(Bucket="test-bucket", Key="test.txt")
     assert content == b"file content"
@@ -114,7 +86,7 @@ async def test_download_file_not_found(mock_aiobotocore_client):
     mock_aiobotocore_client.get_object.side_effect = ClientError(
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"
     )
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     with pytest.raises(FileNotFoundError, match=r"File not found at non_existent.txt"):
         await provider.download_file("non_existent.txt")
 
@@ -124,7 +96,7 @@ async def test_download_file_stream_success(mock_aiobotocore_client):
     mock_body.iter_chunks.return_value.__aiter__.return_value = [b"chunk1", b"chunk2"]
     mock_aiobotocore_client.get_object.return_value = {"Body": mock_body}
 
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     chunks = [chunk async for chunk in provider.download_file_stream("test.txt")]
     assert chunks == [b"chunk1", b"chunk2"]
 
@@ -133,14 +105,14 @@ async def test_download_file_stream_not_found(mock_aiobotocore_client):
     mock_aiobotocore_client.get_object.side_effect = ClientError(
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"
     )
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     with pytest.raises(FileNotFoundError, match=r"File not found at non_existent.txt"):
         async for _ in provider.download_file_stream("non_existent.txt"):
             pass
 
 
 async def test_upload_file_success(mock_aiobotocore_client):
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     await provider.upload_file("upload.txt", b"upload data")
     mock_aiobotocore_client.put_object.assert_called_once_with(
         Bucket="test-bucket", Key="upload.txt", Body=b"upload data"
@@ -148,14 +120,14 @@ async def test_upload_file_success(mock_aiobotocore_client):
 
 
 async def test_delete_file_success(mock_aiobotocore_client):
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     await provider.delete_file("delete.txt")
     mock_aiobotocore_client.delete_object.assert_called_once_with(Bucket="test-bucket", Key="delete.txt")
 
 
 async def test_list_files_success(mock_aiobotocore_client):
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
-    files = await provider.list_files("prefix/")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
+    files = [file async for file in provider.list_files("prefix/")]
     mock_aiobotocore_client.get_paginator.assert_called_once_with("list_objects_v2")
     mock_aiobotocore_client.get_paginator.return_value.paginate.assert_called_once_with(
         Bucket="test-bucket", Prefix="prefix/"
@@ -165,7 +137,7 @@ async def test_list_files_success(mock_aiobotocore_client):
 
 async def test_file_exists_true(mock_aiobotocore_client):
     mock_aiobotocore_client.head_object.return_value = {}
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     exists = await provider.file_exists("existing.txt")
     assert exists is True
 
@@ -174,7 +146,7 @@ async def test_file_exists_false(mock_aiobotocore_client):
     mock_aiobotocore_client.head_object.side_effect = ClientError(
         {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject"
     )
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     exists = await provider.file_exists("non_existing.txt")
     assert exists is False
 
@@ -186,7 +158,7 @@ async def test_get_file_metadata_success(mock_aiobotocore_client):
         "ContentType": "text/plain",
         "ETag": '"abc"',
     }
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     metadata = await provider.get_file_metadata("meta.txt")
     assert metadata["size"] == 123
     assert metadata["last_modified"] == "Thu, 01 Jan 1970 00:00:00 GMT"
@@ -199,6 +171,6 @@ async def test_get_file_metadata_not_found(mock_aiobotocore_client):
     mock_aiobotocore_client.head_object.side_effect = ClientError(
         {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject"
     )
-    provider = S3StorageProvider(mock_aiobotocore_client, "test-bucket")
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
     with pytest.raises(FileNotFoundError, match=r"File not found at non_existent_meta.txt"):
         await provider.get_file_metadata("non_existent_meta.txt")

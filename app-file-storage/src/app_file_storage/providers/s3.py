@@ -4,26 +4,43 @@ from typing import Any
 import aiobotocore.session
 from aiobotocore.client import AioBaseClient
 from botocore.exceptions import ClientError
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app_file_storage.config import FileStorageSettings, S3FileStorageSettings
 from app_file_storage.interface import FileStorageClient
+
+
+class S3FileStorageSettings(BaseSettings):
+    """Settings for when the file storage provider is 's3'."""
+
+    endpoint_url: str = Field(
+        default="http://localhost:9000", description="S3-compatible endpoint URL (e.g. MinIO or AWS S3)"
+    )
+    access_key: SecretStr = Field(description="S3 access key ID for authentication")
+    secret_key: SecretStr = Field(description="S3 secret access key for authentication")
+    bucket_name: str = Field(default="my-bucket", description="Name of the S3 bucket to use for file storage")
+    region_name: str | None = Field(
+        default=None, description="AWS region name (required for AWS S3, optional for S3-compatible providers)"
+    )
+
+    model_config = SettingsConfigDict(env_prefix="FS_S3_")
 
 
 class S3StorageProvider(FileStorageClient):
     """Manages file operations with an S3-compatible storage service."""
 
-    def __init__(self, client: AioBaseClient, bucket_name: str):
+    def __init__(self, context: Any, client: AioBaseClient, bucket_name: str):
+        self.context = context
+        # Typed as Any to bypass Pyright errors from aiobotocore's dynamically generated methods
         self.client: Any = client
         self.bucket_name = bucket_name
 
     @classmethod
-    async def from_config(cls, settings: FileStorageSettings[S3FileStorageSettings]) -> "S3StorageProvider":
+    async def from_env(cls) -> "S3StorageProvider":
         """
         Creates the S3 client from configuration and returns it with the bucket name.
         """
-        if not settings.config:
-            raise ValueError("S3 storage settings are not configured.")
-        config: S3FileStorageSettings = settings.config
+        config = S3FileStorageSettings()  # type: ignore
         session = aiobotocore.session.get_session()
         context = session.create_client(
             "s3",
@@ -33,11 +50,11 @@ class S3StorageProvider(FileStorageClient):
             endpoint_url=config.endpoint_url,
         )
         client = await context.__aenter__()
-        return cls(client, config.bucket_name)
+        return cls(context, client, config.bucket_name)
 
     async def close(self) -> None:
-        """Closes the S3 client."""
-        await self.client.close()
+        """Closes the S3 client context."""
+        await self.context.__aexit__(None, None, None)
 
     async def download_file(self, file_path: str) -> bytes:
         """Downloads a file from S3 and returns its content as bytes."""
@@ -71,16 +88,13 @@ class S3StorageProvider(FileStorageClient):
         """Deletes a file from S3."""
         await self.client.delete_object(Bucket=self.bucket_name, Key=file_path)
 
-    async def list_files(self, prefix: str) -> list[str]:
+    async def list_files(self, prefix: str) -> AsyncIterator[str]:
         """Lists files in S3 matching a given prefix."""
-
         paginator = self.client.get_paginator("list_objects_v2")
-        file_list = []
         async for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
             if "Contents" in page:
                 for obj in page["Contents"]:
-                    file_list.append(obj["Key"])
-        return file_list
+                    yield obj["Key"]
 
     async def file_exists(self, file_path: str) -> bool:
         """Checks if a file exists in S3."""

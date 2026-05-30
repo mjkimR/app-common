@@ -1,19 +1,30 @@
 from collections.abc import Mapping
 from typing import Any
 
-from app_nosql_db.config import FirestoreSettings, NoSQLDBSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from app_nosql_db.interface import NoSQLDBProvider, import_error_handler
-from app_nosql_db.registry import register_nosql_db
 
 
-@register_nosql_db("firestore")
+class FirestoreSettings(BaseSettings):
+    project_id: str = Field(
+        default="dummy-project", description="Google Cloud project ID that owns the Firestore database"
+    )
+    credentials_path: str | None = Field(
+        default=None, description="Path to the Google service account JSON credentials file (uses ADC if not set)"
+    )
+    database_id: str = Field(default="(default)", description="Firestore database ID to connect to")
+    model_config = SettingsConfigDict(env_prefix="NOSQL_DB_FIRESTORE_")
+
+
 class FirestoreProvider(NoSQLDBProvider):
     @classmethod
-    def from_config(cls, settings: NoSQLDBSettings[FirestoreSettings]) -> "FirestoreProvider":
+    def from_env(cls) -> "FirestoreProvider":
         with import_error_handler("firestore"):
             from google.cloud import firestore
 
-        config: FirestoreSettings = settings.config
+        config = FirestoreSettings()
 
         if config.credentials_path:
             client = firestore.AsyncClient.from_service_account_json(

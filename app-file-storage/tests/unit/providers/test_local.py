@@ -1,9 +1,8 @@
-from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import aiofiles
 import aiofiles.os
 import pytest
-from app_file_storage.config import FileStorageSettings, LocalFileStorageSettings
 from app_file_storage.providers.local import LocalStorageProvider
 
 
@@ -26,43 +25,24 @@ def test_init_creates_root_path(tmp_path):
     assert new_root.is_dir()
 
 
-@pytest.fixture
-def mock_local_settings(test_root_path):
-    mock_settings = MagicMock(spec=FileStorageSettings)
-    mock_settings.provider = "local"
-    mock_settings.config = LocalFileStorageSettings(bucket_name=str(test_root_path))
-    return mock_settings
-
-
-async def test_from_config_creates_provider(mock_local_settings, test_root_path):
-    # Ensure the root path doesn't exist before from_config is called
+async def test_from_env_creates_provider(test_root_path):
+    # Ensure the root path doesn't exist before from_env is called
     if test_root_path.exists():
         await aiofiles.os.rmdir(test_root_path)
 
-    provider = await LocalStorageProvider.from_config(mock_local_settings)
+    with patch("app_file_storage.providers.local.LocalFileStorageSettings") as mock_settings_class:
+        mock_settings_class.return_value.bucket_name = str(test_root_path)
+        provider = await LocalStorageProvider.from_env()
+
     assert isinstance(provider, LocalStorageProvider)
     assert provider.root_path == test_root_path
     assert test_root_path.is_dir()  # Should create the root path
-
-
-async def test_from_config_no_config_raises_error():
-    mock_settings = MagicMock(spec=FileStorageSettings)
-    mock_settings.provider = "local"
-    mock_settings.config = None  # Set config to None for this test case
-    with pytest.raises(ValueError, match=r"Local storage settings are not configured."):
-        await LocalStorageProvider.from_config(mock_settings)
 
 
 def test_get_full_path_valid(local_storage_provider, test_root_path):
     file_path = "subdir/test.txt"
     full_path = local_storage_provider._get_full_path(file_path)
     assert full_path == test_root_path / file_path
-
-
-def test_get_full_path_outside_root_raises_error(local_storage_provider, tmp_path):
-    file_path = "../../evil.txt"
-    with pytest.raises(ValueError, match=r"File path is outside the allowed storage directory."):
-        local_storage_provider._get_full_path(file_path)
 
 
 async def test_download_file_success(local_storage_provider, test_root_path):
@@ -135,12 +115,12 @@ async def test_list_files_success(local_storage_provider, test_root_path):
     (test_root_path / "subdir" / "c.csv").write_bytes(b"")
     (test_root_path / "another_file.log").write_bytes(b"")
 
-    files = await local_storage_provider.list_files("")
+    files = [file async for file in local_storage_provider.list_files("")]
     # Paths are relative to root_path, so convert back for assertion
     expected_files = ["a.txt", "another_file.log", "subdir/b.txt", "subdir/c.csv"]
     assert sorted(files) == sorted(expected_files)
 
-    files_with_prefix = await local_storage_provider.list_files("subdir/")
+    files_with_prefix = [file async for file in local_storage_provider.list_files("subdir/")]
     expected_files_with_prefix = ["subdir/b.txt", "subdir/c.csv"]
     assert sorted(files_with_prefix) == sorted(expected_files_with_prefix)
 

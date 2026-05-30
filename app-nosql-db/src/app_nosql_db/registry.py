@@ -1,18 +1,35 @@
+import importlib
+from typing import ClassVar
+
+from app_nosql_db.config import NoSQLDBProviderType
 from app_nosql_db.interface import NoSQLDBProvider
 
-_NOSQL_DB_REGISTRY: dict[str, type[NoSQLDBProvider]] = {}
 
+class NoSQLDBRegistry:
+    """Registry for NoSQL database providers."""
 
-def register_nosql_db[T: NoSQLDBProvider](kind: str):
-    def decorator(cls: type[T]) -> type[T]:
-        _NOSQL_DB_REGISTRY[kind] = cls
-        return cls
+    _PROVIDER_MODULES: ClassVar[dict[NoSQLDBProviderType, str]] = {
+        NoSQLDBProviderType.FIRESTORE: "app_nosql_db.providers.firestore",
+        NoSQLDBProviderType.MONGODB: "app_nosql_db.providers.mongodb",
+    }
 
-    return decorator
+    _PROVIDER_CLASSES: ClassVar[dict[NoSQLDBProviderType, str]] = {
+        NoSQLDBProviderType.FIRESTORE: "FirestoreProvider",
+        NoSQLDBProviderType.MONGODB: "MongoDBProvider",
+    }
 
+    @classmethod
+    def get_provider_cls(cls, provider: NoSQLDBProviderType | str) -> type[NoSQLDBProvider]:
+        try:
+            provider_enum = NoSQLDBProviderType(provider)
+        except ValueError as exc:
+            raise ValueError(f"Unsupported NoSQL DB provider: {provider}") from exc
 
-def get_provider_cls(kind: str) -> type[NoSQLDBProvider]:
-    provider_cls = _NOSQL_DB_REGISTRY.get(kind)
-    if not provider_cls:
-        raise ValueError(f"NoSQL DB provider for kind '{kind}' is not registered.")
-    return provider_cls
+        if provider_enum not in cls._PROVIDER_MODULES:
+            raise ValueError(f"NoSQL DB provider for kind '{provider_enum}' is not registered.")
+
+        module_path = cls._PROVIDER_MODULES[provider_enum]
+        class_name = cls._PROVIDER_CLASSES[provider_enum]
+
+        module = importlib.import_module(module_path)
+        return getattr(module, class_name)

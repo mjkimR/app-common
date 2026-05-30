@@ -1,4 +1,5 @@
 import pytest
+from app_nosql_db.config import NoSQLDBProviderType
 from app_nosql_db.instance import (
     close_nosql_db,
     get_nosql_db_provider,
@@ -34,10 +35,8 @@ async def test_close_nosql_db(mock_provider):
 async def test_setup_nosql_db_provider_none_provider():
     from unittest.mock import MagicMock
 
-    from app_nosql_db.config import NoSQLDBSettings
-
-    settings = MagicMock(spec=NoSQLDBSettings)
-    settings.provider = "none"
+    settings = MagicMock()
+    settings.provider = NoSQLDBProviderType.NONE
     # Should not raise, just skips
     await setup_nosql_db_provider(settings)
     with pytest.raises(RuntimeError):
@@ -47,11 +46,9 @@ async def test_setup_nosql_db_provider_none_provider():
 async def test_setup_nosql_db_provider_already_initialized(mock_provider):
     from unittest.mock import MagicMock
 
-    from app_nosql_db.config import NoSQLDBSettings
-
     set_nosql_db_provider(mock_provider)
 
-    settings = MagicMock(spec=NoSQLDBSettings)
+    settings = MagicMock()
     settings.provider = "some_provider"
     # Already initialized → should log and return without error
     await setup_nosql_db_provider(settings)

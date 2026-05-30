@@ -1,19 +1,25 @@
 from collections.abc import Mapping
 from typing import Any
 
-from app_nosql_db.config import MongoDBSettings, NoSQLDBSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from app_nosql_db.interface import NoSQLDBProvider, import_error_handler
-from app_nosql_db.registry import register_nosql_db
 
 
-@register_nosql_db("mongodb")
+class MongoDBSettings(BaseSettings):
+    url: str = Field(default="mongodb://localhost:27017", description="MongoDB connection URI")
+    database: str = Field(default="app", description="Name of the MongoDB database to use")
+    model_config = SettingsConfigDict(env_prefix="NOSQL_DB_MONGODB_")
+
+
 class MongoDBProvider(NoSQLDBProvider):
     @classmethod
-    def from_config(cls, settings: NoSQLDBSettings[MongoDBSettings]) -> "MongoDBProvider":
+    def from_env(cls) -> "MongoDBProvider":
         with import_error_handler("mongodb"):
             from motor.motor_asyncio import AsyncIOMotorClient
 
-        config: MongoDBSettings = settings.config
+        config = MongoDBSettings()
         client = AsyncIOMotorClient(config.url)
         return cls(client)
 

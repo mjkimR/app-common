@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from app_vector_store.config import VectorDBSettings
 from app_vector_store.factory import VectorStoreFactory, vector_store_cache
 from app_vector_store.interface import VectorStoreProvider
 from langchain_core.vectorstores import VectorStore
@@ -28,7 +27,7 @@ class MockVectorStoreProvider(VectorStoreProvider):
         super().__init__(client)
 
     @classmethod
-    def from_config(cls, settings: VectorDBSettings) -> "MockVectorStoreProvider":
+    def from_env(cls) -> "MockVectorStoreProvider":
         return cls(MagicMock())
 
     def close(self) -> None:

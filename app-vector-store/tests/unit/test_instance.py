@@ -2,7 +2,6 @@ import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-from app_vector_store.config import VectorDBSettings
 from app_vector_store.factory import VectorStoreFactory
 from app_vector_store.instance import (
     close_vector_store,
@@ -50,7 +49,7 @@ class MockVectorStoreProvider(VectorStoreProvider):
         self.create_vector_store_called_with = None
 
     @classmethod
-    def from_config(cls, settings: VectorDBSettings) -> "MockVectorStoreProvider":
+    def from_env(cls) -> "MockVectorStoreProvider":
         return cls(MagicMock())
 
     def close(self) -> None:
@@ -100,7 +99,7 @@ async def test_get_vector_store():
 async def test_setup_vector_store_provider(mock_qdrant_settings):
     mock_settings = mock_qdrant_settings
     with patch(
-        "app_vector_store.instance.get_provider_cls", return_value=MockVectorStoreProvider
+        "app_vector_store.registry.VectorStoreRegistry.get_provider_cls", return_value=MockVectorStoreProvider
     ) as mock_get_provider_cls:
         await setup_vector_store_provider(mock_settings)
         mock_get_provider_cls.assert_called_once_with(mock_settings.provider)
@@ -111,7 +110,7 @@ async def test_setup_vector_store_provider_already_initialized(mock_qdrant_setti
     mock_provider = MockVectorStoreProvider(MagicMock())
     set_vector_store_provider(mock_provider)
     mock_settings = mock_qdrant_settings
-    with patch("app_vector_store.registry.get_provider_cls") as mock_get_provider_cls:
+    with patch("app_vector_store.registry.VectorStoreRegistry.get_provider_cls") as mock_get_provider_cls:
         await setup_vector_store_provider(mock_settings)
         mock_get_provider_cls.assert_not_called()
         assert get_vector_store_provider() == mock_provider

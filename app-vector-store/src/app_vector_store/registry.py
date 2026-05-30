@@ -1,18 +1,33 @@
+import importlib
+from typing import ClassVar
+
+from app_vector_store.config import VectorDBProviderType
 from app_vector_store.interface import VectorStoreProvider
 
-_VECTOR_STORE_REGISTRY: dict[str, type[VectorStoreProvider]] = {}
 
+class VectorStoreRegistry:
+    """Registry for vector store providers."""
 
-def register_vector_store[T: VectorStoreProvider](kind: str):
-    def decorator(cls: type[T]) -> type[T]:
-        _VECTOR_STORE_REGISTRY[kind] = cls
-        return cls
+    _PROVIDER_MODULES: ClassVar[dict[VectorDBProviderType, str]] = {
+        VectorDBProviderType.QDRANT: "app_vector_store.providers.qdrant",
+    }
 
-    return decorator
+    _PROVIDER_CLASSES: ClassVar[dict[VectorDBProviderType, str]] = {
+        VectorDBProviderType.QDRANT: "QdrantProvider",
+    }
 
+    @classmethod
+    def get_provider_cls(cls, provider: VectorDBProviderType | str) -> type[VectorStoreProvider]:
+        try:
+            provider_enum = VectorDBProviderType(provider)
+        except ValueError as exc:
+            raise ValueError(f"Unsupported Vector Store provider: {provider}") from exc
 
-def get_provider_cls(kind: str) -> type[VectorStoreProvider]:
-    provider_cls = _VECTOR_STORE_REGISTRY.get(kind)
-    if not provider_cls:
-        raise ValueError(f"Vector Store provider for kind '{kind}' is not registered.")
-    return provider_cls
+        if provider_enum not in cls._PROVIDER_MODULES:
+            raise ValueError(f"Vector Store provider for kind '{provider_enum}' is not registered.")
+
+        module_path = cls._PROVIDER_MODULES[provider_enum]
+        class_name = cls._PROVIDER_CLASSES[provider_enum]
+
+        module = importlib.import_module(module_path)
+        return getattr(module, class_name)

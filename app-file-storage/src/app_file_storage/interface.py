@@ -2,14 +2,12 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from typing import Any
 
-from app_file_storage.config import FileStorageSettings
-
 
 class FileStorageClient(ABC):
     @classmethod
     @abstractmethod
-    async def from_config(cls, settings: FileStorageSettings) -> "FileStorageClient":
-        """Create a file storage client from configuration."""
+    async def from_env(cls) -> "FileStorageClient":
+        """Create a file storage client from environment configuration."""
         pass
 
     @abstractmethod
@@ -38,7 +36,7 @@ class FileStorageClient(ABC):
         pass
 
     @abstractmethod
-    async def list_files(self, prefix: str) -> list[str]:
+    def list_files(self, prefix: str) -> AsyncIterator[str]:
         """Lists files matching a given prefix."""
         pass
 

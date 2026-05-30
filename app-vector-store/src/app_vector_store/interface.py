@@ -4,8 +4,6 @@ from typing import Any
 
 from langchain_core.vectorstores import VectorStore
 
-from app_vector_store.config import VectorDBSettings
-
 
 class VectorStoreProvider(ABC):
     def __init__(self, client: Any):
@@ -13,7 +11,7 @@ class VectorStoreProvider(ABC):
 
     @classmethod
     @abstractmethod
-    def from_config(cls, settings: VectorDBSettings) -> "VectorStoreProvider":
+    def from_env(cls) -> "VectorStoreProvider":
         pass
 
     @abstractmethod

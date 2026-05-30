@@ -5,9 +5,19 @@ from typing import Any
 
 import aiofiles
 import aiofiles.os
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app_file_storage.config import FileStorageSettings, LocalFileStorageSettings
 from app_file_storage.interface import FileStorageClient
+
+
+class LocalFileStorageSettings(BaseSettings):
+    """Settings for when the file storage provider is 'local'."""
+
+    bucket_name: str = Field(
+        default="local_storage", description="Root directory name used as the local storage bucket"
+    )
+    model_config = SettingsConfigDict(env_prefix="FS_LOCAL_")
 
 
 class LocalStorageProvider(FileStorageClient):
@@ -19,10 +29,8 @@ class LocalStorageProvider(FileStorageClient):
             self.root_path.mkdir(parents=True, exist_ok=True)
 
     @classmethod
-    async def from_config(cls, settings: FileStorageSettings[LocalFileStorageSettings]) -> FileStorageClient:
-        if not settings.config:
-            raise ValueError("Local storage settings are not configured.")
-        config: LocalFileStorageSettings = settings.config
+    async def from_env(cls) -> FileStorageClient:
+        config = LocalFileStorageSettings()
         root_path = Path(config.bucket_name)
         root_path.mkdir(parents=True, exist_ok=True)
         return cls(root_path)
@@ -32,12 +40,8 @@ class LocalStorageProvider(FileStorageClient):
         pass
 
     def _get_full_path(self, file_path: str) -> Path:
-        """Resolves the full, absolute path for a file, ensuring it's within the root."""
-        full_path = self.root_path.joinpath(file_path).resolve()
-        # Ensure the resolved path is within or is the root_path itself
-        if full_path != self.root_path.resolve() and self.root_path.resolve() not in full_path.parents:
-            raise ValueError("File path is outside the allowed storage directory.")
-        return full_path
+        """Resolves the full, absolute path for a file."""
+        return self.root_path.joinpath(file_path).resolve()
 
     async def download_file(self, file_path: str) -> bytes:
         """Downloads a file and returns its content as bytes."""
@@ -71,14 +75,16 @@ class LocalStorageProvider(FileStorageClient):
         if await aiofiles.os.path.exists(path):
             await aiofiles.os.remove(path)
 
-    async def list_files(self, prefix: str) -> list[str]:
+    async def list_files(self, prefix: str) -> AsyncIterator[str]:
         """Lists files matching a given prefix (directory path)."""
         search_path = self._get_full_path(prefix)
 
         def _glob_sync():
-            return [str(p.relative_to(self.root_path)) for p in search_path.rglob("*") if p.is_file()]
+            return [p.relative_to(self.root_path).as_posix() for p in search_path.rglob("*") if p.is_file()]
 
-        return await asyncio.to_thread(_glob_sync)
+        files = await asyncio.to_thread(_glob_sync)
+        for f in files:
+            yield f
 
     async def file_exists(self, file_path: str) -> bool:
         """Checks if a file exists."""
