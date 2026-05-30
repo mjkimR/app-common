@@ -21,3 +21,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app_layer_base"]
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.21.0",
+    "asyncpg>=0.30.0",
+]
+

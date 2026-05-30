@@ -56,23 +56,23 @@ def test_set_http_sync_client_already_initialized():
         set_http_sync_client(mock_client)
 
 
-def test_get_http_client_not_initialized():
-    with pytest.raises(RuntimeError, match=r"HTTP client is not initialized. Check lifespan."):
-        get_http_client()
+def test_get_http_client_lazy_initializes():
+    client = get_http_client()
+    assert isinstance(client, httpx.AsyncClient)
 
 
-def test_get_http_sync_client_not_initialized():
-    with pytest.raises(RuntimeError, match=r"Synchronous HTTP client is not initialized. Check lifespan."):
-        get_http_sync_client()
+def test_get_http_sync_client_lazy_initializes():
+    client = get_http_sync_client()
+    assert isinstance(client, httpx.Client)
 
 
 @pytest.fixture
 def mock_http_settings():
     settings = MagicMock()
-    settings.TIMEOUT = 10.0
-    settings.MAX_CONNECTIONS = 100
-    settings.MAX_KEEPALIVE_CONNECTIONS = 20
-    settings.KEEPALIVE_EXPIRY = 5.0
+    settings.timeout = 10.0
+    settings.max_connections = 100
+    settings.max_keepalive_connections = 20
+    settings.keepalive_expiry = 5.0
     return settings
 
 
@@ -119,8 +119,11 @@ async def test_close_http_client():
     await close_http_client()
 
     mock_client.aclose.assert_awaited_once()
-    with pytest.raises(RuntimeError, match=r"HTTP client is not initialized. Check lifespan."):
-        get_http_client()
+
+    # Verify module global is set to None
+    instance_module = sys.modules.get("app_http_client.instance")
+    assert instance_module is not None
+    assert instance_module._http_client is None
 
 
 async def test_close_http_client_not_initialized():
@@ -135,8 +138,11 @@ def test_close_http_sync_client():
     close_http_sync_client()
 
     mock_client.close.assert_called_once()
-    with pytest.raises(RuntimeError, match=r"Synchronous HTTP client is not initialized. Check lifespan."):
-        get_http_sync_client()
+
+    # Verify module global is set to None
+    instance_module = sys.modules.get("app_http_client.instance")
+    assert instance_module is not None
+    assert instance_module._http_sync_client is None
 
 
 def test_close_http_sync_client_not_initialized():

@@ -5,9 +5,12 @@ description = "File storage adapter package supporting local and S3 storage"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "app-layer-base",
     "aiofiles>=25.1.0",
     "aiobotocore>=3.1.1",
+    "loguru>=0.7.3",
+    "pydantic>=2.11.1",
+    "pydantic-settings>=2.8.1",
+    "dotenv>=0.9.9",
 ]
 
 [build-system]
@@ -21,7 +24,4 @@ packages = ["src/app_file_storage"]
 dev = [
     "fastapi>=0.115.12",
 ]
-
-[tool.uv.sources]
-app-layer-base = { workspace = true }
 

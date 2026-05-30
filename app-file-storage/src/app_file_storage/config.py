@@ -2,7 +2,6 @@ import functools
 import os
 from typing import Literal
 
-from app_layer_base.config_util import get_env_file_path
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -56,7 +55,6 @@ class FileStorageSettings[TFileProviderConfigs: FileProviderConfigs](BaseSetting
     # Nested settings for provider
     config: TFileProviderConfigs
     model_config = SettingsConfigDict(
-        env_file=get_env_file_path(),
         env_nested_delimiter="__",
         validate_assignment=True,
         extra="ignore",

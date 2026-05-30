@@ -4,13 +4,12 @@ from dataclasses import replace
 from functools import lru_cache
 from typing import Any, TypedDict
 
-from app_layer_base.base.schemas.delete_resp import DeleteResponse
-from app_layer_base.base.schemas.paginated import PaginatedList
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from app_nosql_db.interface import NoSQLDBProvider
 from app_nosql_db.query_options import NoSQLListQueryOptions
 from app_nosql_db.repository import NoSQLRepository
+from app_nosql_db.schemas import DeleteResponse, PaginatedList
 
 
 class BaseNoSQLContextKwargs(TypedDict):

@@ -1,6 +1,5 @@
 import functools
 
-from app_layer_base.config_util import get_env_file_path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,22 +10,28 @@ class HTTPClientSettings(BaseSettings):
     Defaults match httpx standard defaults.
     """
 
-    TIMEOUT: float = Field(default=5.0, description="Default timeout in seconds for HTTP requests")
-    MAX_CONNECTIONS: int = Field(
-        default=100, description="Maximum number of concurrent HTTP connections in the connection pool"
+    timeout: float = Field(
+        default=5.0,
+        description="Default timeout in seconds for HTTP requests",
+        validation_alias="HTTP_TIMEOUT",
     )
-    MAX_KEEPALIVE_CONNECTIONS: int = Field(
-        default=20, description="Maximum number of keep-alive connections to maintain in the pool"
+    max_connections: int = Field(
+        default=100,
+        description="Maximum number of concurrent HTTP connections in the connection pool",
+        validation_alias="HTTP_MAX_CONNECTIONS",
     )
-    KEEPALIVE_EXPIRY: float = Field(
-        default=5.0, description="Time in seconds before an idle keep-alive connection is closed"
+    max_keepalive_connections: int = Field(
+        default=20,
+        description="Maximum number of keep-alive connections to maintain in the pool",
+        validation_alias="HTTP_MAX_KEEPALIVE_CONNECTIONS",
+    )
+    keepalive_expiry: float = Field(
+        default=5.0,
+        description="Time in seconds before an idle keep-alive connection is closed",
+        validation_alias="HTTP_KEEPALIVE_EXPIRY",
     )
 
-    model_config = SettingsConfigDict(
-        env_file=get_env_file_path(),
-        env_prefix="HTTP_CLIENT_",
-        extra="ignore",
-    )
+    model_config = SettingsConfigDict(extra="ignore")
 
 
 @functools.lru_cache

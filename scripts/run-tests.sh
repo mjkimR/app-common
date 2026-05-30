@@ -54,42 +54,23 @@ run_pytest() {
     fi
 
     grep -vE "$PROGRESS_LINE_FILTER" "$tmp" || true
-    if [ "$module" = "app-tools" ] && [ "$status" -eq 5 ]; then
-        echo "No app-tools tests collected."
-        status=0
-    elif [ "$module" = "app-prebuilt-outbox" ] && [ "$status" -eq 5 ]; then
-        echo "No app-prebuilt-outbox tests collected."
+    if [ "$status" -eq 5 ]; then
+        echo "No tests collected for $module."
         status=0
     fi
     return "$status"
 }
 
 status=0
-if should_run "$MODULE" "app-prebuilt-user"; then
-    echo "Testing app-prebuilt-user..."
-    if [ "${#PATHS[@]}" -eq 0 ]; then
-        run_pytest "app-prebuilt-user" || status=$?
-    else
-        run_pytest "app-prebuilt-user" "${PATHS[@]}" || status=$?
+for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog; do
+    if should_run "$MODULE" "$m"; then
+        echo "Testing $m..."
+        if [ "${#PATHS[@]}" -eq 0 ]; then
+            run_pytest "$m" || status=$?
+        else
+            run_pytest "$m" "${PATHS[@]}" || status=$?
+        fi
     fi
-fi
-
-if should_run "$MODULE" "app-prebuilt-outbox"; then
-    echo "Testing app-prebuilt-outbox..."
-    if [ "${#PATHS[@]}" -eq 0 ]; then
-        run_pytest "app-prebuilt-outbox" || status=$?
-    else
-        run_pytest "app-prebuilt-outbox" "${PATHS[@]}" || status=$?
-    fi
-fi
-
-if should_run "$MODULE" "app-tools"; then
-    echo "Testing app-tools..."
-    if [ "${#PATHS[@]}" -eq 0 ]; then
-        run_pytest "app-tools" || status=$?
-    else
-        run_pytest "app-tools" "${PATHS[@]}" || status=$?
-    fi
-fi
+done
 
 exit "$status"

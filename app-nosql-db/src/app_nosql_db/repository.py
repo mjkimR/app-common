@@ -1,10 +1,10 @@
 from typing import Any
 
-from app_layer_base.base.schemas.paginated import PaginatedList
 from pydantic import BaseModel
 
 from app_nosql_db.interface import NoSQLDBProvider
 from app_nosql_db.query_options import NoSQLListQueryOptions
+from app_nosql_db.schemas import PaginatedList
 
 
 class NoSQLRepository[

@@ -1,8 +1,6 @@
 import abc
 from typing import Any
 
-from app_layer_base.base.schemas.delete_resp import DeleteResponse
-
 from app_nosql_db.hooks.base import (
     BaseNoSQLContextKwargs,
     BaseNoSQLCreateHooks,
@@ -10,6 +8,7 @@ from app_nosql_db.hooks.base import (
     BaseNoSQLUpdateHooks,
 )
 from app_nosql_db.interface import NoSQLDBProvider
+from app_nosql_db.schemas import DeleteResponse
 
 
 class NoSQLDomainEventHooksMixin[ModelType: Any, TContextKwargs: BaseNoSQLContextKwargs](

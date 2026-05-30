@@ -1,22 +1,27 @@
-from app_layer_base.core.log import logger
+from threading import RLock
+
+from loguru import logger
 
 from app_file_storage.config import FileStorageSettings
 from app_file_storage.factory import FileStorageFactory
 from app_file_storage.interface import FileStorageClient
 
 _file_storage_client: FileStorageClient | None = None
+_file_storage_client_lock = RLock()
 
 
 def set_file_storage_client(client: FileStorageClient) -> None:
     """Set the global file storage client instance."""
     global _file_storage_client
-    if _file_storage_client is not None:
-        raise RuntimeError("File storage client is already initialized.")
-    _file_storage_client = client
+    with _file_storage_client_lock:
+        if _file_storage_client is not None:
+            raise RuntimeError("File storage client is already initialized.")
+        _file_storage_client = client
 
 
 def get_storage_client() -> FileStorageClient:
     """Get the global file storage client instance."""
+    global _file_storage_client
     if _file_storage_client is None:
         raise RuntimeError("File storage client is not initialized. Check lifespan.")
     return _file_storage_client
@@ -24,18 +29,27 @@ def get_storage_client() -> FileStorageClient:
 
 async def setup_storage_client(settings: FileStorageSettings) -> None:
     """Setup the global file storage client instance."""
+    global _file_storage_client
     if _file_storage_client is not None:
         logger.info("File storage client is already initialized.")
         return  # Already initialized
-    logger.info(f"Initializing file storage client of provider: {settings.provider}")
-    client = await FileStorageFactory.create_client(config=settings)
-    set_file_storage_client(client)
-    logger.info("File storage client initialized successfully.")
+
+    with _file_storage_client_lock:
+        if _file_storage_client is not None:
+            logger.info("File storage client is already initialized.")
+            return
+        logger.info(f"Initializing file storage client of provider: {settings.provider}")
+        client = await FileStorageFactory.create_client(config=settings)
+        _file_storage_client = client
+        logger.info("File storage client initialized successfully.")
 
 
 async def close_storage_client() -> None:
     """Close the global file storage client instance."""
     global _file_storage_client
-    if _file_storage_client:
-        await _file_storage_client.close()
+    with _file_storage_client_lock:
+        client = _file_storage_client
         _file_storage_client = None
+    if client:
+        await client.close()
+        logger.info("Global file storage client closed.")

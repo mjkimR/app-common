@@ -5,9 +5,12 @@ description = "NoSQL database adapter package supporting MongoDB and Firestore"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "app-layer-base",
     "motor>=3.1.1",
     "google-cloud-firestore>=2.11.0",
+    "loguru>=0.7.3",
+    "pydantic>=2.11.1",
+    "pydantic-settings>=2.8.1",
+    "dotenv>=0.9.9",
 ]
 
 [build-system]
@@ -21,7 +24,4 @@ packages = ["src/app_nosql_db"]
 dev = [
     "fastapi>=0.115.12",
 ]
-
-[tool.uv.sources]
-app-layer-base = { workspace = true }
 

@@ -3,7 +3,7 @@
 from typing import Any
 
 import pytest
-from app_layer_base.base.exceptions.basic import NotFoundException
+from app_nosql_db.exceptions import NotFoundException
 from app_nosql_db.hooks.base import (
     BaseNoSQLContextKwargs,
     BaseNoSQLCreateServiceMixin,

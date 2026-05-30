@@ -2,7 +2,6 @@ import functools
 import os
 from typing import Literal
 
-from app_layer_base.config_util import get_env_file_path
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -42,7 +41,6 @@ class NoSQLDBSettings[TNoSQLDBProviderConfigs: NoSQLDBProviderConfigs](BaseSetti
     )
     config: TNoSQLDBProviderConfigs
     model_config = SettingsConfigDict(
-        env_file=get_env_file_path(),
         env_nested_delimiter="__",
         validate_assignment=True,
         extra="ignore",

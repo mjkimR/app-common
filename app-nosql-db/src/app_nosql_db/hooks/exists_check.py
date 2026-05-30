@@ -1,9 +1,9 @@
 from contextlib import asynccontextmanager
 from typing import Any
 
-from app_layer_base.base.exceptions.basic import NotFoundException
 from pydantic import BaseModel
 
+from app_nosql_db.exceptions import NotFoundException
 from app_nosql_db.hooks.base import BaseNoSQLContextKwargs, BaseNoSQLDeleteHooks, BaseNoSQLUpdateHooks
 from app_nosql_db.interface import NoSQLDBProvider
 

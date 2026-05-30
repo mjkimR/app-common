@@ -5,10 +5,13 @@ description = "Event broker adapter package supporting RabbitMQ and Redis via Fa
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "app-layer-base",
     "faststream>=0.6.6",
     "faststream[rabbit]>=0.6.6",
     "faststream[redis]>=0.6.6",
+    "loguru>=0.7.3",
+    "pydantic>=2.11.1",
+    "pydantic-settings>=2.8.1",
+    "dotenv>=0.9.9",
 ]
 
 [build-system]
@@ -22,7 +25,4 @@ packages = ["src/app_event_broker"]
 dev = [
     "fastapi>=0.115.12",
 ]
-
-[tool.uv.sources]
-app-layer-base = { workspace = true }
 

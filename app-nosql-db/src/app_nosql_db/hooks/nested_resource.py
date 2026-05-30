@@ -2,9 +2,9 @@ from abc import abstractmethod
 from contextlib import asynccontextmanager
 from typing import Any, Required
 
-from app_layer_base.base.exceptions.basic import NotFoundException
 from pydantic import BaseModel
 
+from app_nosql_db.exceptions import NotFoundException
 from app_nosql_db.hooks.base import (
     BaseNoSQLContextKwargs,
     BaseNoSQLCreateHooks,
