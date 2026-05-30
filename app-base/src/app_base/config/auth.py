@@ -1,9 +1,8 @@
 import functools
 
+from app_layer_base.config_util import get_env_file_path
 from pydantic import EmailStr, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from app_base.config.util import get_env_file_path
 
 
 class AuthSettings(BaseSettings):

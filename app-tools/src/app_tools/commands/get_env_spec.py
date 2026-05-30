@@ -11,7 +11,7 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
     Extracts environment variable specifications from a Pydantic BaseSettings class.
     Handles aliases, env_prefix, and nested delimiters.
     """
-    from app_base.config.util import get_env_file_path  # Defer import to prevent startup crash
+    from app_layer_base.config_util import get_env_file_path  # Defer import to prevent startup crash
 
     specs = {}
 
@@ -130,10 +130,10 @@ def get_env_spec(type: str):
     """List environment variable specifications for app-base configurations."""
     try:
         from app_base.config.auth import AuthSettings
-        from app_base.config.config import AppSettings
-        from app_base.config.event_broker import EventBrokerSettings
-        from app_base.config.file_storage import FileStorageSettings
-        from app_base.config.vector_db import VectorDBSettings
+        from app_event_broker.config import EventBrokerSettings
+        from app_file_storage.config import FileStorageSettings
+        from app_layer_base.config import AppSettings
+        from app_vector_store.config import VectorDBSettings
     except ImportError as e:
         raise click.ClickException(
             "Error: Could not import 'app_base.config' modules. Please ensure 'app-base' is installed "

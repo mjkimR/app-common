@@ -3,17 +3,17 @@ from typing import Annotated
 from uuid import UUID, uuid4
 
 import jwt
-from fastapi import Depends
-from passlib.context import CryptContext
-from pydantic import EmailStr
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app_base.base.services.base import (
+from app_layer_base.base.services.base import (
     BaseContextKwargs,
     BaseDeleteServiceMixin,
     BaseGetMultiServiceMixin,
     BaseGetServiceMixin,
 )
+from fastapi import Depends
+from passlib.context import CryptContext
+from pydantic import EmailStr
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app_base.config import AuthSettings, get_auth_settings
 
 from .exceptions import UserAlreadyExistsException

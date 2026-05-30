@@ -1,8 +1,30 @@
 [tool.uv.workspace]
-members = ["app-base", "app-tools", "app-helper"]
+members = [
+    "app-base",
+    "app-tools",
+    "app-helper",
+    "app-layer-base",
+    "app-file-storage",
+    "app-nosql-db",
+    "app-vector-store",
+    "app-event-broker",
+    "app-http-client",
+    "app-ai-catalog",
+]
 
 [tool.rye.workspace]
-members = ["app-base", "app-tools", "app-helper"]
+members = [
+    "app-base",
+    "app-tools",
+    "app-helper",
+    "app-layer-base",
+    "app-file-storage",
+    "app-nosql-db",
+    "app-vector-store",
+    "app-event-broker",
+    "app-http-client",
+    "app-ai-catalog",
+]
 
 [tool.ruff]
 exclude = [".git", ".venv", "migrations"]
@@ -26,10 +48,45 @@ venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
-extraPaths = ["./app-base/src", "./app-tools/src", "./app-helper/src"]
+extraPaths = [
+    "./app-base/src",
+    "./app-tools/src",
+    "./app-helper/src",
+    "./app-layer-base/src",
+    "./app-file-storage/src",
+    "./app-nosql-db/src",
+    "./app-vector-store/src",
+    "./app-event-broker/src",
+    "./app-http-client/src",
+    "./app-ai-catalog/src",
+]
 
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.0",
     "pyright>=1.1.409",
+]
+
+[tool.pytest.ini_options]
+log_level = "INFO"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = [
+    "app-layer-base",
+    "app-layer-base/tests",
+    "app-layer-base/tests/unit",
+    "app-layer-base/tests/integrate",
+    "app-file-storage",
+    "app-nosql-db",
+    "app-vector-store",
+    "app-event-broker",
+    "app-http-client",
+    "app-ai-catalog",
+    "app-layer-base/src",
+    "app-file-storage/src",
+    "app-nosql-db/src",
+    "app-vector-store/src",
+    "app-event-broker/src",
+    "app-http-client/src",
+    "app-ai-catalog/src",
 ]

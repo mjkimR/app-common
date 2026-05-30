@@ -1,9 +1,8 @@
 from datetime import datetime
 
+from app_layer_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
 from sqlalchemy import JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
-
-from app_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
 
 
 class User(Base, UUIDMixin, TimestampMixin):

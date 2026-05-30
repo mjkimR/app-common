@@ -1,10 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
+from app_layer_base.base.exceptions.basic import NotFoundException
+from app_layer_base.base.schemas.paginated import PaginatedList
 from fastapi import APIRouter, Depends
 
-from app_base.base.exceptions.basic import NotFoundException
-from app_base.base.schemas.paginated import PaginatedList
 from app_base.prebuilt.user.deps import get_current_user, on_superuser
 from app_base.prebuilt.user.exceptions import UserNotFoundException
 from app_base.prebuilt.user.models import User

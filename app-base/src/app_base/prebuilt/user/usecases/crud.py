@@ -1,11 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
+from app_layer_base.base.services.base import BaseContextKwargs
+from app_layer_base.base.usecases.base import BaseUseCase
+from app_layer_base.core.database.transaction import AsyncTransaction
 from fastapi import Depends
-
-from app_base.base.services.base import BaseContextKwargs
-from app_base.base.usecases.base import BaseUseCase
-from app_base.core.database.transaction import AsyncTransaction
 
 from ..exceptions import PermissionDeniedException
 from ..models import User

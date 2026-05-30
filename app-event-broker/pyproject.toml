@@ -1,0 +1,22 @@
+[project]
+name = "app-event-broker"
+version = "0.1.0"
+description = "Event broker adapter package supporting RabbitMQ and Redis via FastStream"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "app-layer-base",
+    "faststream>=0.6.6",
+    "faststream[rabbit]>=0.6.6",
+    "faststream[redis]>=0.6.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_event_broker"]
+
+[tool.uv.sources]
+app-layer-base = { workspace = true }

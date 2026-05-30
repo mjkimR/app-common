@@ -26,26 +26,28 @@ dependencies = [
     "python-multipart>=0.0.20",
     "sqlalchemy>=2.0.39",
     "uvicorn>=0.34.0",
+    "app-layer-base",
+    "app-file-storage",
+    "app-nosql-db",
+    "app-vector-store",
+    "app-event-broker",
+    "app-http-client",
+    "app-ai-catalog",
 ]
 
 [project.optional-dependencies]
-# file storage
-s3 = ["aiobotocore>=3.1.1"]
-file_storage_all = ["app-base[s3]"]
-# vector databases
-qdrant = ["app-base[ai]", "qdrant-client>=1.16.2", "langchain-qdrant>=1.1.0"]
-vector_db_all = ["app-base[qdrant]"]
-# nosql databases
-mongodb = ["motor>=3.1.1"]
-firestore = ["google-cloud-firestore>=2.11.0"]
-nosql_db_all = ["app-base[mongodb,firestore]"]
-# Event broker specific
-rabbit = ["app-base[event]", "faststream[rabbit]>=0.6.6"]
-redis = ["app-base[event]", "faststream[redis]>=0.6.6"]
-event_all = ["app-base[rabbit,redis]"]
-# feature set
-ai = ["langchain-core>=1.2.7", "langgraph>=1.0.7", "litellm>=1.80.0"]
-event = ["faststream>=0.6.6"]
+s3 = ["app-file-storage"]
+file_storage_all = ["app-file-storage"]
+qdrant = ["app-vector-store"]
+vector_db_all = ["app-vector-store"]
+mongodb = ["app-nosql-db"]
+firestore = ["app-nosql-db"]
+nosql_db_all = ["app-nosql-db"]
+rabbit = ["app-event-broker"]
+redis = ["app-event-broker"]
+event_all = ["app-event-broker"]
+ai = ["app-ai-catalog"]
+event = ["app-event-broker"]
 
 
 [dependency-groups]
@@ -73,3 +75,12 @@ asyncio_default_fixture_loop_scope = "function"
 markers = [
     "real_commit: use TRUNCATE strategy instead of savepoint rollback (allows real commits)",
 ]
+
+[tool.uv.sources]
+app-layer-base = { workspace = true }
+app-file-storage = { workspace = true }
+app-nosql-db = { workspace = true }
+app-vector-store = { workspace = true }
+app-event-broker = { workspace = true }
+app-http-client = { workspace = true }
+app-ai-catalog = { workspace = true }

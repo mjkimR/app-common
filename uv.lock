@@ -9,9 +9,16 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "app-ai-catalog",
     "app-base",
+    "app-event-broker",
+    "app-file-storage",
     "app-helper",
+    "app-http-client",
+    "app-layer-base",
+    "app-nosql-db",
     "app-tools",
+    "app-vector-store",
 ]
 
 [manifest.dependency-groups]
@@ -244,6 +251,27 @@ wheels = [
 ]
 
 [[package]]
+name = "app-ai-catalog"
+version = "0.1.0"
+source = { editable = "app-ai-catalog" }
+dependencies = [
+    { name = "app-layer-base" },
+    { name = "langchain-core" },
+    { name = "langgraph" },
+    { name = "litellm" },
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "app-layer-base", editable = "app-layer-base" },
+    { name = "langchain-core", specifier = ">=1.2.7" },
+    { name = "langgraph", specifier = ">=1.0.7" },
+    { name = "litellm", specifier = ">=1.80.0" },
+    { name = "pyyaml", specifier = ">=6.0.1" },
+]
+
+[[package]]
 name = "app-base"
 version = "0.1.0"
 source = { editable = "app-base" }
@@ -251,6 +279,13 @@ dependencies = [
     { name = "aiofiles" },
     { name = "aiosqlite" },
     { name = "alembic" },
+    { name = "app-ai-catalog" },
+    { name = "app-event-broker" },
+    { name = "app-file-storage" },
+    { name = "app-http-client" },
+    { name = "app-layer-base" },
+    { name = "app-nosql-db" },
+    { name = "app-vector-store" },
     { name = "apscheduler" },
     { name = "asyncpg" },
     { name = "bcrypt" },
@@ -273,51 +308,40 @@ dependencies = [
 
 [package.optional-dependencies]
 ai = [
-    { name = "langchain-core" },
-    { name = "langgraph" },
-    { name = "litellm" },
+    { name = "app-ai-catalog" },
 ]
 event = [
-    { name = "faststream" },
+    { name = "app-event-broker" },
 ]
 event-all = [
-    { name = "faststream", extra = ["rabbit", "redis"] },
+    { name = "app-event-broker" },
 ]
 file-storage-all = [
-    { name = "aiobotocore" },
+    { name = "app-file-storage" },
 ]
 firestore = [
-    { name = "google-cloud-firestore" },
+    { name = "app-nosql-db" },
 ]
 mongodb = [
-    { name = "motor" },
+    { name = "app-nosql-db" },
 ]
 nosql-db-all = [
-    { name = "google-cloud-firestore" },
-    { name = "motor" },
+    { name = "app-nosql-db" },
 ]
 qdrant = [
-    { name = "langchain-core" },
-    { name = "langchain-qdrant" },
-    { name = "langgraph" },
-    { name = "litellm" },
-    { name = "qdrant-client" },
+    { name = "app-vector-store" },
 ]
 rabbit = [
-    { name = "faststream", extra = ["rabbit"] },
+    { name = "app-event-broker" },
 ]
 redis = [
-    { name = "faststream", extra = ["redis"] },
+    { name = "app-event-broker" },
 ]
 s3 = [
-    { name = "aiobotocore" },
+    { name = "app-file-storage" },
 ]
 vector-db-all = [
-    { name = "langchain-core" },
-    { name = "langchain-qdrant" },
-    { name = "langgraph" },
-    { name = "litellm" },
-    { name = "qdrant-client" },
+    { name = "app-vector-store" },
 ]
 
 [package.dev-dependencies]
@@ -331,43 +355,44 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiobotocore", marker = "extra == 's3'", specifier = ">=3.1.1" },
     { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "aiosqlite", specifier = ">=0.21.0" },
     { name = "alembic", specifier = ">=1.15.2" },
-    { name = "app-base", extras = ["ai"], marker = "extra == 'qdrant'" },
-    { name = "app-base", extras = ["event"], marker = "extra == 'rabbit'" },
-    { name = "app-base", extras = ["event"], marker = "extra == 'redis'" },
-    { name = "app-base", extras = ["mongodb", "firestore"], marker = "extra == 'nosql-db-all'" },
-    { name = "app-base", extras = ["qdrant"], marker = "extra == 'vector-db-all'" },
-    { name = "app-base", extras = ["rabbit", "redis"], marker = "extra == 'event-all'" },
-    { name = "app-base", extras = ["s3"], marker = "extra == 'file-storage-all'" },
+    { name = "app-ai-catalog", editable = "app-ai-catalog" },
+    { name = "app-ai-catalog", marker = "extra == 'ai'", editable = "app-ai-catalog" },
+    { name = "app-event-broker", editable = "app-event-broker" },
+    { name = "app-event-broker", marker = "extra == 'event'", editable = "app-event-broker" },
+    { name = "app-event-broker", marker = "extra == 'event-all'", editable = "app-event-broker" },
+    { name = "app-event-broker", marker = "extra == 'rabbit'", editable = "app-event-broker" },
+    { name = "app-event-broker", marker = "extra == 'redis'", editable = "app-event-broker" },
+    { name = "app-file-storage", editable = "app-file-storage" },
+    { name = "app-file-storage", marker = "extra == 'file-storage-all'", editable = "app-file-storage" },
+    { name = "app-file-storage", marker = "extra == 's3'", editable = "app-file-storage" },
+    { name = "app-http-client", editable = "app-http-client" },
+    { name = "app-layer-base", editable = "app-layer-base" },
+    { name = "app-nosql-db", editable = "app-nosql-db" },
+    { name = "app-nosql-db", marker = "extra == 'firestore'", editable = "app-nosql-db" },
+    { name = "app-nosql-db", marker = "extra == 'mongodb'", editable = "app-nosql-db" },
+    { name = "app-nosql-db", marker = "extra == 'nosql-db-all'", editable = "app-nosql-db" },
+    { name = "app-vector-store", editable = "app-vector-store" },
+    { name = "app-vector-store", marker = "extra == 'qdrant'", editable = "app-vector-store" },
+    { name = "app-vector-store", marker = "extra == 'vector-db-all'", editable = "app-vector-store" },
     { name = "apscheduler", specifier = ">=3.11.2" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "bcrypt", specifier = "==4.0.1" },
     { name = "cachetools", specifier = ">=6.2.6" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },
-    { name = "faststream", marker = "extra == 'event'", specifier = ">=0.6.6" },
-    { name = "faststream", extras = ["rabbit"], marker = "extra == 'rabbit'", specifier = ">=0.6.6" },
-    { name = "faststream", extras = ["redis"], marker = "extra == 'redis'", specifier = ">=0.6.6" },
-    { name = "google-cloud-firestore", marker = "extra == 'firestore'", specifier = ">=2.11.0" },
     { name = "greenlet", specifier = ">=3.1.1" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "langchain-core", marker = "extra == 'ai'", specifier = ">=1.2.7" },
-    { name = "langchain-qdrant", marker = "extra == 'qdrant'", specifier = ">=1.1.0" },
-    { name = "langgraph", marker = "extra == 'ai'", specifier = ">=1.0.7" },
-    { name = "litellm", marker = "extra == 'ai'", specifier = ">=1.80.0" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "motor", marker = "extra == 'mongodb'", specifier = ">=3.1.1" },
     { name = "orjson", specifier = ">=3.10.16" },
     { name = "passlib", specifier = ">=1.7.4" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.11.1" },
     { name = "pydantic-settings", specifier = ">=2.8.1" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "python-multipart", specifier = ">=0.0.20" },
-    { name = "qdrant-client", marker = "extra == 'qdrant'", specifier = ">=1.16.2" },
     { name = "sqlalchemy", specifier = ">=2.0.39" },
     { name = "uvicorn", specifier = ">=0.34.0" },
 ]
@@ -380,6 +405,40 @@ dev = [
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "ruff", specifier = ">=0.14.14" },
     { name = "testcontainers", extras = ["postgres"], specifier = ">=4.14.2" },
+]
+
+[[package]]
+name = "app-event-broker"
+version = "0.1.0"
+source = { editable = "app-event-broker" }
+dependencies = [
+    { name = "app-layer-base" },
+    { name = "faststream", extra = ["rabbit", "redis"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "app-layer-base", editable = "app-layer-base" },
+    { name = "faststream", specifier = ">=0.6.6" },
+    { name = "faststream", extras = ["rabbit"], specifier = ">=0.6.6" },
+    { name = "faststream", extras = ["redis"], specifier = ">=0.6.6" },
+]
+
+[[package]]
+name = "app-file-storage"
+version = "0.1.0"
+source = { editable = "app-file-storage" }
+dependencies = [
+    { name = "aiobotocore" },
+    { name = "aiofiles" },
+    { name = "app-layer-base" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiobotocore", specifier = ">=3.1.1" },
+    { name = "aiofiles", specifier = ">=25.1.0" },
+    { name = "app-layer-base", editable = "app-layer-base" },
 ]
 
 [[package]]
@@ -407,6 +466,65 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "ruff", specifier = ">=0.14.14" },
+]
+
+[[package]]
+name = "app-http-client"
+version = "0.1.0"
+source = { editable = "app-http-client" }
+dependencies = [
+    { name = "app-layer-base" },
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "app-layer-base", editable = "app-layer-base" },
+    { name = "httpx", specifier = ">=0.28.1" },
+]
+
+[[package]]
+name = "app-layer-base"
+version = "0.1.0"
+source = { editable = "app-layer-base" }
+dependencies = [
+    { name = "dotenv" },
+    { name = "fastapi" },
+    { name = "greenlet" },
+    { name = "loguru" },
+    { name = "orjson" },
+    { name = "pydantic", extra = ["email"] },
+    { name = "pydantic-settings" },
+    { name = "sqlalchemy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dotenv", specifier = ">=0.9.9" },
+    { name = "fastapi", specifier = ">=0.115.12" },
+    { name = "greenlet", specifier = ">=3.1.1" },
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "orjson", specifier = ">=3.10.16" },
+    { name = "pydantic", extras = ["email"], specifier = ">=2.11.1" },
+    { name = "pydantic-settings", specifier = ">=2.8.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.39" },
+]
+
+[[package]]
+name = "app-nosql-db"
+version = "0.1.0"
+source = { editable = "app-nosql-db" }
+dependencies = [
+    { name = "app-layer-base" },
+    { name = "google-cloud-firestore" },
+    { name = "motor" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "app-layer-base", editable = "app-layer-base" },
+    { name = "google-cloud-firestore", specifier = ">=2.11.0" },
+    { name = "motor", specifier = ">=3.1.1" },
 ]
 
 [[package]]
@@ -440,6 +558,25 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "ruff", specifier = ">=0.14.14" },
+]
+
+[[package]]
+name = "app-vector-store"
+version = "0.1.0"
+source = { editable = "app-vector-store" }
+dependencies = [
+    { name = "app-ai-catalog" },
+    { name = "app-layer-base" },
+    { name = "langchain-qdrant" },
+    { name = "qdrant-client" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "app-ai-catalog", editable = "app-ai-catalog" },
+    { name = "app-layer-base", editable = "app-layer-base" },
+    { name = "langchain-qdrant", specifier = ">=1.1.0" },
+    { name = "qdrant-client", specifier = ">=1.16.2" },
 ]
 
 [[package]]

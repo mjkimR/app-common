@@ -1,9 +1,8 @@
 import datetime
 from typing import Any, TypedDict
 
+from app_layer_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
 from pydantic import BaseModel, ConfigDict, Field
-
-from app_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
 
 from .models import EventStatus
 

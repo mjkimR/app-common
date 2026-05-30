@@ -1,0 +1,21 @@
+[project]
+name = "app-file-storage"
+version = "0.1.0"
+description = "File storage adapter package supporting local and S3 storage"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "app-layer-base",
+    "aiofiles>=25.1.0",
+    "aiobotocore>=3.1.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_file_storage"]
+
+[tool.uv.sources]
+app-layer-base = { workspace = true }

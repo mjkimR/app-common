@@ -39,83 +39,58 @@ init-dev module="all":
 # Run ruff format and lint for a specific module (all, app-base, or app-tools)
 lint module="all":
     #!/usr/bin/env bash
+    set -e
     source ./scripts/_lib.sh
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    if should_run "$target" "app-base"; then
-        path=$(resolve_module_path "app-base")
-        echo "Linting app-base ($path)..."
-        uv run ruff format "$path"
-        uv run ruff check --fix "$path"
-    fi
-
-    if should_run "$target" "app-tools"; then
-        path=$(resolve_module_path "app-tools")
-        echo "Linting app-tools ($path)..."
-        uv run ruff format "$path"
-        uv run ruff check --fix "$path"
-    fi
-
-    if should_run "$target" "app-helper"; then
-        path=$(resolve_module_path "app-helper")
-        echo "Linting app-helper ($path)..."
-        uv run ruff format "$path"
-        uv run ruff check --fix "$path"
-    fi
+    for m in app-base app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog; do
+        if should_run "$target" "$m"; then
+            path=$(resolve_module_path "$m")
+            if [ -d "$path" ]; then
+                echo "Linting $m ($path)..."
+                uv run ruff format "$path"
+                uv run ruff check --fix "$path"
+            fi
+        fi
+    done
 
 # Run pyright static type checking for a specific module (all, app-base, or app-tools)
 check module="all":
     #!/usr/bin/env bash
+    set -e
     source ./scripts/_lib.sh
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    if should_run "$target" "app-base"; then
-        path=$(resolve_module_path "app-base")
-        echo "Type checking app-base ($path)..."
-        uv run pyright "$path/src"
-    fi
-
-    if should_run "$target" "app-tools"; then
-        path=$(resolve_module_path "app-tools")
-        echo "Type checking app-tools ($path)..."
-        uv run pyright "$path/src"
-    fi
-
-    if should_run "$target" "app-helper"; then
-        path=$(resolve_module_path "app-helper")
-        echo "Type checking app-helper ($path)..."
-        uv run pyright "$path/src"
-    fi
+    for m in app-base app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog; do
+        if should_run "$target" "$m"; then
+            path=$(resolve_module_path "$m")
+            if [ -d "$path" ]; then
+                echo "Type checking $m ($path)..."
+                uv run pyright "$path/src"
+            fi
+        fi
+    done
 
 # Run ruff format and lint checks without modifying files
 lint-check module="all":
     #!/usr/bin/env bash
+    set -e
     source ./scripts/_lib.sh
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    if should_run "$target" "app-base"; then
-        path=$(resolve_module_path "app-base")
-        echo "Checking lint for app-base ($path)..."
-        uv run ruff format --check "$path"
-        uv run ruff check "$path"
-    fi
-
-    if should_run "$target" "app-tools"; then
-        path=$(resolve_module_path "app-tools")
-        echo "Checking lint for app-tools ($path)..."
-        uv run ruff format --check "$path"
-        uv run ruff check "$path"
-    fi
-
-    if should_run "$target" "app-helper"; then
-        path=$(resolve_module_path "app-helper")
-        echo "Checking lint for app-helper ($path)..."
-        uv run ruff format --check "$path"
-        uv run ruff check "$path"
-    fi
+    for m in app-base app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog; do
+        if should_run "$target" "$m"; then
+            path=$(resolve_module_path "$m")
+            if [ -d "$path" ]; then
+                echo "Checking lint for $m ($path)..."
+                uv run ruff format --check "$path"
+                uv run ruff check "$path"
+            fi
+        fi
+    done
 
 # Install pre-commit hooks
 hooks-install:

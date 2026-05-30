@@ -1,4 +1,4 @@
-from app_base.base.repos.base import BaseRepository
+from app_layer_base.base.repos.base import BaseRepository
 
 from .models import User
 from .schemas import UserDbCreate, UserDbUpdate

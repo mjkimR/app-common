@@ -2,15 +2,14 @@ from abc import abstractmethod
 from contextlib import asynccontextmanager
 from typing import Any, TypedDict
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app_base.base.repos.base import PrimaryKeyType
-from app_base.base.services.base import (
+from app_layer_base.base.repos.base import PrimaryKeyType
+from app_layer_base.base.services.base import (
     BaseContextKwargs,
     BaseCreateHooks,
     BaseDeleteHooks,
     BaseUpdateHooks,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .repos import OutboxRepository
 from .schemas import OutboxCreate, OutboxIdentityDict
