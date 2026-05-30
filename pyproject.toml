@@ -1,6 +1,7 @@
 [tool.uv.workspace]
 members = [
-    "app-base",
+    "app-prebuilt-user",
+    "app-prebuilt-outbox",
     "app-tools",
     "app-helper",
     "app-layer-base",
@@ -14,7 +15,8 @@ members = [
 
 [tool.rye.workspace]
 members = [
-    "app-base",
+    "app-prebuilt-user",
+    "app-prebuilt-outbox",
     "app-tools",
     "app-helper",
     "app-layer-base",
@@ -49,7 +51,8 @@ venv = ".venv"
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
 extraPaths = [
-    "./app-base/src",
+    "./app-prebuilt-user/src",
+    "./app-prebuilt-outbox/src",
     "./app-tools/src",
     "./app-helper/src",
     "./app-layer-base/src",
@@ -76,6 +79,9 @@ pythonpath = [
     "app-layer-base/tests",
     "app-layer-base/tests/unit",
     "app-layer-base/tests/integrate",
+    "app-prebuilt-user",
+    "app-prebuilt-user/tests",
+    "app-prebuilt-outbox",
     "app-file-storage",
     "app-nosql-db",
     "app-vector-store",
@@ -83,6 +89,8 @@ pythonpath = [
     "app-http-client",
     "app-ai-catalog",
     "app-layer-base/src",
+    "app-prebuilt-user/src",
+    "app-prebuilt-outbox/src",
     "app-file-storage/src",
     "app-nosql-db/src",
     "app-vector-store/src",

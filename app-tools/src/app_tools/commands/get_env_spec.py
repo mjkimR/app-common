@@ -129,15 +129,15 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
 def get_env_spec(type: str):
     """List environment variable specifications for app-base configurations."""
     try:
-        from app_base.config.auth import AuthSettings
         from app_event_broker.config import EventBrokerSettings
         from app_file_storage.config import FileStorageSettings
         from app_layer_base.config import AppSettings
+        from app_prebuilt_user.config.auth import AuthSettings
         from app_vector_store.config import VectorDBSettings
     except ImportError as e:
         raise click.ClickException(
-            "Error: Could not import 'app_base.config' modules. Please ensure 'app-base' is installed "
-            "(e.g., 'pip install app-base') in your Python environment."
+            "Error: Could not import configuration modules. Please ensure 'app-prebuilt-user' and related packages are installed "
+            "in your Python environment."
         ) from e
 
     settings_map = {

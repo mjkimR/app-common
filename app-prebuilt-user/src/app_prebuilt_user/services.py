@@ -14,7 +14,7 @@ from passlib.context import CryptContext
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app_base.config import AuthSettings, get_auth_settings
+from app_prebuilt_user.config import AuthSettings, get_auth_settings
 
 from .exceptions import UserAlreadyExistsException
 from .models import User

@@ -1,0 +1,32 @@
+[project]
+name = "app-prebuilt-user"
+version = "0.1.0"
+description = "Prebuilt user management and authentication library for app-common"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "app-layer-base",
+    "bcrypt==4.0.1",
+    "passlib>=1.7.4",
+    "pyjwt>=2.10.1",
+    "sqlalchemy>=2.0.39",
+]
+
+[dependency-groups]
+dev = [
+    "fastapi>=0.115.12",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-mock>=3.15.0",
+    "ruff>=0.14.14",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_prebuilt_user"]
+
+[tool.uv.sources]
+app-layer-base = { workspace = true }

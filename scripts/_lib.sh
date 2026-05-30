@@ -2,11 +2,12 @@
 # Shared helpers for module resolution.
 # Source this file from scripts or justfile recipes: source ./scripts/_lib.sh
 
-AVAILABLE_MODULES="all app-base app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog"
+AVAILABLE_MODULES="all app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog"
 
 resolve_module() {
     case "$1" in
-        app-base|base|backend) echo "app-base" ;;
+        app-prebuilt-user|prebuilt-user|user) echo "app-prebuilt-user" ;;
+        app-prebuilt-outbox|prebuilt-outbox|outbox) echo "app-prebuilt-outbox" ;;
         app-tools|tools|cli) echo "app-tools" ;;
         app-helper|helper|helpers) echo "app-helper" ;;
         app-layer-base|layer-base|layer) echo "app-layer-base" ;;
@@ -23,7 +24,8 @@ resolve_module() {
 
 resolve_module_path() {
     case "$1" in
-        app-base) echo "app-base" ;;
+        app-prebuilt-user) echo "app-prebuilt-user" ;;
+        app-prebuilt-outbox) echo "app-prebuilt-outbox" ;;
         app-tools) echo "app-tools" ;;
         app-helper) echo "app-helper" ;;
         app-layer-base) echo "app-layer-base" ;;
@@ -43,7 +45,7 @@ should_run() {
 
 validate_module() {
     case "$1" in
-        all|app-base|app-tools|app-helper|app-layer-base|app-file-storage|app-nosql-db|app-vector-store|app-event-broker|app-http-client|app-ai-catalog) ;;
+        all|app-prebuilt-user|app-prebuilt-outbox|app-tools|app-helper|app-layer-base|app-file-storage|app-nosql-db|app-vector-store|app-event-broker|app-http-client|app-ai-catalog) ;;
         *)
             echo "Unknown module: $1" >&2
             echo "Available modules: $AVAILABLE_MODULES" >&2

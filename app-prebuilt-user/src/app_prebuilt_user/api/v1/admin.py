@@ -7,10 +7,10 @@ from app_layer_base.base.schemas.delete_resp import DeleteResponse
 from app_layer_base.base.schemas.paginated import PaginatedList
 from fastapi import APIRouter, Depends, status
 
-from app_base.prebuilt.user.deps import get_current_user, on_superuser
-from app_base.prebuilt.user.models import User
-from app_base.prebuilt.user.schemas import UserCreate, UserRead
-from app_base.prebuilt.user.usecases.admin import (
+from app_prebuilt_user.deps import get_current_user, on_superuser
+from app_prebuilt_user.models import User
+from app_prebuilt_user.schemas import UserCreate, UserRead
+from app_prebuilt_user.usecases.admin import (
     CreateAdminUseCase,
     CreateUserUseCase,
     DeleteUserUseCase,

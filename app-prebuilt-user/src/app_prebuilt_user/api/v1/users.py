@@ -5,11 +5,11 @@ from app_layer_base.base.exceptions.basic import NotFoundException
 from app_layer_base.base.schemas.paginated import PaginatedList
 from fastapi import APIRouter, Depends
 
-from app_base.prebuilt.user.deps import get_current_user, on_superuser
-from app_base.prebuilt.user.exceptions import UserNotFoundException
-from app_base.prebuilt.user.models import User
-from app_base.prebuilt.user.schemas import UserRead, UserUpdate
-from app_base.prebuilt.user.usecases.crud import GetUserUseCase, UpdateUserUseCase
+from app_prebuilt_user.deps import get_current_user, on_superuser
+from app_prebuilt_user.exceptions import UserNotFoundException
+from app_prebuilt_user.models import User
+from app_prebuilt_user.schemas import UserRead, UserUpdate
+from app_prebuilt_user.usecases.crud import GetUserUseCase, UpdateUserUseCase
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

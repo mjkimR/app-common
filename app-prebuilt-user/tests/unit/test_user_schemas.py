@@ -1,5 +1,5 @@
 import pytest
-from app_base.prebuilt.user.schemas import UserCreate
+from app_prebuilt_user.schemas import UserCreate
 from pydantic import SecretStr, ValidationError
 
 

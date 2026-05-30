@@ -4,7 +4,7 @@ set -euo pipefail
 source "$(dirname "$0")/_lib.sh"
 
 DB_TYPE=${1:?Usage: run-tests.sh <db_type> <module> [paths...]}
-MODULE=$(resolve_module "${2:-app-base}")
+MODULE=$(resolve_module "${2:-all}")
 shift 2 || true
 PATHS=("$@")
 
@@ -23,7 +23,12 @@ run_pytest() {
 
     local updated_paths=()
     if [ "$#" -eq 0 ]; then
-        updated_paths=("src")
+        if [ -d "$path/src" ]; then
+            updated_paths+=("src")
+        fi
+        if [ -d "$path/tests" ]; then
+            updated_paths+=("tests")
+        fi
     else
         local item
         for item in "$@"; do
@@ -42,7 +47,7 @@ run_pytest() {
     trap 'rm -f "$tmp"' RETURN
 
     local status=0
-    if [ "$module" = "app-base" ]; then
+    if [ "$module" = "app-prebuilt-user" ]; then
         uv run --directory "$path" pytest $PYTEST_OPTIONS --db-type "$DB_TYPE" "${updated_paths[@]}" >"$tmp" 2>&1 || status=$?
     else
         uv run --directory "$path" pytest $PYTEST_OPTIONS "${updated_paths[@]}" >"$tmp" 2>&1 || status=$?
@@ -52,17 +57,29 @@ run_pytest() {
     if [ "$module" = "app-tools" ] && [ "$status" -eq 5 ]; then
         echo "No app-tools tests collected."
         status=0
+    elif [ "$module" = "app-prebuilt-outbox" ] && [ "$status" -eq 5 ]; then
+        echo "No app-prebuilt-outbox tests collected."
+        status=0
     fi
     return "$status"
 }
 
 status=0
-if should_run "$MODULE" "app-base"; then
-    echo "Testing app-base..."
+if should_run "$MODULE" "app-prebuilt-user"; then
+    echo "Testing app-prebuilt-user..."
     if [ "${#PATHS[@]}" -eq 0 ]; then
-        run_pytest "app-base" || status=$?
+        run_pytest "app-prebuilt-user" || status=$?
     else
-        run_pytest "app-base" "${PATHS[@]}" || status=$?
+        run_pytest "app-prebuilt-user" "${PATHS[@]}" || status=$?
+    fi
+fi
+
+if should_run "$MODULE" "app-prebuilt-outbox"; then
+    echo "Testing app-prebuilt-outbox..."
+    if [ "${#PATHS[@]}" -eq 0 ]; then
+        run_pytest "app-prebuilt-outbox" || status=$?
+    else
+        run_pytest "app-prebuilt-outbox" "${PATHS[@]}" || status=$?
     fi
 fi
 

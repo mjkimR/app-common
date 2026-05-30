@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app_base.prebuilt.user.exceptions import IncorrectEmailOrPasswordException
-from app_base.prebuilt.user.services import UserService
-from app_base.prebuilt.user.token_schemas import Token
+from app_prebuilt_user.exceptions import IncorrectEmailOrPasswordException
+from app_prebuilt_user.services import UserService
+from app_prebuilt_user.token_schemas import Token
 
 router = APIRouter(tags=["Login"])
 

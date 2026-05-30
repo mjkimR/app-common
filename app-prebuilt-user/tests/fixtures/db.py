@@ -31,7 +31,6 @@ from loguru import logger
 from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-
 from tests.utils import clean_db_after_test
 
 
