@@ -1,74 +1,83 @@
-# `app_base/adapter` Module Guide
+# Standalone Adapter Modules Guide
 
-This document explains the adapters provided in the `app-base` package. Adapters serve as interfaces to external systems like NoSQL DBs, Object Storage, Vector Stores, and Event Brokers.
-
----
-
-## 1. Event Broker (`app_base.adapter.event_broker`)
-
-### Summary
-Manages event streaming and publishing.
-
-### Components
-- **`interface.py` & `factory.py`**: Defines `EventBrokerProvider`.
-- **`lifespan.py`**: FastAPI lifespan manager to initialize and close the connection pool cleanly.
-- **Usage**: Retrieve the active instance from the dependency or global instance to publish events defined by `EventDomainHooksMixin`.
-- **Precautions**: Ensure `EVENT_BROKER_URL` is set in configuration. Connections must be closed during application shutdown to avoid memory leaks.
+This document explains the adapters provided in our workspace packages. Each adapter is fully modularized as a standalone package inside the workspace, allowing independent imports and zero-dependency bloat.
 
 ---
 
-## 2. File Storage (`app_base.adapter.file_storage`)
+## 1. Event Broker (`app-event-broker`)
 
 ### Summary
-Unified interface for object storage operations (uploading, downloading).
+Manages event streaming, publishing, and subscribing via standard message brokers.
 
 ### Components
-- **Providers**: `local.py` (Local File System), `s3.py` (AWS S3 / MinIO).
+- **Import Namespace**: `app_event_broker`
+- **Modules**: `factory.py`, `instance.py`, `lifespan.py`
+- **Underlying Stack**: `faststream`, `faststream[rabbit]`, `faststream[redis]`
+- **Usage**:
+  - Retrieve the active instance from the FastAPI dependency or global `get_event_broker` to publish events.
+- **Precautions**: Ensure `EVENT_BROKER_URL` is set in configuration. Lifespan handlers must be linked to the FastAPI application to manage the connection pool cleanly.
+
+---
+
+## 2. File Storage (`app-file-storage`)
+
+### Summary
+Unified interface for asynchronous object storage operations (uploading, downloading, metadata reading).
+
+### Components
+- **Import Namespace**: `app_file_storage`
+- **Providers**: `providers/local.py` (Local File System), `providers/s3.py` (AWS S3 / MinIO via `aiobotocore`).
 - **Interface**: `FileStorageClient`.
 - **Usage**:
   ```python
-  client = get_file_storage_client()
-  await client.upload_file(path, bytes_data)
+  from app_file_storage import get_storage_client
+  
+  client = get_storage_client()
+  await client.upload_file("destination_key", bytes_data)
   ```
-- **Precautions**: When using `s3.py`, make sure `boto3` is installed and `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` are provided.
+- **Precautions**: The S3 provider requires proper environment settings (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_S3_BUCKET_NAME`).
 
 ---
 
-## 3. NoSQL Database (`app_base.adapter.nosql_db`)
+## 3. NoSQL Database (`app-nosql-db`)
 
 ### Summary
-Adapts NoSQL databases like MongoDB or Firebase Firestore to a repository pattern similar to SQLAlchemy.
+Adapts Document NoSQL databases like MongoDB or Firebase Firestore to clean repository and service patterns.
 
 ### Components
-- **Providers**: `mongodb.py`, `firestore.py`.
-- **`repository.py`**: A NoSQL equivalent of `BaseRepository`.
-- **Hooks**: Specific hooks tailored for NoSQL constraints (e.g., uniqueness validation in document stores).
-- **Precautions**: Query syntax heavily depends on the underlying provider. Test deeply when switching between MongoDB and Firestore.
+- **Import Namespace**: `app_nosql_db`
+- **Providers**: `providers/mongodb.py` (via `motor`), `providers/firestore.py` (via `google-cloud-firestore`).
+- **Precautions**: Switch providers transparently by updating your configuration, but verify index structures and specific query constraints when switching back-ends.
 
 ---
 
-## 4. Vector Store (`app_base.adapter.vector_store`)
+## 4. Vector Store (`app-vector-store`)
 
 ### Summary
-Integrates with vector databases for AI and embeddings using LangChain's VectorStore APIs.
+Integrates with vector databases for semantic search and AI embedding storage.
 
 ### Components
-- **Providers**: `qdrant.py`.
+- **Import Namespace**: `app_vector_store`
+- **Providers**: `providers/qdrant.py` (utilizes `qdrant-client` and `langchain-qdrant`).
 - **Interface**: `VectorStoreProvider`.
 - **Usage**:
   ```python
-  store = provider.create_vector_store(collection_name="docs", model_name="text-embedding-ada-002")
+  from app_vector_store import get_vector_store_client
+  
+  provider = get_vector_store_client()
+  store = await provider.create_vector_store(collection_name="docs", model_name="text-embedding-3-small")
   ```
-- **Precautions**: The Qdrant provider requires the `qdrant-client` package and correct GRPC/REST API host settings in the `VectorDBSettings` config.
+- **Precautions**: The Qdrant provider requires the `app-ai-catalog` package to automatically fetch embeddings during vector store instantiation.
 
 ---
 
-## 5. HTTP Client (`app_base.adapter.http_client`)
+## 5. HTTP Client (`app-http-client`)
 
 ### Summary
-Async HTTP Client management (typically using `httpx`).
+Asynchronous HTTP Client management utilizing a single connection pool.
 
 ### Components
-- **`instance.py` & `lifespan.py`**: Provides a managed `httpx.AsyncClient`.
-- **Usage**: Ensures a single connection pool is reused across the application to improve performance.
-- **Precautions**: Always use the client from the dependency injection or lifespan state rather than creating a new `httpx.AsyncClient` manually to prevent exhausting available file descriptors.
+- **Import Namespace**: `app_http_client`
+- **Modules**: `instance.py`, `lifespan.py` (manages `httpx.AsyncClient` lifespan).
+- **Usage**: Reuse a single connection pool across the application to prevent fd exhaustion.
+- **Precautions**: Always resolve the client from the dependency injection or lifespan state rather than instantiating a new `httpx.AsyncClient()` manually.

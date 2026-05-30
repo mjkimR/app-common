@@ -1,10 +1,10 @@
-# app-base Developer Guide
+# app-layer-base Developer Guide
 
-This guide provides expert guidance for developing FastAPI applications using the `app-base` package. It focuses on the package's layered architecture, dependency injection, and hook-based customization patterns.
+This guide provides expert guidance for developing FastAPI applications using the modular workspace packages. It focuses on the layered architecture, dependency injection, and hook-based customization patterns defined in `app-layer-base`.
 
 ## Core Philosophy & Architecture
 
-The `app-base` package promotes a clean, layered architecture to build scalable and maintainable FastAPI applications. The key layers are:
+The workspace promotes a clean, layered architecture to build scalable and maintainable FastAPI applications. The key layers are:
 
 1.  **API/Router (`api/`)**: Handles HTTP requests, dependency injection, and calls UseCases.
 2.  **UseCase (`usecases/`)**: Orchestrates business logic, manages database transactions, and calls Services. Inherits from `Base...UseCase` classes.
@@ -18,10 +18,10 @@ Follow these steps to create a new, complete CRUD endpoint for a resource (e.g.,
 
 ### 1. Define Model and Schemas
 
--   **Model (`models/book.py`)**: Create the SQLAlchemy model. Use mixins from `app_base.base.models.mixin` for common fields like `id`, `created_at`, etc.
+-   **Model (`models/book.py`)**: Create the SQLAlchemy model. Use mixins from `app_layer_base.base.models.mixin` for common fields like `id`, `created_at`, etc.
 
     ```python
-    from app_base.base.models.mixin import Base, UUIDMixin, TimestampMixin
+    from app_layer_base.base.models.mixin import Base, UUIDMixin, TimestampMixin
     from sqlalchemy.orm import Mapped, mapped_column
 
     class Book(Base, UUIDMixin, TimestampMixin):
@@ -34,7 +34,7 @@ Follow these steps to create a new, complete CRUD endpoint for a resource (e.g.,
 
     ```python
     from pydantic import BaseModel
-    from app_base.base.schemas.mixin import UUIDSchemaMixin, TimestampSchemaMixin
+    from app_layer_base.base.schemas.mixin import UUIDSchemaMixin, TimestampSchemaMixin
 
     class BookBase(BaseModel):
         title: str
@@ -57,7 +57,7 @@ Follow these steps to create a new, complete CRUD endpoint for a resource (e.g.,
 -   **Repository (`repos/book.py`)**: Create a repository class that inherits from `BaseRepository` and links it to your model and schemas.
 
     ```python
-    from app_base.base.repos.base import BaseRepository
+    from app_layer_base.base.repos.base import BaseRepository
     from app.models.book import Book
     from app.schemas.book import BookCreate, BookUpdate
 
@@ -71,7 +71,7 @@ Follow these steps to create a new, complete CRUD endpoint for a resource (e.g.,
 
     ```python
     from app.repos.book import BookRepository
-    from app_base.base.services.base import (
+    from app_layer_base.base.services.base import (
         BaseCreateServiceMixin,
         BaseUpdateServiceMixin,
         BaseDeleteServiceMixin,
@@ -79,8 +79,8 @@ Follow these steps to create a new, complete CRUD endpoint for a resource (e.g.,
         BaseGetMultiServiceMixin,
     )
     # Import desired hooks
-    from app_base.base.services.exists_check_hook import ExistsCheckHooksMixin
-    from app_base.base.services.user_aware_hook import UserAwareHooksMixin, UserContextKwargs
+    from app_layer_base.base.services.exists_check_hook import ExistsCheckHooksMixin
+    from app_layer_base.base.services.user_aware_hook import UserAwareHooksMixin, UserContextKwargs
 
     class BookService(
         BaseCreateServiceMixin,
@@ -100,7 +100,7 @@ Follow these steps to create a new, complete CRUD endpoint for a resource (e.g.,
 -   **UseCases (`usecases/book.py`)**: Wrap each service operation in a UseCase. This handles transactions and decouples the API layer from the service layer.
 
     ```python
-    from app_base.base.usecases.crud import (
+    from app_layer_base.base.usecases.crud import (
         BaseCreateUseCase,
         BaseGetUseCase,
         # ... import other use case bases
@@ -154,7 +154,7 @@ Hooks are the primary way to add business logic. Simply add the mixin to your se
 -   **`UniqueConstraintHooksMixin`**: Check for uniqueness before creating/updating. Implement the `_unique_constraints` async generator.
     ```python
     from sqlalchemy import and_
-    
+
     class MyService(UniqueConstraintHooksMixin, ...):
         async def _unique_constraints(self, obj_data, context):
             if obj_data.name:
@@ -171,11 +171,11 @@ Hooks are the primary way to add business logic. Simply add the mixin to your se
 
 When performing tasks, refer to these key files to understand the underlying patterns and base implementations.
 
--   `README.md`: High-level overview of the package.
--   `src/app_base/base/repos/base.py`: The `BaseRepository` implementation.
--   `src/app_base/base/services/base.py`: Defines all base service mixins and their hook interfaces (`_context_*`, `_prepare_*`, `_post_*`).
--   `src/app_base/base/services/*_hook.py`: Implementations for all standard service hooks. Review these to see how to add custom logic.
--   `src/app_base/base/usecases/crud.py`: The base UseCase implementations that manage transactions.
--   `src/app_base/ai/models/factory.py`: The `AIModelFactory` for creating LLM and embedding models.
--   `src/app_base/config/`: Pydantic settings management for different modules.
--   `src/app_base/adapter/`: Interfaces and implementations for file storage and vector stores.
+-   `README.md`: High-level overview of the workspace.
+-   `app-layer-base/src/app_layer_base/base/repos/base.py`: The `BaseRepository` implementation.
+-   `app-layer-base/src/app_layer_base/base/services/base.py`: Defines all base service mixins and their hook interfaces (`_context_*`, `_prepare_*`, `_post_*`).
+-   `app-layer-base/src/app_layer_base/base/services/*_hook.py`: Implementations for all standard service hooks. Review these to see how to add custom logic.
+-   `app-layer-base/src/app_layer_base/base/usecases/crud.py`: The base UseCase implementations that manage transactions.
+-   `app-ai-catalog/src/app_ai_catalog/models/factory.py`: The `AIModelFactory` for creating LLM and embedding models.
+-   `app-layer-base/src/app_layer_base/config_util.py`: Settings loader and `ConfigLoader` utility.
+-   `app-file-storage/`, `app-nosql-db/`, `app-vector-store/`, `app-event-broker/`, `app-http-client/`: Standalone adapter packages.

@@ -1,10 +1,10 @@
 # app-tools Developer Guide
 
-This guide provides expert guidance for utilizing the `app-tools` CLI to streamline development workflows, particularly for `app-base` based FastAPI applications. It focuses on generating new feature modules and understanding the conventions used by the `app-tools` CLI.
+This guide provides expert guidance for utilizing the `app-tools` CLI to streamline development workflows for FastAPI applications built on the modular workspace packages. It focuses on generating new feature modules and understanding the conventions used by the `app-tools` CLI.
 
 ## Core Philosophy & Usage
 
-The `app-tools` CLI is designed to accelerate development by generating boilerplate code for common patterns, adhering to the architectural guidelines of the `app-base` package.
+The `app-tools` CLI is designed to accelerate development by generating boilerplate code for common patterns, adhering to the architectural guidelines of the `app-layer-base` package.
 
 ### Primary Workflow: Creating a New Feature
 
