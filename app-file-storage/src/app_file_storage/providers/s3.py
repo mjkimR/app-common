@@ -22,6 +22,10 @@ class S3FileStorageSettings(BaseSettings):
     region_name: str | None = Field(
         default=None, description="AWS region name (required for AWS S3, optional for S3-compatible providers)"
     )
+    auto_create_bucket: bool = Field(
+        default=True,
+        description="If True, automatically create the bucket on startup if it does not exist",
+    )
 
     model_config = SettingsConfigDict(env_prefix="FS_S3_")
 
@@ -39,6 +43,9 @@ class S3StorageProvider(FileStorageClient):
     async def from_env(cls) -> "S3StorageProvider":
         """
         Creates the S3 client from configuration and returns it with the bucket name.
+
+        If FS_S3_AUTO_CREATE_BUCKET=true, the bucket is created when it does not exist.
+        Otherwise a RuntimeError is raised if the bucket is missing.
         """
         config = S3FileStorageSettings()  # type: ignore
         session = aiobotocore.session.get_session()
@@ -50,7 +57,32 @@ class S3StorageProvider(FileStorageClient):
             endpoint_url=config.endpoint_url,
         )
         client = await context.__aenter__()
-        return cls(context, client, config.bucket_name)
+        instance = cls(context, client, config.bucket_name)
+        await instance._ensure_bucket(auto_create=config.auto_create_bucket, region_name=config.region_name)
+        return instance
+
+    async def _ensure_bucket(self, *, auto_create: bool, region_name: str | None) -> None:
+        """
+        Verifies that the configured bucket exists.
+
+        If auto_create is True and the bucket is absent, it is created.
+        If auto_create is False and the bucket is absent, a RuntimeError is raised.
+        """
+        try:
+            await self.client.head_bucket(Bucket=self.bucket_name)
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code not in ("404", "NoSuchBucket"):
+                raise
+            if not auto_create:
+                raise RuntimeError(
+                    f"S3 bucket '{self.bucket_name}' does not exist. "
+                    "Set FS_S3_AUTO_CREATE_BUCKET=true to create it automatically."
+                ) from e
+            create_kwargs: dict[str, Any] = {"Bucket": self.bucket_name}
+            if region_name and region_name != "us-east-1":
+                create_kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region_name}
+            await self.client.create_bucket(**create_kwargs)
 
     async def close(self) -> None:
         """Closes the S3 client context."""
