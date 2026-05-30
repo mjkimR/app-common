@@ -416,6 +416,11 @@ dependencies = [
     { name = "faststream", extra = ["rabbit", "redis"] },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fastapi" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "app-layer-base", editable = "app-layer-base" },
@@ -423,6 +428,9 @@ requires-dist = [
     { name = "faststream", extras = ["rabbit"], specifier = ">=0.6.6" },
     { name = "faststream", extras = ["redis"], specifier = ">=0.6.6" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fastapi", specifier = ">=0.115.12" }]
 
 [[package]]
 name = "app-file-storage"
@@ -434,12 +442,20 @@ dependencies = [
     { name = "app-layer-base" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fastapi" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aiobotocore", specifier = ">=3.1.1" },
     { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "app-layer-base", editable = "app-layer-base" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fastapi", specifier = ">=0.115.12" }]
 
 [[package]]
 name = "app-helper"
@@ -477,11 +493,19 @@ dependencies = [
     { name = "httpx" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fastapi" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "app-layer-base", editable = "app-layer-base" },
     { name = "httpx", specifier = ">=0.28.1" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fastapi", specifier = ">=0.115.12" }]
 
 [[package]]
 name = "app-layer-base"
@@ -520,12 +544,20 @@ dependencies = [
     { name = "motor" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fastapi" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "app-layer-base", editable = "app-layer-base" },
     { name = "google-cloud-firestore", specifier = ">=2.11.0" },
     { name = "motor", specifier = ">=3.1.1" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fastapi", specifier = ">=0.115.12" }]
 
 [[package]]
 name = "app-tools"
@@ -571,6 +603,11 @@ dependencies = [
     { name = "qdrant-client" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fastapi" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "app-ai-catalog", editable = "app-ai-catalog" },
@@ -578,6 +615,9 @@ requires-dist = [
     { name = "langchain-qdrant", specifier = ">=1.1.0" },
     { name = "qdrant-client", specifier = ">=1.16.2" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fastapi", specifier = ">=0.115.12" }]
 
 [[package]]
 name = "apscheduler"

@@ -1,6 +1,10 @@
-from contextlib import asynccontextmanager
+from __future__ import annotations
 
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 from app_vector_store.config import get_vector_db_settings
 from app_vector_store.factory import vector_store_cache

@@ -17,5 +17,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/app_file_storage"]
 
+[dependency-groups]
+dev = [
+    "fastapi>=0.115.12",
+]
+
 [tool.uv.sources]
 app-layer-base = { workspace = true }
+

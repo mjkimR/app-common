@@ -1,6 +1,10 @@
-from contextlib import asynccontextmanager
+from __future__ import annotations
 
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 from app_file_storage.config import get_file_storage_settings
 from app_file_storage.instance import close_storage_client, setup_storage_client

@@ -1,6 +1,10 @@
-from contextlib import asynccontextmanager
+from __future__ import annotations
 
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 from app_nosql_db.config import get_nosql_db_settings
 from app_nosql_db.instance import close_nosql_db, setup_nosql_db_provider
