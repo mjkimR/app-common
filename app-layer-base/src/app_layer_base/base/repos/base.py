@@ -168,6 +168,7 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         self,
         session: AsyncSession,
         obj_in: CreateSchemaType,
+        return_updated_obj: bool = True,
         **update_fields: Any,
     ) -> ModelType:
         obj_dict = obj_in.model_dump()
@@ -176,7 +177,8 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         db_obj: ModelType = self.model(**obj_dict)
         session.add(db_obj)
         await session.flush()
-        await session.refresh(db_obj)
+        if return_updated_obj:
+            await session.refresh(db_obj)
         return db_obj
 
     async def create_multi(

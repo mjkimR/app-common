@@ -46,6 +46,18 @@ def test_x_xss_protection_header():
     assert response.headers.get("x-xss-protection") == "1; mode=block"
 
 
+def test_content_security_policy_header():
+    client = _make_app()
+    response = client.get("/test")
+    assert response.headers.get("content-security-policy") == "default-src 'self'"
+
+
+def test_referrer_policy_header():
+    client = _make_app()
+    response = client.get("/test")
+    assert response.headers.get("referrer-policy") == "strict-origin-when-cross-origin"
+
+
 def test_all_security_headers_present():
     client = _make_app()
     response = client.get("/test")
