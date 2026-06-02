@@ -8,6 +8,11 @@ from app_layer_base.config_util import get_env_file_path, get_project_root
 
 
 class AppSettings(BaseSettings):
+    APP_ENV: str = Field(
+        default="development",
+        description="Runtime environment name. Set to 'production' to enable production-only behavior.",
+    )
+
     DATABASE_URL: str = Field(
         default_factory=lambda: f"sqlite+aiosqlite:///{get_project_root()}/.test.db",
         description="SQLAlchemy async database connection URL (defaults to SQLite)",
@@ -41,6 +46,10 @@ class AppSettings(BaseSettings):
         env_file=get_env_file_path(),
         extra="ignore",
     )
+
+    @property
+    def is_production(self) -> bool:
+        return self.APP_ENV.strip().lower() == "production"
 
 
 @functools.lru_cache

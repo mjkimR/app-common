@@ -3,7 +3,6 @@ from pathlib import Path
 import click
 
 from app_tools.create_code.create_feature import create_feature
-from app_tools.utils.config import get_app_home_dir
 
 
 @click.group()
@@ -20,6 +19,5 @@ def create_code():
 )
 def feature(name: str, plural: str | None, prefix: str | None):
     """Create a new feature module"""
-    base_dir = get_app_home_dir()
-    base_dir = Path(base_dir) if base_dir else None
+    base_dir = Path.cwd()
     create_feature(name=name, plural=plural, base_dir=base_dir, feature_prefix=prefix)

@@ -1,7 +1,10 @@
 from typing import ClassVar
 
 from fastapi import FastAPI
+from loguru import logger
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from app_layer_base.config import get_app_settings
 
 
 class SecurityHeaderMiddleware:
@@ -15,8 +18,13 @@ class SecurityHeaderMiddleware:
         (b"permissions-policy", b"camera=(), microphone=(), geolocation=(), payment=()"),
     ]
 
-    def __init__(self, app: ASGIApp, is_production: bool = True):
+    def __init__(self, app: ASGIApp, is_production: bool | None = None):
         self.app = app
+        app_env = "override"
+        if is_production is None:
+            settings = get_app_settings()
+            is_production = settings.is_production
+            app_env = settings.APP_ENV
 
         # Compute the headers list once during initialization to optimize performance
         self.security_headers = list(self.BASE_HEADERS)
@@ -29,6 +37,11 @@ class SecurityHeaderMiddleware:
                 ]
             )
         else:
+            logger.info(
+                "SecurityHeaderMiddleware running in development mode (APP_ENV={}). "
+                "HSTS is disabled and CSP is relaxed.",
+                app_env,
+            )
             # Development environment: Exclude HSTS entirely, relax CSP
             self.security_headers.extend(
                 [
@@ -52,6 +65,5 @@ class SecurityHeaderMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 
-def add_middleware(app: FastAPI, is_production: bool = False):
-    # Pass the is_production flag based on your environment settings
+def add_middleware(app: FastAPI, is_production: bool | None = None):
     app.add_middleware(SecurityHeaderMiddleware, is_production=is_production)
