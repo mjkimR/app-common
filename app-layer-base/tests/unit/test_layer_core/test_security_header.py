@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import pytest
 from app_layer_base.core.middlewares.security_header import SecurityHeaderMiddleware, add_middleware
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -55,6 +56,15 @@ def test_content_security_policy_header():
     client = _make_app()
     response = client.get("/test")
     assert response.headers.get("content-security-policy") == "default-src 'self'"
+
+
+@pytest.mark.parametrize("path", ["/docs", "/redoc", "/docs/oauth2-redirect"])
+def test_docs_paths_use_docs_content_security_policy(path: str):
+    client = _make_app()
+    response = client.get(path)
+
+    assert response.headers.get("content-security-policy") == SecurityHeaderMiddleware.DOCS_CSP.decode()
+    assert response.headers.get("strict-transport-security") == "max-age=31536000; includeSubDomains"
 
 
 def test_referrer_policy_header():
