@@ -36,7 +36,7 @@ def get_project_root() -> str:
 
     # Check for .git directory
     current_path = Path.cwd()
-    for parent in [current_path, *list(current_path.parents)]:
+    for parent in (current_path, *current_path.parents):
         if (parent / ".git").exists():
             return str(parent)
 

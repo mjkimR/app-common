@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 
-class AIModelType(str, Enum):
+class AIModelType(StrEnum):
     LLM = "llm"
     EMBEDDING = "text-embedding"
     STT = "stt"

@@ -1,5 +1,5 @@
 import datetime
-import enum
+from enum import StrEnum
 from typing import Any
 
 from app_layer_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
@@ -8,7 +8,7 @@ from sqlalchemy import Enum as EnumColumn
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-class EventStatus(str, enum.Enum):
+class EventStatus(StrEnum):
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
     PUBLISHED = "PUBLISHED"
