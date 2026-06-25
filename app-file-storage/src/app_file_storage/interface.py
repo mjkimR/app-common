@@ -16,7 +16,7 @@ class FileStorageClient(ABC):
         pass
 
     @abstractmethod
-    async def download_file(self, file_path: str) -> bytes:
+    async def download_file(self, file_path: str, version_id: str | None = None) -> bytes:
         """Downloads a file and returns its content as bytes."""
         pass
 

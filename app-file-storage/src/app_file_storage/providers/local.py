@@ -43,8 +43,11 @@ class LocalStorageProvider(FileStorageClient):
         """Resolves the full, absolute path for a file."""
         return self.root_path.joinpath(file_path).resolve()
 
-    async def download_file(self, file_path: str) -> bytes:
+    async def download_file(self, file_path: str, version_id: str | None = None) -> bytes:
         """Downloads a file and returns its content as bytes."""
+        if version_id is not None:
+            raise NotImplementedError("Versioning is not supported in local storage.")
+
         path = self._get_full_path(file_path)
         if not await aiofiles.os.path.exists(path):
             raise FileNotFoundError(f"File not found at {file_path}")

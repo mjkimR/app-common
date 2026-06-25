@@ -82,6 +82,21 @@ async def test_download_file_success(mock_aiobotocore_client):
     assert content == b"file content"
 
 
+async def test_download_file_with_version_id_success(mock_aiobotocore_client):
+    mock_body_stream = AsyncMock()
+    mock_body_stream.read.return_value = b"file content version 1"
+
+    mock_body = AsyncMock()
+    mock_body.__aenter__.return_value = mock_body_stream
+    mock_body.__aexit__.return_value = None
+
+    mock_aiobotocore_client.get_object.return_value = {"Body": mock_body}
+    provider = S3StorageProvider(None, mock_aiobotocore_client, "test-bucket")
+    content = await provider.download_file("test.txt", version_id="v1")
+    mock_aiobotocore_client.get_object.assert_called_once_with(Bucket="test-bucket", Key="test.txt", VersionId="v1")
+    assert content == b"file content version 1"
+
+
 async def test_download_file_not_found(mock_aiobotocore_client):
     mock_aiobotocore_client.get_object.side_effect = ClientError(
         {"Error": {"Code": "NoSuchKey", "Message": "Not Found"}}, "GetObject"

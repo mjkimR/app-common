@@ -54,6 +54,11 @@ async def test_download_file_success(local_storage_provider, test_root_path):
     assert downloaded_content == file_content
 
 
+async def test_download_file_with_version_id_raises_not_implemented(local_storage_provider):
+    with pytest.raises(NotImplementedError, match=r"Versioning is not supported in local storage."):
+        await local_storage_provider.download_file("test.txt", version_id="v1")
+
+
 async def test_download_file_not_found(local_storage_provider):
     with pytest.raises(FileNotFoundError, match=r"File not found at non_existent.txt"):
         await local_storage_provider.download_file("non_existent.txt")

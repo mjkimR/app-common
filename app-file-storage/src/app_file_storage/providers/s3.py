@@ -88,11 +88,14 @@ class S3StorageProvider(FileStorageClient):
         """Closes the S3 client context."""
         await self.context.__aexit__(None, None, None)
 
-    async def download_file(self, file_path: str) -> bytes:
+    async def download_file(self, file_path: str, version_id: str | None = None) -> bytes:
         """Downloads a file from S3 and returns its content as bytes."""
 
         try:
-            response = await self.client.get_object(Bucket=self.bucket_name, Key=file_path)
+            kwargs = {"Bucket": self.bucket_name, "Key": file_path}
+            if version_id:
+                kwargs["VersionId"] = version_id
+            response = await self.client.get_object(**kwargs)
             async with response["Body"] as stream:
                 return await stream.read()
         except ClientError as e:
