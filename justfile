@@ -107,3 +107,8 @@ test +paths="":
 # Run tests with PostgreSQL
 test-pg +paths="":
     @bash ./scripts/run-tests.sh postgres all {{ paths }}
+
+# Install app-helper globally in editable mode using uv tool
+install-app-helper:
+    @bash ./scripts/install-app-helper.sh
+
