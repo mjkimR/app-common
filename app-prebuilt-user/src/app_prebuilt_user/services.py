@@ -76,8 +76,12 @@ class UserService(
         return await self.repo.create(session, user_data)
 
     async def update_user(self, session: AsyncSession, obj_data: UserUpdate, user_id: UUID) -> User | None:
-        """Update an existing user."""
-        user_data = UserDbUpdate(**obj_data.model_dump(exclude={"password"}))
+        """Update an existing user.
+
+        Only fields explicitly provided by the caller are applied (partial update);
+        unset fields are left untouched rather than overwritten with ``None``.
+        """
+        user_data = UserDbUpdate(**obj_data.model_dump(exclude={"password"}, exclude_unset=True))
         if obj_data.password:
             user_data.hashed_password = self.get_password_hash(obj_data.password.get_secret_value())
         return await self.repo.update_by_pk(session, pk=user_id, obj_in=user_data)

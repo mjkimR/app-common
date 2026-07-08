@@ -41,9 +41,8 @@ class UpdateUserUseCase(BaseUseCase):
         current_user: User,
         context: BaseContextKwargs | None = None,
     ) -> User | None:
-        if current_user.id == user_id:
-            return current_user
-        if not current_user.is_superadmin:
+        # A user may update their own record; updating anyone else requires superadmin.
+        if current_user.id != user_id and not current_user.is_superadmin:
             raise PermissionDeniedException()
         async with AsyncTransaction() as session:
             return await self.service.update_user(session, obj_data, user_id)

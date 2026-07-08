@@ -2,7 +2,6 @@ from typing import Annotated
 from uuid import UUID
 
 from app_layer_base.base.exceptions.basic import NotFoundException
-from app_layer_base.base.schemas.paginated import PaginatedList
 from fastapi import APIRouter, Depends
 
 from app_prebuilt_user.deps import get_current_user, on_superuser
@@ -14,7 +13,7 @@ from app_prebuilt_user.usecases.crud import GetUserUseCase, UpdateUserUseCase
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.get("/{user_id}", response_model=PaginatedList[UserRead])
+@router.get("/{user_id}", response_model=UserRead)
 async def read_user(
     use_case: Annotated[GetUserUseCase, Depends()],
     user_id: UUID,
