@@ -2,8 +2,9 @@ import datetime
 import logging
 from contextlib import asynccontextmanager
 from datetime import UTC
+from functools import partial
+from typing import Any, Protocol
 
-from app_event_broker.instance import get_event_broker
 from app_layer_base.base.schemas.event import DomainEvent
 from app_layer_base.core.database.transaction import AsyncTransaction
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -17,22 +18,39 @@ _ZOMBIE_MAX_RETRIES = 3
 _ZOMBIE_TIMEOUT = 60 * 60  # 1 hour
 
 
-async def dispatch_event(event_type: str, event: DomainEvent) -> None:
-    """Dispatch event to message broker."""
-    broker = get_event_broker()
-    if broker is None:
-        logger.warning("Event broker is not configured. Skipping event dispatch.")
-        return
+class EventPublisher(Protocol):
+    """Transport-agnostic publisher injected by the consumer.
 
-    # FastStream publish: channel name based on event_type
-    channel = f"events.{event_type.lower().replace('_', '.')}"
-    message = event.to_message()
+    The outbox relay does not own a message broker. The consumer supplies a
+    callable that knows how to publish a ``DomainEvent`` over whatever transport
+    it uses (a FastStream broker, a Taskiq queue, an HTTP webhook, ...). This keeps
+    the outbox package standalone and free of any broker dependency.
 
-    await broker.publish(message, channel=channel)
-    logger.debug(f"Event dispatched: {event_type} -> {channel}")
+    See :func:`make_faststream_publisher` for a ready-made adapter over a
+    FastStream-style broker.
+    """
+
+    async def __call__(self, event_type: str, event: DomainEvent) -> None: ...
 
 
-async def process_outbox_events_job():
+def make_faststream_publisher(broker: Any) -> EventPublisher:
+    """Build an :class:`EventPublisher` over a FastStream-style broker.
+
+    ``broker`` only needs an awaitable ``publish(message, channel=...)`` method,
+    so any object honoring that contract works without importing FastStream here.
+    The channel name is derived from the event type (e.g. ``item_created`` ->
+    ``events.item.created``).
+    """
+
+    async def _publish(event_type: str, event: DomainEvent) -> None:
+        channel = f"events.{event_type.lower().replace('_', '.')}"
+        await broker.publish(event.to_message(), channel=channel)
+        logger.debug(f"Event dispatched: {event_type} -> {channel}")
+
+    return _publish
+
+
+async def process_outbox_events_job(publisher: EventPublisher):
     """
     A job function to be run by the scheduler.
 
@@ -62,7 +80,7 @@ async def process_outbox_events_job():
             # Process each event
             for event in events_to_process:
                 try:
-                    await dispatch_event(
+                    await publisher(
                         event.event_type,
                         DomainEvent(
                             id=event.id,
@@ -144,19 +162,37 @@ async def resolve_zombie_events():
 
 
 @asynccontextmanager
-async def scheduler_lifespan(app: FastAPI):
+async def scheduler_lifespan(
+    app: FastAPI,
+    publisher: EventPublisher,
+    *,
+    process_interval_seconds: int = 5,
+    zombie_interval_seconds: int = 60 * 10,
+):
+    """FastAPI lifespan that runs the outbox relay and zombie resolver.
+
+    The consumer injects ``publisher`` (see :class:`EventPublisher`). Wire it into
+    an app with ``functools.partial`` so FastAPI still calls it with just ``app``::
+
+        from functools import partial
+        from app_prebuilt_outbox.scheduler import scheduler_lifespan, make_faststream_publisher
+
+        # `broker` is any object with an awaitable `publish(message, channel=...)`.
+        publisher = make_faststream_publisher(broker)
+        app = FastAPI(lifespan=partial(scheduler_lifespan, publisher=publisher))
+    """
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
-        process_outbox_events_job,
+        partial(process_outbox_events_job, publisher),
         "interval",
-        seconds=5,
+        seconds=process_interval_seconds,
         id="process_outbox",
         max_instances=1,
     )
     scheduler.add_job(
         resolve_zombie_events,
         "interval",
-        seconds=60 * 10,
+        seconds=zombie_interval_seconds,
         id="resolve_zombies",
         max_instances=1,
     )
