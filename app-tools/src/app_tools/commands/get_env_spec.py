@@ -113,11 +113,6 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
             "file_storage_none",
             "file_storage_local",
             "file_storage_s3",
-            "event_broker",
-            "event_broker_none",
-            "event_broker_in_memory",
-            "event_broker_rabbitmq",
-            "event_broker_redis",
             "vector_db",
             "vector_db_none",
             "vector_db_qdrant",
@@ -129,7 +124,6 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
 def get_env_spec(type: str):
     """List environment variable specifications for app-base configurations."""
     try:
-        from app_event_broker.config import EventBrokerSettings
         from app_file_storage.config import FileStorageSettings
         from app_layer_base.config import AppSettings
         from app_prebuilt_user.config.auth import AuthSettings
@@ -147,11 +141,6 @@ def get_env_spec(type: str):
         "file_storage_none": (FileStorageSettings, "none"),
         "file_storage_local": (FileStorageSettings, "local"),
         "file_storage_s3": (FileStorageSettings, "s3"),
-        "event_broker": (EventBrokerSettings, None),
-        "event_broker_none": (EventBrokerSettings, "none"),
-        "event_broker_in_memory": (EventBrokerSettings, "in_memory"),
-        "event_broker_rabbitmq": (EventBrokerSettings, "rabbitmq"),
-        "event_broker_redis": (EventBrokerSettings, "redis"),
         "vector_db": (VectorDBSettings, None),
         "vector_db_none": (VectorDBSettings, "none"),
         "vector_db_qdrant": (VectorDBSettings, "qdrant"),

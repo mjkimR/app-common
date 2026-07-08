@@ -2,7 +2,7 @@
 # Shared helpers for module resolution.
 # Source this file from scripts or justfile recipes: source ./scripts/_lib.sh
 
-AVAILABLE_MODULES="all app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog"
+AVAILABLE_MODULES="all app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-vector-store app-http-client app-ai-catalog"
 
 resolve_module() {
     case "$1" in
@@ -12,9 +12,7 @@ resolve_module() {
         app-helper|helper|helpers) echo "app-helper" ;;
         app-layer-base|layer-base|layer) echo "app-layer-base" ;;
         app-file-storage|file-storage|storage) echo "app-file-storage" ;;
-        app-nosql-db|nosql-db|nosql) echo "app-nosql-db" ;;
         app-vector-store|vector-store|vector) echo "app-vector-store" ;;
-        app-event-broker|event-broker|broker) echo "app-event-broker" ;;
         app-http-client|http-client|http) echo "app-http-client" ;;
         app-ai-catalog|ai-catalog|ai) echo "app-ai-catalog" ;;
         all) echo "all" ;;
@@ -30,9 +28,7 @@ resolve_module_path() {
         app-helper) echo "app-helper" ;;
         app-layer-base) echo "app-layer-base" ;;
         app-file-storage) echo "app-file-storage" ;;
-        app-nosql-db) echo "app-nosql-db" ;;
         app-vector-store) echo "app-vector-store" ;;
-        app-event-broker) echo "app-event-broker" ;;
         app-http-client) echo "app-http-client" ;;
         app-ai-catalog) echo "app-ai-catalog" ;;
         *) echo "$1" ;;
@@ -45,7 +41,7 @@ should_run() {
 
 validate_module() {
     case "$1" in
-        all|app-prebuilt-user|app-prebuilt-outbox|app-tools|app-helper|app-layer-base|app-file-storage|app-nosql-db|app-vector-store|app-event-broker|app-http-client|app-ai-catalog) ;;
+        all|app-prebuilt-user|app-prebuilt-outbox|app-tools|app-helper|app-layer-base|app-file-storage|app-vector-store|app-http-client|app-ai-catalog) ;;
         *)
             echo "Unknown module: $1" >&2
             echo "Available modules: $AVAILABLE_MODULES" >&2

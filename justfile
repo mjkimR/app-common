@@ -44,7 +44,7 @@ lint module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog; do
+    for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
@@ -63,7 +63,7 @@ check module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog; do
+    for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
@@ -81,7 +81,7 @@ lint-check module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-nosql-db app-vector-store app-event-broker app-http-client app-ai-catalog; do
+    for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
