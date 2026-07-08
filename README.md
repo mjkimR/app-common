@@ -6,7 +6,7 @@ A personal monorepo containing highly modularized packages and developer CLI too
 
 ## Workspace Core Packages
 
-This repository is built as a `uv workspace` divided into 10+ focused, standalone packages. You can import only what you need, avoiding heavy third-party dependency bloat.
+This repository is built as a `uv workspace` divided into focused, standalone packages. You can import only what you need, avoiding heavy third-party dependency bloat.
 
 ### 1. [app-layer-base](./app-layer-base/README.md)
 The foundational domain layer.
@@ -15,9 +15,7 @@ The foundational domain layer.
 ### 2. Standalone Adapters
 Each adapter isolates a specific technology stack and can be imported independently:
 - **[app-file-storage](./app-file-storage/README.md)**: Support for Local and AWS S3 object storage clients.
-- **[app-nosql-db](./app-nosql-db/README.md)**: Support for MongoDB (Motor) and Google Cloud Firestore.
 - **[app-vector-store](./app-vector-store/README.md)**: Support for Qdrant vector databases, seamlessly integrated with `app-ai-catalog`.
-- **[app-event-broker](./app-event-broker/README.md)**: Support for RabbitMQ and Redis event brokers via FastStream.
 - **[app-http-client](./app-http-client/README.md)**: Lightweight asynchronous HTTP client wrapper based on `httpx`.
 
 ### 3. Standalone AI & Prebuilt Services

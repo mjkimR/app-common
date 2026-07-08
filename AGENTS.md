@@ -1,6 +1,6 @@
 # AGENTS.md - Guide for AI Assistants
 
-This repository contains a **highly modular framework for FastAPI-based development**, split into 10+ independent `uv workspace` packages designed to isolate concerns and allow standalone usage.
+This repository contains a **highly modular framework for FastAPI-based development**, split into independent `uv workspace` packages designed to isolate concerns and allow standalone usage.
 
 ---
 
@@ -54,9 +54,7 @@ The repository is fully modularized into discrete workspace packages:
     - `utils/`: Common time and type hint utilities.
     - `config_util.py` & `config.py`: Environment settings loaders and general app settings.
 - **`app-file-storage/`**: Standalone adapter for local and AWS S3 storage client operations.
-- **`app-nosql-db/`**: Standalone adapter supporting MongoDB and Google Cloud Firestore.
 - **`app-vector-store/`**: Standalone adapter for Qdrant vector database storage and search.
-- **`app-event-broker/`**: Standalone adapter for RabbitMQ and Redis event brokers via FastStream.
 - **`app-http-client/`**: Standalone light-weight HTTP client adapter based on `httpx`.
 - **`app-ai-catalog/`**: AI model factories, LangChain AI clients, and LiteLLM adapters.
 - **`app-prebuilt-user/`**: Prebuilt authentication, signup, and user management controllers, services, and models.

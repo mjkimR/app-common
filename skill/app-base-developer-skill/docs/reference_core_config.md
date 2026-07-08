@@ -31,7 +31,7 @@ Uses Pydantic Settings (`BaseSettings`) to strictly validate and load environmen
 ### Components
 - **`app-layer-base/src/app_layer_base/config.py`**: `AppSettings` contains variables like `ENV`, `DEBUG`, `CORS_ALLOWED_ORIGINS`.
 - **`app-layer-base/src/app_layer_base/config_util.py`**: `ConfigLoader` that parses YAML and resolves `${ENV_VAR}` variables if needed.
-- **Per-adapter settings**: Each adapter package (`app-file-storage`, `app-event-broker`, `app-nosql-db`, `app-vector-store`, `app-http-client`) defines its own settings class in its own `config.py` or `settings.py`. These are lazily loaded by `app-base/src/app_base/config/` when the full framework is used.
+- **Per-adapter settings**: Each adapter package (`app-file-storage`, `app-vector-store`, `app-http-client`) defines its own settings class in its own `config.py` or `settings.py`. These are lazily loaded by `app-layer-base` config composition when the full framework is used.
 - **Usage**:
   ```python
   from app_layer_base.config_util import ConfigLoader

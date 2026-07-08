@@ -1,6 +1,6 @@
 # App Helper
 
-General-purpose developer helper tools and utilities. This package is completely independent of `app-base` and can be used in any environment.
+General-purpose developer helper tools and utilities. This package is completely independent of the rest of `app-common` and can be used in any environment.
 
 ## Installation
 

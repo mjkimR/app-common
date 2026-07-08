@@ -89,7 +89,7 @@ app-tools get-env-spec --type <config_type>
 
 **Options:**
 -   `--type`: **(Required)** The type of configuration to inspect.
-    -   Choices include: `auth`, `app`, `file_storage`, `file_storage_none`, `file_storage_local`, `file_storage_s3`, `event_broker`, `event_broker_none`, `event_broker_in_memory`, `event_broker_rabbitmq`, `event_broker_redis`, `vector_db`, `vector_db_none`, `vector_db_qdrant`, `vector_db_milvus`.
+    -   Choices include: `auth`, `app`, `file_storage`, `file_storage_none`, `file_storage_local`, `file_storage_s3`, `vector_db`, `vector_db_none`, `vector_db_qdrant`, `vector_db_milvus`.
 
 **Example:**
 

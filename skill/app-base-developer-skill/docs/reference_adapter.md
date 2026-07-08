@@ -4,22 +4,7 @@ This document explains the adapters provided in our workspace packages. Each ada
 
 ---
 
-## 1. Event Broker (`app-event-broker`)
-
-### Summary
-Manages event streaming, publishing, and subscribing via standard message brokers.
-
-### Components
-- **Import Namespace**: `app_event_broker`
-- **Modules**: `factory.py`, `instance.py`, `lifespan.py`
-- **Underlying Stack**: `faststream`, `faststream[rabbit]`, `faststream[redis]`
-- **Usage**:
-  - Retrieve the active instance from the FastAPI dependency or global `get_event_broker` to publish events.
-- **Precautions**: Ensure `EVENT_BROKER_URL` is set in configuration. Lifespan handlers must be linked to the FastAPI application to manage the connection pool cleanly.
-
----
-
-## 2. File Storage (`app-file-storage`)
+## 1. File Storage (`app-file-storage`)
 
 ### Summary
 Unified interface for asynchronous object storage operations (uploading, downloading, metadata reading).
@@ -39,19 +24,7 @@ Unified interface for asynchronous object storage operations (uploading, downloa
 
 ---
 
-## 3. NoSQL Database (`app-nosql-db`)
-
-### Summary
-Adapts Document NoSQL databases like MongoDB or Firebase Firestore to clean repository and service patterns.
-
-### Components
-- **Import Namespace**: `app_nosql_db`
-- **Providers**: `providers/mongodb.py` (via `motor`), `providers/firestore.py` (via `google-cloud-firestore`).
-- **Precautions**: Switch providers transparently by updating your configuration, but verify index structures and specific query constraints when switching back-ends.
-
----
-
-## 4. Vector Store (`app-vector-store`)
+## 2. Vector Store (`app-vector-store`)
 
 ### Summary
 Integrates with vector databases for semantic search and AI embedding storage.
@@ -71,7 +44,7 @@ Integrates with vector databases for semantic search and AI embedding storage.
 
 ---
 
-## 5. HTTP Client (`app-http-client`)
+## 3. HTTP Client (`app-http-client`)
 
 ### Summary
 Asynchronous HTTP Client management utilizing a single connection pool.

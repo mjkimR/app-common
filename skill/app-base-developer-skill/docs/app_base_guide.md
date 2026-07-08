@@ -178,4 +178,4 @@ When performing tasks, refer to these key files to understand the underlying pat
 -   `app-layer-base/src/app_layer_base/base/usecases/crud.py`: The base UseCase implementations that manage transactions.
 -   `app-ai-catalog/src/app_ai_catalog/models/factory.py`: The `AIModelFactory` for creating LLM and embedding models.
 -   `app-layer-base/src/app_layer_base/config_util.py`: Settings loader and `ConfigLoader` utility.
--   `app-file-storage/`, `app-nosql-db/`, `app-vector-store/`, `app-event-broker/`, `app-http-client/`: Standalone adapter packages.
+-   `app-file-storage/`, `app-vector-store/`, `app-http-client/`: Standalone adapter packages.
