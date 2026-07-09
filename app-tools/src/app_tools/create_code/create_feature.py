@@ -1,5 +1,8 @@
 import re
 from pathlib import Path
+from string import Template
+
+FEATURE_TEMPLATES_DIR = Path(__file__).parent / "templates" / "feature"
 
 
 def pluralize(name: str) -> str:
@@ -108,237 +111,26 @@ def create_feature(
 
     print(f"Creating feature '{class_name}' in '{feature_dir}'...")
 
-    # Define file structure and content templates
-    files_to_create = {
-        "__init__.py": "",
-        "models.py": f"""
-from sqlalchemy.orm import Mapped, mapped_column
-
-from app_layer_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
-
-
-class {class_name}(Base, UUIDMixin, TimestampMixin):
-    __tablename__ = "{plural_name}"
-    name: Mapped[str] = mapped_column()
-""",
-        "schemas.py": f"""
-from pydantic import BaseModel, ConfigDict, Field
-
-from app_layer_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
-
-
-class {class_name}Base(BaseModel):
-    name: str = Field(description="The name of the {singular_name}.")
-
-
-class {class_name}Create({class_name}Base):
-    pass
-
-
-class {class_name}Put({class_name}Base):
-    pass
-
-
-class {class_name}Patch(BaseModel):
-    name: str | None = Field(default=None, description="The name of the {singular_name}.")
-
-
-class {class_name}Read(UUIDSchemaMixin, TimestampSchemaMixin, {class_name}Base):
-    model_config = ConfigDict(from_attributes=True)
-""",
-        "repos.py": f"""
-from app_layer_base.base.repos.base import BaseRepository
-from {import_prefix}.{plural_name}.models import {class_name}
-from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Put, {class_name}Patch
-
-
-class {class_name}Repository(BaseRepository[{class_name}, {class_name}Create, {class_name}Put, {class_name}Patch]):
-    model = {class_name}
-""",
-        "services.py": f"""
-from typing import Annotated
-
-from fastapi import Depends
-
-from app_layer_base.base.services.base import (
-    BaseContextKwargs,
-    BaseCreateServiceMixin,
-    BaseDeleteServiceMixin,
-    BaseGetMultiServiceMixin,
-    BaseGetServiceMixin,
-    BaseUpdateServiceMixin,
-)
-from {import_prefix}.{plural_name}.models import {class_name}
-from {import_prefix}.{plural_name}.repos import {class_name}Repository
-from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Put, {class_name}Patch
-
-
-class {class_name}ContextKwargs(BaseContextKwargs):
-    pass
-
-
-class {class_name}Service(
-    BaseCreateServiceMixin[{class_name}Repository, {class_name}, {class_name}Create, {class_name}ContextKwargs],
-    BaseGetMultiServiceMixin[{class_name}Repository, {class_name}, {class_name}ContextKwargs],
-    BaseGetServiceMixin[{class_name}Repository, {class_name}, {class_name}ContextKwargs],
-    BaseUpdateServiceMixin[{class_name}Repository, {class_name}, {class_name}Put, {class_name}Patch, {class_name}ContextKwargs],
-    BaseDeleteServiceMixin[{class_name}Repository, {class_name}, {class_name}ContextKwargs],
-):
-    def __init__(self, repo: Annotated[{class_name}Repository, Depends()]):
-        self._repo = repo
-
-    @property
-    def repo(self) -> {class_name}Repository:
-        return self._repo
-
-    @property
-    def context_model(self):
-        return {class_name}ContextKwargs
-""",
-        "usecases/__init__.py": "",
-        "usecases/crud.py": f"""
-from typing import Annotated
-
-from fastapi import Depends
-
-from app_layer_base.base.usecases.crud import (
-    BaseCreateUseCase,
-    BaseDeleteUseCase,
-    BaseGetMultiUseCase,
-    BaseGetUseCase,
-    BasePatchUseCase,
-    BasePutUseCase,
-)
-from {import_prefix}.{plural_name}.models import {class_name}
-from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Put, {class_name}Patch
-from {import_prefix}.{plural_name}.services import {class_name}Service, {class_name}ContextKwargs
-
-
-class Get{class_name}UseCase(BaseGetUseCase[{class_name}Service, {class_name}, {class_name}ContextKwargs]):
-    def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
-        super().__init__(service)
-
-
-class GetMulti{class_name}UseCase(BaseGetMultiUseCase[{class_name}Service, {class_name}, {class_name}ContextKwargs]):
-    def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
-        super().__init__(service)
-
-
-class Create{class_name}UseCase(BaseCreateUseCase[{class_name}Service, {class_name}, {class_name}Create, {class_name}ContextKwargs]):
-    def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
-        super().__init__(service)
-
-
-class Patch{class_name}UseCase(BasePatchUseCase[{class_name}Service, {class_name}, {class_name}Put, {class_name}Patch, {class_name}ContextKwargs]):
-    def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
-        super().__init__(service)
-
-
-class Put{class_name}UseCase(BasePutUseCase[{class_name}Service, {class_name}, {class_name}Put, {class_name}Patch, {class_name}ContextKwargs]):
-    def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
-        super().__init__(service)
-
-
-class Delete{class_name}UseCase(BaseDeleteUseCase[{class_name}Service, {class_name}, {class_name}ContextKwargs]):
-    def __init__(self, service: Annotated[{class_name}Service, Depends()]) -> None:
-        super().__init__(service)
-""",
-        "api/__init__.py": f"""
-from .v1 import router as v1_{plural_name}_router
-
-__all__ = ["v1_{plural_name}_router"]
-""",
-        "api/v1.py": f"""
-from uuid import UUID
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, status
-
-from app_layer_base.base.deps.params.page import PaginationParam
-from app_layer_base.base.exceptions.basic import NotFoundException
-from app_layer_base.base.repos.query_options import ListQueryOptions
-from app_layer_base.base.schemas.delete_resp import DeleteResponse
-from app_layer_base.base.schemas.paginated import PaginatedList
-from {import_prefix}.{plural_name}.schemas import {class_name}Create, {class_name}Read, {class_name}Patch, {class_name}Put
-from {import_prefix}.{plural_name}.usecases.crud import (
-    Create{class_name}UseCase,
-    Delete{class_name}UseCase,
-    Get{class_name}UseCase,
-    GetMulti{class_name}UseCase,
-    Patch{class_name}UseCase,
-    Put{class_name}UseCase,
-)
-
-router = APIRouter(prefix="/{plural_name}", tags=["{class_name}"], dependencies=[])
-
-
-@router.post("", status_code=status.HTTP_201_CREATED, response_model={class_name}Read)
-async def create_{singular_name}(
-    use_case: Annotated[Create{class_name}UseCase, Depends()],
-    {singular_name}_in: {class_name}Create,
-):
-    return await use_case.execute({singular_name}_in)
-
-
-@router.get("", response_model=PaginatedList[{class_name}Read])
-async def get_{plural_name}(
-    use_case: Annotated[GetMulti{class_name}UseCase, Depends()],
-    pagination: PaginationParam,
-):
-    query_options = ListQueryOptions(offset=pagination.offset, limit=pagination.limit)
-    return await use_case.execute(query_options=query_options)
-
-
-@router.get("/{{{singular_name}_id}}", response_model={class_name}Read)
-async def get_{singular_name}(
-    use_case: Annotated[Get{class_name}UseCase, Depends()],
-    {singular_name}_id: UUID,
-):
-    {singular_name} = await use_case.execute({singular_name}_id)
-    if not {singular_name}:
-        raise NotFoundException()
-    return {singular_name}
-
-
-@router.patch("/{{{singular_name}_id}}", response_model={class_name}Read)
-async def patch_{singular_name}(
-    use_case: Annotated[Patch{class_name}UseCase, Depends()],
-    {singular_name}_id: UUID,
-    {singular_name}_in: {class_name}Patch,
-):
-    {singular_name} = await use_case.execute({singular_name}_id, {singular_name}_in)
-    if not {singular_name}:
-        raise NotFoundException()
-    return {singular_name}
-
-
-@router.put("/{{{singular_name}_id}}", response_model={class_name}Read)
-async def put_{singular_name}(
-    use_case: Annotated[Put{class_name}UseCase, Depends()],
-    {singular_name}_id: UUID,
-    {singular_name}_in: {class_name}Put,
-):
-    {singular_name} = await use_case.execute({singular_name}_id, {singular_name}_in)
-    if not {singular_name}:
-        raise NotFoundException()
-    return {singular_name}
-
-
-@router.delete("/{{{singular_name}_id}}", response_model=DeleteResponse)
-async def delete_{singular_name}(
-    use_case: Annotated[Delete{class_name}UseCase, Depends()],
-    {singular_name}_id: UUID,
-):
-    return await use_case.execute({singular_name}_id)
-""",
+    mapping = {
+        "class_name": class_name,
+        "singular_name": singular_name,
+        "plural_name": plural_name,
+        "import_prefix": import_prefix,
     }
 
-    # Create directories and files
-    for file_path, content in files_to_create.items():
-        path = feature_dir / file_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content.strip())
-        print(f"  - Created {path}")
+    # Render every template under templates/feature/ into the feature directory,
+    # mirroring its layout. That directory IS the feature skeleton: add or remove a
+    # *.tmpl file to change what gets generated — no code change needed here.
+    # Templates use string.Template ($placeholders), so literal braces in the
+    # generated Python (e.g. route paths like "/{book_id}") need no escaping.
+    for template_path in sorted(FEATURE_TEMPLATES_DIR.rglob("*.tmpl")):
+        relative_output = template_path.relative_to(FEATURE_TEMPLATES_DIR).with_suffix("")
+        content = Template(template_path.read_text()).substitute(mapping)
+
+        output_path = feature_dir / relative_output
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(content.strip())
+        print(f"  - Created {output_path}")
 
     print(f"\nFeature '{class_name}' created successfully!")
     update_router(plural_name, base_dir, import_prefix)

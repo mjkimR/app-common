@@ -1,0 +1,7 @@
+from app_layer_base.base.repos.base import BaseRepository
+from ${import_prefix}.${plural_name}.models import ${class_name}
+from ${import_prefix}.${plural_name}.schemas import ${class_name}Create, ${class_name}Put, ${class_name}Patch
+
+
+class ${class_name}Repository(BaseRepository[${class_name}, ${class_name}Create, ${class_name}Put, ${class_name}Patch]):
+    model = ${class_name}

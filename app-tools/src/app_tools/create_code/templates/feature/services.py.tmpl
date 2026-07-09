@@ -1,0 +1,38 @@
+from typing import Annotated
+
+from fastapi import Depends
+
+from app_layer_base.base.services.base import (
+    BaseContextKwargs,
+    BaseCreateServiceMixin,
+    BaseDeleteServiceMixin,
+    BaseGetMultiServiceMixin,
+    BaseGetServiceMixin,
+    BaseUpdateServiceMixin,
+)
+from ${import_prefix}.${plural_name}.models import ${class_name}
+from ${import_prefix}.${plural_name}.repos import ${class_name}Repository
+from ${import_prefix}.${plural_name}.schemas import ${class_name}Create, ${class_name}Put, ${class_name}Patch
+
+
+class ${class_name}ContextKwargs(BaseContextKwargs):
+    pass
+
+
+class ${class_name}Service(
+    BaseCreateServiceMixin[${class_name}Repository, ${class_name}, ${class_name}Create, ${class_name}ContextKwargs],
+    BaseGetMultiServiceMixin[${class_name}Repository, ${class_name}, ${class_name}ContextKwargs],
+    BaseGetServiceMixin[${class_name}Repository, ${class_name}, ${class_name}ContextKwargs],
+    BaseUpdateServiceMixin[${class_name}Repository, ${class_name}, ${class_name}Put, ${class_name}Patch, ${class_name}ContextKwargs],
+    BaseDeleteServiceMixin[${class_name}Repository, ${class_name}, ${class_name}ContextKwargs],
+):
+    def __init__(self, repo: Annotated[${class_name}Repository, Depends()]):
+        self._repo = repo
+
+    @property
+    def repo(self) -> ${class_name}Repository:
+        return self._repo
+
+    @property
+    def context_model(self):
+        return ${class_name}ContextKwargs

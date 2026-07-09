@@ -1,0 +1,23 @@
+from pydantic import BaseModel, ConfigDict, Field
+
+from app_layer_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
+
+
+class ${class_name}Base(BaseModel):
+    name: str = Field(description="The name of the ${singular_name}.")
+
+
+class ${class_name}Create(${class_name}Base):
+    pass
+
+
+class ${class_name}Put(${class_name}Base):
+    pass
+
+
+class ${class_name}Patch(BaseModel):
+    name: str | None = Field(default=None, description="The name of the ${singular_name}.")
+
+
+class ${class_name}Read(UUIDSchemaMixin, TimestampSchemaMixin, ${class_name}Base):
+    model_config = ConfigDict(from_attributes=True)

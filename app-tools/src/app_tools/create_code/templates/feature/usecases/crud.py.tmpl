@@ -1,0 +1,45 @@
+from typing import Annotated
+
+from fastapi import Depends
+
+from app_layer_base.base.usecases.crud import (
+    BaseCreateUseCase,
+    BaseDeleteUseCase,
+    BaseGetMultiUseCase,
+    BaseGetUseCase,
+    BasePatchUseCase,
+    BasePutUseCase,
+)
+from ${import_prefix}.${plural_name}.models import ${class_name}
+from ${import_prefix}.${plural_name}.schemas import ${class_name}Create, ${class_name}Put, ${class_name}Patch
+from ${import_prefix}.${plural_name}.services import ${class_name}Service, ${class_name}ContextKwargs
+
+
+class Get${class_name}UseCase(BaseGetUseCase[${class_name}Service, ${class_name}, ${class_name}ContextKwargs]):
+    def __init__(self, service: Annotated[${class_name}Service, Depends()]) -> None:
+        super().__init__(service)
+
+
+class GetMulti${class_name}UseCase(BaseGetMultiUseCase[${class_name}Service, ${class_name}, ${class_name}ContextKwargs]):
+    def __init__(self, service: Annotated[${class_name}Service, Depends()]) -> None:
+        super().__init__(service)
+
+
+class Create${class_name}UseCase(BaseCreateUseCase[${class_name}Service, ${class_name}, ${class_name}Create, ${class_name}ContextKwargs]):
+    def __init__(self, service: Annotated[${class_name}Service, Depends()]) -> None:
+        super().__init__(service)
+
+
+class Patch${class_name}UseCase(BasePatchUseCase[${class_name}Service, ${class_name}, ${class_name}Put, ${class_name}Patch, ${class_name}ContextKwargs]):
+    def __init__(self, service: Annotated[${class_name}Service, Depends()]) -> None:
+        super().__init__(service)
+
+
+class Put${class_name}UseCase(BasePutUseCase[${class_name}Service, ${class_name}, ${class_name}Put, ${class_name}Patch, ${class_name}ContextKwargs]):
+    def __init__(self, service: Annotated[${class_name}Service, Depends()]) -> None:
+        super().__init__(service)
+
+
+class Delete${class_name}UseCase(BaseDeleteUseCase[${class_name}Service, ${class_name}, ${class_name}ContextKwargs]):
+    def __init__(self, service: Annotated[${class_name}Service, Depends()]) -> None:
+        super().__init__(service)
