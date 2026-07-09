@@ -24,6 +24,22 @@ jobs:
         run: |
           just lint-check
 
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up CI environment
+        uses: ./.github/actions/setup-ci
+        with:
+          python-version: '3.13'
+
+      - name: Run Pyright
+        run: |
+          just check
+
   test:
     name: Test / ${{ matrix.name }}
     runs-on: ubuntu-latest
