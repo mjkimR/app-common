@@ -384,7 +384,12 @@ class BaseDeleteServiceMixin[TRepo: BaseRepository, ModelType, TContextKwargs: B
         ctx = self._ensure_context(context, self.context_model)
         async with self._context_delete_multi(session, obj_pks, context=ctx):
             deleted_count = await self.repo.delete_by_pk_multi(session, pks=obj_pks)
-            result = MultipleDeleteResponse(deleted_count=deleted_count)
+            # failed_count is derived from the aggregate count (no extra query); per-item
+            # failure detail is left to consumers via a _post_delete_multi override.
+            result = MultipleDeleteResponse(
+                deleted_count=deleted_count,
+                failed_count=max(0, len(obj_pks) - deleted_count),
+            )
             result = await self._post_delete_multi(session, obj_pks, result, context=ctx)
             return result
 

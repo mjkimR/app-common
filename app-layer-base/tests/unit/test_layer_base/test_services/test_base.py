@@ -466,6 +466,41 @@ class TestBaseDeleteServiceMixin:
         assert service.bulk_called is True
         assert service.seen_pks == []
 
+    @pytest.mark.parametrize(
+        ("requested", "deleted_count", "expected_failed"),
+        [
+            (3, 3, 0),  # all deleted
+            (3, 2, 1),  # one not found / not deleted
+            (3, 0, 3),  # none deleted
+            (1, 3, 0),  # deleted_count exceeds request -> clamped to 0
+        ],
+    )
+    async def test_delete_multi_derives_failed_count_from_aggregate(
+        self, mock_async_session, requested, deleted_count, expected_failed
+    ):
+        """failed_count is derived as max(0, requested - deleted_count), no extra query."""
+
+        class TestService(BaseDeleteServiceMixin):
+            def __init__(self):
+                self._repo = AsyncMock()
+
+            @property
+            def repo(self):
+                return self._repo
+
+            @property
+            def context_model(self):
+                return BaseContextKwargs
+
+        service = TestService()
+        service.repo.delete_by_pk_multi.return_value = deleted_count
+        pks = [uuid.uuid4() for _ in range(requested)]
+
+        result = await service.delete_multi(mock_async_session, pks)
+
+        assert result.deleted_count == deleted_count
+        assert result.failed_count == expected_failed
+
     async def test_post_delete_multi_runs_single_hook_fallback_when_all_requested_items_deleted(
         self, mock_async_session, sample_uuid
     ):

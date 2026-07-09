@@ -18,8 +18,11 @@ class DeleteResponse(BaseModel):
 
 class MultipleDeleteResponse(BaseModel):
     deleted_count: int = 0
-    failed_count: int = 0
-    messages: list[str] = Field(default_factory=list, description="Messages related to the delete operations.")
+    failed_count: int = Field(
+        default=0,
+        description="Requested primary keys that were not deleted (not found or already removed): "
+        "len(requested) - deleted_count.",
+    )
 
     meta: dict = Field(
         default_factory=dict,
