@@ -59,3 +59,8 @@ async def save(data: bytes):
 - `FileStorageClient` — the provider-agnostic interface
 - `get_storage_client()` — the initialized client singleton
 - `lifespan_file_storage` — FastAPI lifespan that builds and closes the client
+
+## See also
+
+- [Adapter Module Reference](../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
+- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_base_guide.md) — how adapters fit the layered app.

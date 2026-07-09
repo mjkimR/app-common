@@ -48,3 +48,8 @@ Getters lazily initialize the client on first use, so `get_http_client()` also w
 - `get_http_client()` — shared `httpx.AsyncClient`
 - `get_http_sync_client()` — shared `httpx.Client`
 - `lifespan_http_client` — FastAPI lifespan that initializes and closes both clients
+
+## See also
+
+- [Adapter Module Reference](../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
+- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_base_guide.md) — how adapters fit the layered app.

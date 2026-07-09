@@ -23,15 +23,15 @@ The `core` module initializes foundational aspects like the database engine, tra
 
 ---
 
-## 2. Configuration (`app_base.config` / per-package settings)
+## 2. Configuration (`app_layer_base.config` / per-package settings)
 
 ### Summary
-Uses Pydantic Settings (`BaseSettings`) to strictly validate and load environment variables. Each standalone adapter package owns its own settings class. The `app-base` package aggregates them all for convenience.
+Uses Pydantic Settings (`BaseSettings`) to strictly validate and load environment variables. Each package owns its own independent settings class — there is no central aggregator; `app-layer-base` only provides the app-level `AppSettings`.
 
 ### Components
-- **`app-layer-base/src/app_layer_base/config.py`**: `AppSettings` contains variables like `ENV`, `DEBUG`, `CORS_ALLOWED_ORIGINS`.
+- **`app-layer-base/src/app_layer_base/config.py`**: `AppSettings` — `APP_ENV`, `DATABASE_URL`, the `LOG_*` group (`LOG_PATH`, `LOG_LEVEL`, `LOG_JSON_FORMAT`, `LOG_SIMPLE_TRACEBACK`, `LOG_TRACEBACK_WHITELIST`), and the `CORS_*` group (`CORS_ALLOWED_ORIGINS`, `CORS_ALLOW_ORIGIN_REGEX`, `CORS_ALLOW_CREDENTIALS`).
 - **`app-layer-base/src/app_layer_base/config_util.py`**: `ConfigLoader` that parses YAML and resolves `${ENV_VAR}` variables if needed.
-- **Per-adapter settings**: Each adapter package (`app-file-storage`, `app-vector-store`, `app-http-client`) defines its own settings class in its own `config.py` or `settings.py`. These are lazily loaded by `app-layer-base` config composition when the full framework is used.
+- **Per-adapter settings**: Each adapter package (`app-file-storage`, `app-vector-store`, `app-http-client`) defines and loads its own settings class in its own `config.py`, fully independently. See each package's README for its env-var table.
 - **Usage**:
   ```python
   from app_layer_base.config_util import ConfigLoader
@@ -60,6 +60,7 @@ Provides factory patterns for instantiating LangChain LLM and Embedding models b
   response = await llm.ainvoke("Hello!")
   ```
 - **Precautions**: Relies on LangChain integrations. Ensure optional dependencies (`[ai]`) are installed (`langchain-openai`, `langchain-google-genai`). Missing dependencies will raise an `ImportError`.
+- **Canonical reference**: [`app-ai-catalog/README.md`](../../../app-ai-catalog/README.md) — install, env vars, and full public API.
 
 ---
 

@@ -23,8 +23,8 @@ It can guide you through creating new features, implementing business logic, und
     -   Use Service Hooks.
     -   See the guide on [Using Service Hooks](./docs/app_base_guide.md#using-service-hooks).
 
--   **If you want to interact with File Storage, a NoSQL DB, Vector Store, or an AI Model...**
-    -   See the guide on [Using Adapters & AI](./docs/app_base_guide.md#using-adapters--ai).
+-   **If you want to interact with File Storage, a Vector Store, an HTTP Client, or an AI Model...**
+    -   Each adapter is a standalone package; its canonical reference is its own README. See the [Adapter Module Reference](./docs/reference_adapter.md) for the index.
 
 -   **If you need to check environment variables for configuration...**
     -   Use the `app-tools get-env-spec` command.
@@ -38,14 +38,14 @@ It can guide you through creating new features, implementing business logic, und
 -   **Service, Repository, UseCase, Model, Schema**: Core layers of the architecture. See the [app-base Developer Guide](./docs/app_base_guide.md#core-philosophy--architecture).
 -   **Hooks, Business Logic**: Customized service flows. See [Using Service Hooks](./docs/app_base_guide.md#using-service-hooks).
 -   **Configuration, Settings**: See [Managing Application Configuration](./docs/app_base_guide.md#managing-application-configuration-environment-variables).
--   **Adapters (Storage, NoSQL, Vector, Event)**: See [Using Adapters & AI](./docs/app_base_guide.md#using-adapters--ai).
+-   **Adapters (File Storage, Vector Store, HTTP Client)**: See the [Adapter Module Reference](./docs/reference_adapter.md).
 
 ## Reference Documentation
 
 For detailed API-level information on each workspace module's classes and configurations:
 
 -   **[Base Module Reference](./docs/reference_base.md)**: Models (Mixins), Repositories, Services (Hooks), UseCases, Dependencies, Exceptions inside `app-layer-base`.
--   **[Adapter Module Reference](./docs/reference_adapter.md)**: Event Broker, File Storage (S3, Local), NoSQL Database (MongoDB, Firestore), Vector Store (Qdrant), HTTP Client.
+-   **[Adapter Module Reference](./docs/reference_adapter.md)**: File Storage (S3, Local), Vector Store (Qdrant), HTTP Client — each links to its standalone package README.
 -   **[Core, Config, AI & Utils Reference](./docs/reference_core_config.md)**: Middlewares, Pydantic Settings, LangChain AI Factories, Time/Type Utilities.
 
 ## Quick Reference

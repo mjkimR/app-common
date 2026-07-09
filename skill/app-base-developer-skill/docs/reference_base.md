@@ -48,9 +48,10 @@ Provides the business logic layer with a powerful Hook system to manage operatio
 ### Pre-built Hooks
 - **`ExistsCheckHooksMixin`**: Checks if an entity exists before `update` or `delete`. Raises `NotFoundException` if it fails.
 - **`UniqueConstraintHooksMixin`**: Provides an async generator `_unique_constraints` to check DB uniqueness before `create` or `update` to prevent duplicate data conflicts (Raises `ConflictException`).
-- **`EventDomainHooksMixin`**: Publishes messages to an event broker after successful CUD operations.
+- **`DomainEventHooksMixin`**: Publishes domain events (e.g. `Model.created`) after successful CUD operations. Implement the abstract `publish_event(topic, payload)` to wire it to your transport — it is transport-agnostic and has no message-broker dependency.
 - **`UserAwareHooksMixin`**: Automatically injects a `user_id` context into operations (e.g. tracking `created_by` / `updated_by`).
 - **`NestedResourceHooksMixin`**: Ensures parent-child relationships are strictly validated.
+- **`DetailDeleteResponseHookMixin`**: Enriches the delete response with detail about the removed object(s).
 - **Usage**:
   ```python
   from app_layer_base.base.services.unique_constraints_hook import UniqueConstraintHooksMixin
@@ -68,8 +69,8 @@ Provides the business logic layer with a powerful Hook system to manage operatio
 Encapsulates single units of application logic.
 
 ### `base.py` & `crud.py`
-- **Classes**: `BaseUseCase`, `CreateUseCase`, `GetUseCase`, `UpdateUseCase`, `DeleteUseCase`.
-- **Usage**: Inherit from `BaseUseCase` and implement the `execute` method to coordinate transactions.
+- **Classes**: `BaseGetUseCase`, `BaseGetMultiUseCase`, `BaseCreateUseCase`, `BasePutUseCase`, `BasePatchUseCase`, `BaseDeleteUseCase` (`Put` = full replace, `Patch` = partial update; there is no single "Update" use case).
+- **Usage**: Inherit from the matching base and inject the service via `Annotated[Service, Depends()]`; the base `execute` coordinates the transaction.
 
 ---
 

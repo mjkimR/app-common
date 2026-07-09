@@ -68,3 +68,8 @@ For LangChain integrations, `client.get_embedding("text-embedding-3-small")` ret
 - `LiteLLMEmbeddingsAdapter` — LangChain `Embeddings` implementation
 
 > AI/RAG features that are still being iterated (prompt registry, agent/graph orchestration, retrieval) live in a separate proving-ground project and are absorbed here only once stable; this package is intentionally the stable model-access substrate.
+
+## See also
+
+- [Core, Config, AI & Utils Reference](../skill/app-base-developer-skill/docs/reference_core_config.md) — AI factory usage in context.
+- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_base_guide.md) — how this package fits the layered app.

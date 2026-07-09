@@ -14,11 +14,9 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-vecto
 
 | Variable | Default | Description |
 |---|---|---|
-| `VECTOR_DB_PROVIDER` | `qdrant` | Backend to use: `none` \| `qdrant` \| `milvus` |
+| `VECTOR_DB_PROVIDER` | `qdrant` | Backend to use: `none` \| `qdrant` |
 | `VECTOR_DB_QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
 | `VECTOR_DB_QDRANT_API_KEY` | — | API key for Qdrant |
-
-> `milvus` is reserved in the provider enum but not yet implemented; only `qdrant` is available today.
 
 ## Usage
 
@@ -45,3 +43,8 @@ The collection is created automatically if it does not exist, using the embeddin
 - `get_vector_store(collection_name, model_name)` — convenience accessor for a cached store
 - `get_vector_store_provider()`, `get_vector_store_factory()` — lower-level accessors
 - `lifespan_vector_store` — FastAPI lifespan that clears the store cache on shutdown
+
+## See also
+
+- [Adapter Module Reference](../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
+- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_base_guide.md) — how adapters fit the layered app.
