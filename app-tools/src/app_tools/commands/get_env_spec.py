@@ -116,7 +116,6 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
             "vector_db",
             "vector_db_none",
             "vector_db_qdrant",
-            "vector_db_milvus",
         ]
     ),
     help="The type of configuration to inspect (e.g., auth, file_storage_s3).",
@@ -144,7 +143,6 @@ def get_env_spec(type: str):
         "vector_db": (VectorDBSettings, None),
         "vector_db_none": (VectorDBSettings, "none"),
         "vector_db_qdrant": (VectorDBSettings, "qdrant"),
-        "vector_db_milvus": (VectorDBSettings, "milvus"),
     }
 
     settings_class, provider_type = settings_map.get(type, (None, None))

@@ -32,7 +32,7 @@ class AppSettings(BaseSettings):
         default=True, description="Shorten tracebacks to only show frames matching the whitelist"
     )
     LOG_TRACEBACK_WHITELIST: list[str] = Field(
-        default_factory=lambda: ["app_base", "app_layer_base"],
+        default_factory=lambda: ["app_layer_base"],
         description="List of module name prefixes included in simplified tracebacks",
     )
 
