@@ -16,6 +16,12 @@ wheels/
 # Virtual environments
 .venv
 
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+.coverage_data/
+
 # Others
 **/logs
 .*

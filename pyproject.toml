@@ -62,29 +62,37 @@ extraPaths = [
 dev = [
     "pre-commit>=4.6.0",
     "pyright>=1.1.409",
+    "pytest-cov>=7.0.0",
 ]
 
+# Each package owns its own pytest config (its `pythonpath = "src"` / `testpaths`), and
+# `just test` runs one pytest per package from that package's directory. This table only
+# applies to an ad-hoc `pytest` invoked from the repo root.
+#
+# There is deliberately no workspace-wide `pythonpath` here. Listing every package's
+# directory made `tests` a single global top-level module name, so the one package with
+# a `tests/__init__.py` silently won it for all the others -- app-prebuilt-user's
+# conftest was importing app-layer-base's fixtures. Shared test code now lives in
+# `app_layer_base.testing` and is loaded as a pytest plugin, not off `sys.path`.
 [tool.pytest.ini_options]
 log_level = "INFO"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-pythonpath = [
-    "app-layer-base",
-    "app-layer-base/tests",
-    "app-layer-base/tests/unit",
-    "app-layer-base/tests/integrate",
-    "app-prebuilt-user",
-    "app-prebuilt-user/tests",
-    "app-prebuilt-outbox",
-    "app-file-storage",
-    "app-vector-store",
-    "app-http-client",
-    "app-ai-catalog",
-    "app-layer-base/src",
-    "app-prebuilt-user/src",
-    "app-prebuilt-outbox/src",
-    "app-file-storage/src",
-    "app-vector-store/src",
-    "app-http-client/src",
-    "app-ai-catalog/src",
+
+# Coverage is driven by `just test-cov`, which runs pytest once per package from
+# that package's own directory and points `--cov-config` back at this file.
+# The measured source is therefore passed per-run as `--cov=src`, not set here.
+[tool.coverage.run]
+branch = true
+# app_layer_base/testing ships in the wheel but is test scaffolding, not product code.
+omit = ["*/tests/*", "*/app_layer_base/testing/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+    "^\\s*\\.\\.\\.$",
 ]

@@ -108,6 +108,10 @@ test +paths="":
 test-pg +paths="":
     @bash ./scripts/run-tests.sh postgres all {{ paths }}
 
+# Run tests with coverage, printing a per-package and a combined report
+test-cov module="all":
+    @COVERAGE=1 bash ./scripts/run-tests.sh sqlite {{ module }}
+
 # Install app-helper globally in editable mode using uv tool
 install-app-helper:
     @bash ./scripts/install-app-helper.sh
