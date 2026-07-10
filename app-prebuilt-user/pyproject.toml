@@ -14,13 +14,19 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "app-layer-base[testing]",
     "fastapi>=0.115.12",
     "python-multipart>=0.0.7",
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.26.0",
     "pytest-mock>=3.15.0",
     "ruff>=0.14.14",
 ]
+
+[tool.pytest.ini_options]
+log_level = "INFO"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = "src"
+testpaths = "tests"
 
 [build-system]
 requires = ["hatchling"]

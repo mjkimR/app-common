@@ -1,12 +1,12 @@
 import pytest
 from app_layer_base.core.database.transaction import AsyncTransaction
+from app_layer_base.testing import random_email
 from app_prebuilt_user.config.auth import AuthSettings
 from app_prebuilt_user.exceptions import PermissionDeniedException
 from app_prebuilt_user.repos import UserRepository
 from app_prebuilt_user.schemas import UserCreate, UserUpdate
 from app_prebuilt_user.services import UserService
 from app_prebuilt_user.usecases.crud import GetUserUseCase, UpdateUserUseCase
-from tests.utils import random_email
 
 
 @pytest.fixture

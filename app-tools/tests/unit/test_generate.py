@@ -6,7 +6,7 @@ from pathlib import Path
 
 from app_tools.create_code.create_feature import create_feature
 
-# app-common workspace root: .../app-common/app-tools/src/tests/test_generate.py
+# app-common workspace root: .../app-common/app-tools/tests/unit/test_generate.py
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 EXPECTED_FILES = [

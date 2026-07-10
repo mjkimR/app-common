@@ -2,13 +2,13 @@ import uuid
 
 import jwt
 import pytest
+from app_layer_base.testing import random_email
 from app_prebuilt_user.config.auth import AuthSettings
 from app_prebuilt_user.exceptions import UserAlreadyExistsException
 from app_prebuilt_user.models import User
 from app_prebuilt_user.repos import UserRepository
 from app_prebuilt_user.schemas import UserCreate, UserUpdate
 from app_prebuilt_user.services import UserService
-from tests.utils import random_email
 
 SECRET = "test-secret-key-not-for-production"
 
