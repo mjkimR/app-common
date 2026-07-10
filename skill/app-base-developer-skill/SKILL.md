@@ -17,11 +17,11 @@ It can guide you through creating new features, implementing business logic, und
     -   For a detailed walkthrough, see the [app-tools Developer Guide](./docs/app_tools_guide.md).
 
 -   **If you want to understand our layered architecture (Services, Repositories, UseCases)...**
-    -   Read the [app-base Developer Guide](./docs/app_base_guide.md#core-philosophy--architecture).
+    -   Read the [app-layer-base Developer Guide](./docs/app_layer_base_guide.md#core-philosophy--architecture).
 
 -   **If you want to add business logic (e.g., uniqueness checks, user awareness)...**
     -   Use Service Hooks.
-    -   See the guide on [Using Service Hooks](./docs/app_base_guide.md#using-service-hooks).
+    -   See the guide on [Using Service Hooks](./docs/app_layer_base_guide.md#using-service-hooks).
 
 -   **If you want to interact with File Storage, a Vector Store, an HTTP Client, or an AI Model...**
     -   Each adapter is a standalone package; its canonical reference is its own README. See the [Adapter Module Reference](./docs/reference_adapter.md) for the index.
@@ -32,12 +32,12 @@ It can guide you through creating new features, implementing business logic, und
 
 ## Keyword Router
 
--   **`app-layer-base`**: Refers to the core domain framework. See the [app-base Developer Guide](./docs/app_base_guide.md).
+-   **`app-layer-base`**: Refers to the core domain framework. See the [app-layer-base Developer Guide](./docs/app_layer_base_guide.md).
 -   **`app-tools`**: Refers to the CLI for code generation. See the [app-tools Developer Guide](./docs/app_tools_guide.md).
 -   **Code Scaffolding**: See [Creating a New Feature](./docs/app_tools_guide.md#primary-workflow-creating-a-new-feature).
--   **Service, Repository, UseCase, Model, Schema**: Core layers of the architecture. See the [app-base Developer Guide](./docs/app_base_guide.md#core-philosophy--architecture).
--   **Hooks, Business Logic**: Customized service flows. See [Using Service Hooks](./docs/app_base_guide.md#using-service-hooks).
--   **Configuration, Settings**: See [Managing Application Configuration](./docs/app_base_guide.md#managing-application-configuration-environment-variables).
+-   **Service, Repository, UseCase, Model, Schema**: Core layers of the architecture. See the [app-layer-base Developer Guide](./docs/app_layer_base_guide.md#core-philosophy--architecture).
+-   **Hooks, Business Logic**: Customized service flows. See [Using Service Hooks](./docs/app_layer_base_guide.md#using-service-hooks).
+-   **Configuration, Settings**: See [Configuration](./docs/reference_core_config.md#2-configuration-app_layer_baseconfig--per-package-settings).
 -   **Adapters (File Storage, Vector Store, HTTP Client)**: See the [Adapter Module Reference](./docs/reference_adapter.md).
 
 ## Reference Documentation

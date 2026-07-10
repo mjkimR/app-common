@@ -47,4 +47,4 @@ The collection is created automatically if it does not exist, using the embeddin
 ## See also
 
 - [Adapter Module Reference](../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
-- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_base_guide.md) — how adapters fit the layered app.
+- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.

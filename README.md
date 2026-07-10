@@ -67,6 +67,6 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-tools
 
 Comprehensive architectural paradigms, API mappings, and development workflows are fully documented:
 
-- **[Architecture & Service Hooks Guide](./skill/app-base-developer-skill/docs/app_base_guide.md)**: Understand the core design principles and how to customize business flows via mixin hooks.
+- **[Architecture & Service Hooks Guide](./skill/app-base-developer-skill/docs/app_layer_base_guide.md)**: Understand the core design principles and how to customize business flows via mixin hooks.
 - **[CLI Code Generation Guide](./skill/app-base-developer-skill/docs/app_tools_guide.md)**: Scaffolding a feature in seconds.
 - **[Adapter Modules Mapping](./skill/app-base-developer-skill/docs/reference_adapter.md)**: Details on storage, db, broker, and http client adapter configurations.

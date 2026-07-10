@@ -37,8 +37,10 @@ Use the provided scripts to install it automatically:
 - **Lint & format one module**: `just lint <module-name>` (e.g., `just lint app-file-storage`)
 - **Type check all modules**: `just check`
 - **Type check one module**: `just check <module-name>`
-- **Run tests**: `just test` (runs tests inside `app-prebuilt-user` / `app-prebuilt-outbox`)
+- **Run tests**: `just test` (every module, SQLite)
+- **Run tests on PostgreSQL**: `just test-pg` — **requires Docker** (testcontainers). Row-locking tests skip on SQLite, so this is the only run that verifies them.
 - **Run targeted tests**: `uv run pytest <package-directory>/tests` (e.g., `uv run pytest app-layer-base/tests`)
+- **Run tests with coverage**: `just test-cov` or `just test-cov <module-name>` (per-package + combined report, HTML in `htmlcov/`)
 
 ---
 
@@ -61,13 +63,26 @@ The repository is fully modularized into discrete workspace packages:
 - **`app-prebuilt-outbox/`**: Prebuilt Transactional Outbox pattern engine for reliable event messaging.
 - **`app-tools/`**: CLI tool for scaffolding new modular features.
     - Usage: `uv run app-tools create-code feature --name <Name>`
+    - `create_code/templates/feature/`: the generated feature skeleton, one `*.tmpl` per emitted file.
+- **`app-helper/`**: Standalone developer CLI for git-diff prompt building and clipboard helpers.
+
+Every package keeps its source in `src/<package_name>/` and its tests in `tests/unit/` (plus `tests/integrate/` where present). Tests never live under `src/`. Each package owns its own pytest config (`[tool.pytest.ini_options]`), so its rootdir is the package directory — there is deliberately no workspace-wide `pythonpath`.
+
+Shared test fixtures live in `app_layer_base.testing` and are loaded as a pytest plugin, never off `sys.path`:
+
+```python
+# <package>/tests/conftest.py  (must be the top-level conftest)
+pytest_plugins = ["app_layer_base.testing.db"]
+```
+
+That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `session_maker` / `async_engine` / `is_postgres` fixtures. Never copy a `tests/fixtures/db.py` into a package; a `tests/` directory shared over `sys.path` collides on the name `tests` and silently shadows whichever copy loads first.
 
 ### 2. Core Architecture
 
 - **Layered Flow**: `API (Router) -> UseCase -> Service -> Repository`.
 - **Service Hooks**: All business logic should be implemented using `BaseService` hooks (e.g., `_context_create`, `_pre_create_hook`) defined in `app-layer-base`.
 - **DI**: Extensive use of FastAPI's `Depends` and `Annotated[T, Depends(func)]`.
-- **Settings Composition**: Settings are kept within their respective packages and lazy-loaded dynamically by `app-base/config` to avoid dependency bloat.
+- **Settings Composition**: Each package owns its own `Settings` class. There is no central aggregator — `app_layer_base.config` holds only the base `AppSettings`, and an application composes the per-package settings it actually needs, so importing one adapter never drags in another's dependencies.
 
 ---
 
@@ -85,4 +100,4 @@ The repository is fully modularized into discrete workspace packages:
 ## Further Reading
 
 - Detailed guides are available in `skill/app-base-developer-skill/docs/`.
-- Key reference: `app_base_guide.md` for architecture and hooks.
+- Key reference: `app_layer_base_guide.md` for architecture and hooks.

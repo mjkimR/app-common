@@ -72,4 +72,4 @@ For LangChain integrations, `client.get_embedding("text-embedding-3-small")` ret
 ## See also
 
 - [Core, Config, AI & Utils Reference](../skill/app-base-developer-skill/docs/reference_core_config.md) — AI factory usage in context.
-- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_base_guide.md) — how this package fits the layered app.
+- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how this package fits the layered app.

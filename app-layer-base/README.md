@@ -18,6 +18,46 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-layer
   - `schemas/`, `models/`, `exceptions/` — `PaginatedList`, `DomainEvent` (CloudEvents), mixins (`UUIDMixin`, `TimestampMixin`, `AuditMixin`, `SoftDeleteMixin`), and RFC 7807 error handlers.
 - **`core/`** — async engine + `AsyncTransaction`, middlewares (CORS, request-id, query-counter, security headers, timeout), loguru config, traceback filtering.
 - **`config.py`** — `AppSettings` and the lazy env-file loader.
+- **`testing/`** — pytest fixtures and DI helpers for code built on this package. See below.
+
+## Testing against app-layer-base
+
+Anything built on this package needs the same things to test: a session wired to the
+engine accessors the app code calls, table cleanup between tests, and a way to
+reconstruct `Annotated[T, Depends()]` trees without an app or a request.
+
+```bash
+uv add --dev "app-layer-base[testing] @ git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-layer-base"
+```
+
+The fixtures are a pytest plugin. Enable them from the **top-level `conftest.py`** of a
+test suite — pytest only honours `pytest_plugins` there:
+
+```python
+# tests/conftest.py
+pytest_plugins = ["app_layer_base.testing.db"]
+```
+
+That gives you:
+
+| | |
+|---|---|
+| `--db-type sqlite\|postgres` | SQLite in-memory by default; `postgres` stands up a container (needs Docker) |
+| `session`, `session_maker`, `async_engine` | session bound to the test engine, with `get_async_engine` / `get_session_maker` patched |
+| `is_postgres` | skip-guard for tests that only mean something on a real PostgreSQL |
+| `@pytest.mark.real_commit` | opt out of savepoint isolation when another connection must see committed rows |
+
+By default PostgreSQL tests are isolated with a savepoint that is rolled back, so nothing
+reaches disk. SQLite always commits for real (aiosqlite mishandles nested savepoints) and
+the tables are emptied afterwards.
+
+The backends are not interchangeable: SQLite parses `FOR UPDATE SKIP LOCKED` and ignores
+it, and its `StaticPool` shares one connection. Anything asserting on row locking or two
+concurrent transactions must run on PostgreSQL and skip elsewhere.
+
+Also exported from `app_layer_base.testing`: `resolve_dependency` / `MockRequest` for
+building a service or usecase straight from its dependency tree, `clean_db_after_test`,
+`random_email`, `random_string`.
 
 ## Configuration
 
@@ -37,10 +77,10 @@ Projects follow a decoupled flow: **API (Router) → UseCase → Service → Rep
 
 See the developer guides for the full picture:
 
-- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_base_guide.md)
+- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_layer_base_guide.md)
 - [Base Module Reference](../skill/app-base-developer-skill/docs/reference_base.md)
 - [Core, Config & Utils Reference](../skill/app-base-developer-skill/docs/reference_core_config.md)
 
 ## Public API
 
-`AppSettings`, `get_app_settings`, and env helpers (`get_project_root`, `get_env_file_path`, `load_env`, ...) are exported at the top level; the domain classes are imported from their submodules (e.g. `from app_layer_base.base.repos.base import BaseRepository`).
+`AppSettings`, `get_app_settings`, and env helpers (`get_project_root`, `get_env_file_path`, `load_env`, ...) are exported at the top level; the domain classes are imported from their submodules (e.g. `from app_layer_base.base.repos.base import BaseRepository`). Test support is under `app_layer_base.testing` and needs the `testing` extra — see [Testing against app-layer-base](#testing-against-app-layer-base).
