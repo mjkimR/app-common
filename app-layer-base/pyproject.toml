@@ -15,6 +15,17 @@ dependencies = [
     "greenlet>=3.1.1",
 ]
 
+# `app_layer_base.testing` -- pytest fixtures and DI helpers for anything built on this
+# package. Not imported by the library itself, so these stay out of the base install.
+[project.optional-dependencies]
+testing = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "aiosqlite>=0.21.0",
+    "asyncpg>=0.30.0",
+    "testcontainers[postgres]>=4.8.0",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -24,7 +35,15 @@ packages = ["src/app_layer_base"]
 
 [dependency-groups]
 dev = [
-    "aiosqlite>=0.21.0",
-    "asyncpg>=0.30.0",
+    "app-layer-base[testing]",
 ]
+
+[tool.pytest.ini_options]
+log_level = "INFO"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# tests/unit carries the shared `test_layer_base.mock_models` package. `tests` itself is
+# deliberately absent: making it importable is what let one package's tests/ shadow
+# another's across the workspace.
+pythonpath = ["tests/unit", "src"]
 

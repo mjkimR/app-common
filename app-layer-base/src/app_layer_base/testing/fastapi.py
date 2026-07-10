@@ -1,3 +1,10 @@
+"""Resolve FastAPI `Annotated[T, Depends()]` trees without an app or a request.
+
+app-layer-base wires services, repositories and usecases together with FastAPI's
+dependency injection, so unit-testing any of them means reconstructing that tree by
+hand. `resolve_dependency` does it for you, with `overrides` to swap in mocks.
+"""
+
 import inspect
 from collections.abc import Callable
 from types import SimpleNamespace
