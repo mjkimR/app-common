@@ -52,7 +52,28 @@ async def save(data: bytes):
 
 ## Interface
 
-`FileStorageClient` (async): `upload_file`, `download_file`, `download_file_stream`, `delete_file`, `list_files`, `file_exists`, `get_file_metadata`, `close`. Object versioning is supported on S3 (`version_id` on `download_file`) and raises `NotImplementedError` on Local.
+`FileStorageClient` (async): `upload_file`, `download_file`, `download_file_stream`, `delete_file`, `list_files`, `file_exists`, `get_file_metadata`, `close`.
+
+Providers are swappable, so the contract holds for every one of them — `tests/integrate/test_contract.py` runs the same assertions against Local and a real S3:
+
+- **Keys are opaque strings, S3-style.** `a/b.txt` is a key, not a directory, and a key can never address anything outside the bucket/root — `../` raises `ValueError`.
+- **`list_files(prefix)` matches on the string prefix of the key**, so `list_files("doc")` yields both `doc.txt` and `docs/a.txt`.
+- **Missing key → `FileNotFoundError`** from `download_file`, `download_file_stream` and `get_file_metadata`. `delete_file` on a missing key is a no-op.
+- **`file_exists` returns `False` only for a genuine not-found.** Denied credentials or an unreachable backend raise — absence and failure are never conflated.
+- **`get_file_metadata` always returns `size` (int), `last_modified` (timezone-aware `datetime`) and `path`.** S3 adds `content_type` and `etag`.
+
+Object versioning is S3-only (`version_id` on `download_file`); Local raises `NotImplementedError`. It also needs versioning enabled **on the bucket** — this package never turns it on, so without it `put_object` returns no version to ask for.
+
+## Testing
+
+```bash
+just test          # unit + the local-filesystem half of the contract suite. No Docker.
+just test-docker   # ...plus the S3 half, against a real MinIO. Needs Docker.
+```
+
+The S3 tests are marked `docker` and deselected by default, so the everyday run stays fast. **CI runs `just test-docker` on every push**, so they are still verified before anything merges — deselecting them locally is a convenience, not a gap.
+
+Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on the default config, and denied credentials being reported as "file not found"), all while the code was 100% line-covered. That is what these run against a real backend for.
 
 ## Public API
 

@@ -4,6 +4,25 @@ from typing import Any
 
 
 class FileStorageClient(ABC):
+    """Object storage seen as a flat key -> bytes map.
+
+    Every provider must be swappable without changing caller behaviour, so the contract
+    below is binding for all of them (`tests/integrate/test_contract.py` enforces it
+    against each implementation):
+
+    - Keys are opaque strings, S3-style. `a/b.txt` is a key, not a directory, and a key
+      can never address anything outside the configured bucket/root -- `../` must raise.
+    - Missing key -> `FileNotFoundError` from `download_file`, `download_file_stream` and
+      `get_file_metadata`. `delete_file` on a missing key is a no-op, not an error.
+    - `file_exists` returns False only for a genuine not-found. Anything else (denied
+      credentials, unreachable backend) raises; it must never be reported as absence.
+    - `list_files(prefix)` matches on the **string prefix** of the key, so `list_files("doc")`
+      yields both `doc.txt` and `docs/a.txt`.
+    - `get_file_metadata` always returns at least `size` (int), `last_modified`
+      (timezone-aware `datetime`) and `path` (the key). Providers may add their own keys
+      on top -- S3 also returns `content_type` and `etag`.
+    """
+
     @classmethod
     @abstractmethod
     async def from_env(cls) -> "FileStorageClient":

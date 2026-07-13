@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -24,9 +25,12 @@ class LocalStorageProvider(FileStorageClient):
     """Manages file operations on the local filesystem."""
 
     def __init__(self, root_path: str | Path):
-        self.root_path = Path(root_path)
-        if not self.root_path.exists():
-            self.root_path.mkdir(parents=True, exist_ok=True)
+        # Resolved once, here: `_get_full_path` resolves every key, so an unresolved root
+        # (a relative path -- which is exactly what `from_env` builds -- or one with a
+        # symlinked parent like macOS /tmp) would make `relative_to(self.root_path)` in
+        # `list_files` raise ValueError.
+        self.root_path = Path(root_path).resolve()
+        self.root_path.mkdir(parents=True, exist_ok=True)
 
     @classmethod
     async def from_env(cls) -> FileStorageClient:
@@ -40,8 +44,16 @@ class LocalStorageProvider(FileStorageClient):
         pass
 
     def _get_full_path(self, file_path: str) -> Path:
-        """Resolves the full, absolute path for a file."""
-        return self.root_path.joinpath(file_path).resolve()
+        """Resolve a key to an absolute path, refusing anything outside the storage root.
+
+        An S3 key cannot escape its bucket, so a `../` in a key must not escape the root
+        here either -- otherwise a caller-supplied path reads or overwrites arbitrary
+        files on the host.
+        """
+        full_path = self.root_path.joinpath(file_path).resolve()
+        if full_path != self.root_path and self.root_path not in full_path.parents:
+            raise ValueError(f"Path escapes the storage root: {file_path!r}")
+        return full_path
 
     async def download_file(self, file_path: str, version_id: str | None = None) -> bytes:
         """Downloads a file and returns its content as bytes."""
@@ -79,26 +91,31 @@ class LocalStorageProvider(FileStorageClient):
             await aiofiles.os.remove(path)
 
     async def list_files(self, prefix: str) -> AsyncIterator[str]:
-        """Lists files matching a given prefix (directory path)."""
-        search_path = self._get_full_path(prefix)
+        """Lists keys beginning with `prefix`.
 
-        def _glob_sync():
-            return [p.relative_to(self.root_path).as_posix() for p in search_path.rglob("*") if p.is_file()]
+        `prefix` is a string prefix on the key, not a directory: `list_files("doc")`
+        yields both `doc.txt` and `docs/a.txt`. This mirrors S3's `list_objects_v2`, so
+        swapping providers does not change what a caller gets back.
+        """
 
-        files = await asyncio.to_thread(_glob_sync)
-        for f in files:
-            yield f
+        def _walk_sync() -> list[str]:
+            keys = (p.relative_to(self.root_path).as_posix() for p in self.root_path.rglob("*") if p.is_file())
+            return sorted(key for key in keys if key.startswith(prefix))
+
+        for key in await asyncio.to_thread(_walk_sync):
+            yield key
 
     async def file_exists(self, file_path: str) -> bool:
-        """Checks if a file exists."""
-        try:
-            path = self._get_full_path(file_path)
-            return await aiofiles.os.path.exists(path)
-        except ValueError:
-            return False
+        """Checks if a file exists. Raises ValueError if the key escapes the storage root."""
+        path = self._get_full_path(file_path)
+        return await aiofiles.os.path.exists(path)
 
     async def get_file_metadata(self, file_path: str) -> dict[str, Any]:
-        """Gets metadata for a file."""
+        """Gets metadata for a file.
+
+        `size`, `last_modified` (UTC datetime) and `path` are the keys every provider
+        guarantees; see `FileStorageClient.get_file_metadata`.
+        """
         path = self._get_full_path(file_path)
         if not await aiofiles.os.path.exists(path):
             raise FileNotFoundError(f"File not found at {file_path}")
@@ -106,6 +123,8 @@ class LocalStorageProvider(FileStorageClient):
         stat = await aiofiles.os.stat(path)
         return {
             "size": stat.st_size,
-            "last_modified": stat.st_mtime,
-            "path": str(path.relative_to(self.root_path)),
+            # A UTC datetime, matching S3's LastModified -- st_mtime is a float, and a
+            # caller must not have to ask which provider it is talking to.
+            "last_modified": datetime.datetime.fromtimestamp(stat.st_mtime, tz=datetime.UTC),
+            "path": path.relative_to(self.root_path).as_posix(),
         }

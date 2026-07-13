@@ -26,6 +26,12 @@ if [ "$COVERAGE" = "1" ]; then
     find "$COVERAGE_DATA_DIR" -maxdepth 1 -type f -name '.coverage*' -delete
 fi
 
+# Container-backed tests (opt-in via DOCKER=1, normally through `just test-docker`).
+# They spin real backends up and cost seconds, so the default run deselects them and
+# stays fast and infra-free. CI runs them on every push -- if it did not, tests nobody
+# runs would rot. Marked with `docker`; see app-file-storage/tests/integrate/conftest.py.
+DOCKER="${DOCKER:-0}"
+
 run_pytest() {
     local module=$1
     shift
@@ -69,12 +75,19 @@ run_pytest() {
         app-layer-base|app-prebuilt-user|app-prebuilt-outbox) db_args=(--db-type "$DB_TYPE") ;;
     esac
 
+    # Harmless for packages that have no `docker`-marked tests: nothing matches, nothing
+    # is deselected.
+    local marker_args=()
+    if [ "$DOCKER" != "1" ]; then
+        marker_args=(-m "not docker")
+    fi
+
     local tmp
     tmp="$(mktemp)"
     trap 'rm -f "$tmp"' RETURN
 
     local status=0
-    uv run --directory "$path" pytest $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" >"$tmp" 2>&1 || status=$?
+    uv run --directory "$path" pytest $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" >"$tmp" 2>&1 || status=$?
 
     grep -vE "$PROGRESS_LINE_FILTER" "$tmp" || true
     if [ "$status" -eq 5 ]; then

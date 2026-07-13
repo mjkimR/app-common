@@ -132,12 +132,19 @@ class S3StorageProvider(FileStorageClient):
                     yield obj["Key"]
 
     async def file_exists(self, file_path: str) -> bool:
-        """Checks if a file exists in S3."""
+        """Checks if a file exists in S3.
+
+        Only a genuine not-found means False. Swallowing every ClientError would report
+        a 403 from expired or misscoped credentials as "the file isn't there", turning a
+        configuration failure into silent data loss at the call site.
+        """
         try:
             await self.client.head_object(Bucket=self.bucket_name, Key=file_path)
             return True
-        except ClientError:
-            return False
+        except ClientError as e:
+            if e.response["Error"]["Code"] in ("404", "NoSuchKey"):
+                return False
+            raise
 
     async def get_file_metadata(self, file_path: str) -> dict[str, Any]:
         """Gets metadata for a file from S3."""

@@ -100,17 +100,24 @@ hooks-install:
 hooks-run:
     uv run pre-commit run --all-files
 
-# Run tests with SQLite (default)
+# Run tests with SQLite; container-backed tests are deselected, so no Docker is needed
 test +paths="":
     @bash ./scripts/run-tests.sh sqlite all {{ paths }}
 
-# Run tests with PostgreSQL
+# Run tests with PostgreSQL (needs Docker: testcontainers)
 test-pg +paths="":
     @bash ./scripts/run-tests.sh postgres all {{ paths }}
 
-# Run tests with coverage, printing a per-package and a combined report
+# Also run the container-backed tests, e.g. the S3 contract against a real MinIO (needs Docker)
+test-docker +paths="":
+    @DOCKER=1 bash ./scripts/run-tests.sh sqlite all {{ paths }}
+
+# Run tests with coverage, printing a per-package and a combined report.
+# Includes the container-backed tests (needs Docker): this is an on-demand "what is
+# untested?" tool, and silently dropping half the suite would make it under-report.
+# Without a Docker daemon those tests skip and the numbers are correspondingly lower.
 test-cov module="all":
-    @COVERAGE=1 bash ./scripts/run-tests.sh sqlite {{ module }}
+    @COVERAGE=1 DOCKER=1 bash ./scripts/run-tests.sh sqlite {{ module }}
 
 # Install app-helper globally in editable mode using uv tool
 install-app-helper:

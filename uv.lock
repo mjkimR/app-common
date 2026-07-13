@@ -247,6 +247,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "fastapi" },
+    { name = "testcontainers" },
 ]
 
 [package.metadata]
@@ -260,7 +261,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "fastapi", specifier = ">=0.115.12" }]
+dev = [
+    { name = "fastapi", specifier = ">=0.115.12" },
+    { name = "testcontainers", specifier = ">=4.8.0" },
+]
 
 [[package]]
 name = "app-helper"

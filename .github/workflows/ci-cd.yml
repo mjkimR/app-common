@@ -51,6 +51,8 @@ jobs:
             test-command: test
           - name: PostgreSQL
             test-command: test-pg
+          - name: Docker backends
+            test-command: test-docker
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
