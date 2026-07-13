@@ -1,20 +1,26 @@
-"""Unit tests for ExistsCheckHooksMixin."""
+"""Unit tests for ExistsCheckHook."""
 
+import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from app_layer_base.base.exceptions.basic import NotFoundException
-from app_layer_base.base.services.base import BaseContextKwargs
-from app_layer_base.base.services.exists_check_hook import ExistsCheckHooksMixin
+from app_layer_base.base.services.base import BaseContextKwargs, BaseDeleteServiceMixin
+from app_layer_base.base.services.exists_check_hook import ExistsCheckHook
+from app_layer_base.base.services.hooks import Operation
+from test_layer_base.mock_models import MockModel, MockRepository, MockUpdateSchema
 
 # =============================================================================
-# Concrete service for testing
+# Service wiring the hook, for the end-to-end checks
 # =============================================================================
 
 
-class ConcreteExistsCheckService(ExistsCheckHooksMixin):
+class ExistsCheckDeleteService(
+    BaseDeleteServiceMixin[MockRepository, MockModel, BaseContextKwargs],
+):
     def __init__(self, repo):
         self._repo = repo
+        self.hooks = (ExistsCheckHook(),)
 
     @property
     def repo(self):
@@ -26,90 +32,175 @@ class ConcreteExistsCheckService(ExistsCheckHooksMixin):
 
 
 # =============================================================================
-# Tests for _context_update
+# Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def hook():
+    return ExistsCheckHook()
+
+
+@pytest.fixture
+def composite_op(mock_async_session, composite_repo_mock) -> Operation:
+    return Operation(session=mock_async_session, context={}, repo=composite_repo_mock)
+
+
+def _existing(repo, pk) -> MagicMock:
+    """A row whose pk columns carry `pk` (single value or composite tuple)."""
+    obj = MagicMock()
+    values = repo.normalize_pk(pk)
+    for col, value in zip(repo.primary_keys, values, strict=True):
+        setattr(obj, col.key, value)
+    return obj
+
+
+# =============================================================================
+# update_context
 # =============================================================================
 
 
 class TestExistsCheckUpdate:
-    @pytest.fixture
-    def service(self, mock_repo):
-        return ConcreteExistsCheckService(mock_repo)
+    async def test_passes_when_obj_exists(self, hook, base_op, sample_uuid):
+        base_op.repo.get_by_pk = AsyncMock(return_value=MagicMock())
 
-    async def test_context_update_passes_when_obj_exists(self, service, mock_async_session, sample_uuid, base_context):
-        service.repo.get_by_pk = AsyncMock(return_value=MagicMock())
-
-        async with service._context_update(mock_async_session, sample_uuid, MagicMock(), base_context):
+        async with hook.update_context(base_op, sample_uuid, MockUpdateSchema()):
             pass  # No exception expected
 
-    async def test_context_update_raises_not_found_when_obj_missing(
-        self, service, mock_async_session, sample_uuid, base_context
-    ):
-        service.repo.get_by_pk = AsyncMock(return_value=None)
+    async def test_raises_not_found_when_obj_missing(self, hook, base_op, sample_uuid):
+        base_op.repo.get_by_pk = AsyncMock(return_value=None)
 
-        with pytest.raises(NotFoundException):
-            async with service._context_update(mock_async_session, sample_uuid, MagicMock(), base_context):
+        with pytest.raises(NotFoundException) as exc:
+            async with hook.update_context(base_op, sample_uuid, MockUpdateSchema()):
                 pass
+
+        assert str(sample_uuid) in exc.value.log_message
 
 
 # =============================================================================
-# Tests for _context_delete
+# delete_context
 # =============================================================================
 
 
 class TestExistsCheckDelete:
-    @pytest.fixture
-    def service(self, mock_repo):
-        return ConcreteExistsCheckService(mock_repo)
+    async def test_passes_when_obj_exists(self, hook, base_op, sample_uuid):
+        base_op.repo.get_by_pk = AsyncMock(return_value=MagicMock())
 
-    async def test_context_delete_passes_when_obj_exists(self, service, mock_async_session, sample_uuid, base_context):
-        service.repo.get_by_pk = AsyncMock(return_value=MagicMock())
-
-        async with service._context_delete(mock_async_session, sample_uuid, base_context):
+        async with hook.delete_context(base_op, sample_uuid):
             pass  # No exception expected
 
-    async def test_context_delete_raises_not_found_when_obj_missing(
-        self, service, mock_async_session, sample_uuid, base_context
-    ):
-        service.repo.get_by_pk = AsyncMock(return_value=None)
+    async def test_raises_not_found_when_obj_missing(self, hook, base_op, sample_uuid):
+        base_op.repo.get_by_pk = AsyncMock(return_value=None)
 
         with pytest.raises(NotFoundException):
-            async with service._context_delete(mock_async_session, sample_uuid, base_context):
+            async with hook.delete_context(base_op, sample_uuid):
                 pass
 
 
 # =============================================================================
-# Tests for _context_delete_multi
+# delete_context_multi -- one IN query instead of one lookup per pk
 # =============================================================================
 
 
 class TestExistsCheckDeleteMulti:
-    @pytest.fixture
-    def service(self, mock_repo):
-        return ConcreteExistsCheckService(mock_repo)
+    async def test_passes_when_all_exist(self, hook, base_op, sample_uuid):
+        base_op.repo.get_all = AsyncMock(return_value=[_existing(base_op.repo, sample_uuid)])
 
-    async def test_context_delete_multi_passes_when_all_exist(
-        self, service, mock_async_session, sample_uuid, base_context
-    ):
-        existing_obj = MagicMock()
-        # primary_keys[0].key must match what the repo mock exposes
-        pk_col = service.repo.primary_keys[0]
-        setattr(existing_obj, pk_col.key, sample_uuid)
-
-        service.repo.get_all = AsyncMock(return_value=[existing_obj])
-
-        async with service._context_delete_multi(mock_async_session, [sample_uuid], base_context):
+        async with hook.delete_context_multi(base_op, [sample_uuid]):
             pass  # No exception expected
 
-    async def test_context_delete_multi_raises_not_found_when_missing(
-        self, service, mock_async_session, sample_uuid, base_context
-    ):
-        # Return empty list → all PKs are missing
-        service.repo.get_all = AsyncMock(return_value=[])
+    async def test_uses_a_single_in_query_for_many_pks(self, hook, base_op):
+        pks = [uuid.uuid4() for _ in range(3)]
+        base_op.repo.get_all = AsyncMock(return_value=[_existing(base_op.repo, pk) for pk in pks])
 
-        with pytest.raises(NotFoundException):
-            async with service._context_delete_multi(mock_async_session, [sample_uuid], base_context):
+        async with hook.delete_context_multi(base_op, pks):
+            pass
+
+        base_op.repo.get_all.assert_awaited_once()
+        base_op.repo.get_by_pk.assert_not_awaited()
+        where = base_op.repo.get_all.await_args.kwargs["where"]
+        assert len(where) == 1
+        assert "mock_items.id IN" in str(where[0])
+
+    async def test_raises_not_found_listing_only_the_missing_pks(self, hook, base_op, sample_uuid):
+        present, missing = sample_uuid, uuid.uuid4()
+        base_op.repo.get_all = AsyncMock(return_value=[_existing(base_op.repo, present)])
+
+        with pytest.raises(NotFoundException) as exc:
+            async with hook.delete_context_multi(base_op, [present, missing]):
                 pass
 
-    async def test_context_delete_multi_skips_check_for_empty_list(self, service, mock_async_session, base_context):
-        async with service._context_delete_multi(mock_async_session, [], base_context):
-            pass  # Empty list should not raise
+        assert str(missing) in exc.value.log_message
+        assert str(present) not in exc.value.log_message
+
+    async def test_string_pk_matches_a_uuid_row(self, hook, base_op, sample_uuid):
+        """Normalization means str vs UUID is not a false miss."""
+        base_op.repo.get_all = AsyncMock(return_value=[_existing(base_op.repo, sample_uuid)])
+
+        async with hook.delete_context_multi(base_op, [str(sample_uuid)]):
+            pass  # No exception expected
+
+    async def test_skips_the_query_for_an_empty_list(self, hook, base_op):
+        async with hook.delete_context_multi(base_op, []):
+            pass
+
+        base_op.repo.get_all.assert_not_awaited()
+
+    # --- composite primary key -------------------------------------------------
+
+    async def test_composite_pk_uses_a_tuple_in_query(self, hook, composite_op):
+        tenant = uuid.uuid4()
+        pks = [(tenant, "A"), (tenant, "B")]
+        composite_op.repo.get_all = AsyncMock(return_value=[_existing(composite_op.repo, pk) for pk in pks])
+
+        async with hook.delete_context_multi(composite_op, pks):
+            pass
+
+        composite_op.repo.get_all.assert_awaited_once()
+        where = composite_op.repo.get_all.await_args.kwargs["where"]
+        rendered = str(where[0])
+        assert "tenant_id" in rendered
+        assert "code" in rendered
+        assert "IN" in rendered
+
+    async def test_composite_pk_raises_when_one_is_missing(self, hook, composite_op):
+        tenant = uuid.uuid4()
+        present, missing = (tenant, "A"), (tenant, "B")
+        composite_op.repo.get_all = AsyncMock(return_value=[_existing(composite_op.repo, present)])
+
+        with pytest.raises(NotFoundException) as exc:
+            async with hook.delete_context_multi(composite_op, [present, missing]):
+                pass
+
+        assert "code=B" in exc.value.log_message
+        assert "code=A" not in exc.value.log_message
+
+
+# =============================================================================
+# End-to-end through a service
+# =============================================================================
+
+
+class TestExistsCheckThroughService:
+    @pytest.fixture
+    def service(self, mock_repo):
+        return ExistsCheckDeleteService(mock_repo)
+
+    async def test_delete_of_a_missing_row_never_reaches_the_repo(
+        self, service, mock_async_session, mock_repo, sample_uuid
+    ):
+        mock_repo.get_by_pk = AsyncMock(return_value=None)
+
+        with pytest.raises(NotFoundException):
+            await service.delete(mock_async_session, sample_uuid)
+
+        mock_repo.delete_by_pk.assert_not_awaited()
+
+    async def test_delete_of_an_existing_row_goes_through(self, service, mock_async_session, mock_repo, sample_uuid):
+        mock_repo.get_by_pk = AsyncMock(return_value=MagicMock())
+        mock_repo.delete_by_pk = AsyncMock(return_value=True)
+
+        result = await service.delete(mock_async_session, sample_uuid)
+
+        assert result.success is True
+        mock_repo.delete_by_pk.assert_awaited_once()

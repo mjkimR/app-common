@@ -1,7 +1,14 @@
 import uuid
 from typing import Any, Required
 
-from app_layer_base.base.services.base import BaseContextKwargs, BaseCreateHooks, BaseUpdateHooks
+from pydantic import BaseModel
+
+from app_layer_base.base.services.hooks import (
+    BaseContextKwargs,
+    CreateHook,
+    Operation,
+    UpdateHook,
+)
 
 
 class UserContextKwargs(BaseContextKwargs):
@@ -10,19 +17,33 @@ class UserContextKwargs(BaseContextKwargs):
     user_id: Required[uuid.UUID]
 
 
-class UserAwareHooksMixin[ModelType: Any, TUserContextKwargs: UserContextKwargs](
-    BaseCreateHooks[ModelType, TUserContextKwargs], BaseUpdateHooks[ModelType, TUserContextKwargs]
+class UserAwareHook[ModelType: Any, TUserContextKwargs: UserContextKwargs](
+    CreateHook[ModelType, TUserContextKwargs],
+    UpdateHook[ModelType, TUserContextKwargs],
 ):
-    def _prepare_create_fields(self, obj_data, context: TUserContextKwargs, **update_fields: Any) -> dict[str, Any]:
-        base = super()._prepare_create_fields(obj_data, context, **update_fields)
-        if user_id := context.get("user_id"):
-            return {**base, "created_by": user_id, "updated_by": user_id}
-        return base
+    """
+    Stamps created_by / updated_by from ``context["user_id"]``.
 
-    def _prepare_update_fields(
-        self, obj_data, context: TUserContextKwargs, partial: bool = True, **update_fields: Any
+    Stateless and dependency-free; a single instance can be shared.
+    """
+
+    def create_prepare_fields(
+        self,
+        op: Operation[TUserContextKwargs],
+        data: BaseModel,
+        fields: dict[str, Any],
     ) -> dict[str, Any]:
-        base = super()._prepare_update_fields(obj_data, context, partial=partial, **update_fields)
-        if user_id := context.get("user_id"):
-            return {**base, "updated_by": user_id}
-        return base
+        if user_id := op.context.get("user_id"):
+            return {**fields, "created_by": user_id, "updated_by": user_id}
+        return fields
+
+    def update_prepare_fields(
+        self,
+        op: Operation[TUserContextKwargs],
+        data: BaseModel,
+        fields: dict[str, Any],
+        partial: bool = True,
+    ) -> dict[str, Any]:
+        if user_id := op.context.get("user_id"):
+            return {**fields, "updated_by": user_id}
+        return fields

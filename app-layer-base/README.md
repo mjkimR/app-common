@@ -12,7 +12,7 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-layer
 
 - **`base/`** — the domain building blocks:
   - `repos/` — `BaseRepository[Model, Create, Put, Patch]`: async CRUD with pagination, bulk ops, soft/hard delete, composite-PK handling.
-  - `services/` — `Base*ServiceMixin` + composable hook mixins (unique constraints, nested-resource ownership, user auditing, domain events, exists checks) chained via `super()`.
+  - `services/` — `Base*ServiceMixin` + composable hook objects (unique constraints, nested-resource ownership, user auditing, domain events, exists checks, delete-response detail). A service declares one ordered `hooks` tuple; the executor enters each hook's context in that order and unwinds in reverse, so no hook can break the chain for the others.
   - `usecases/` — transaction-wrapping `Base*UseCase` classes.
   - `deps/` — FastAPI dependency factories for declarative filtering, ordering and pagination.
   - `schemas/`, `models/`, `exceptions/` — `PaginatedList`, `DomainEvent` (CloudEvents), mixins (`UUIDMixin`, `TimestampMixin`, `AuditMixin`, `SoftDeleteMixin`), and RFC 7807 error handlers.
@@ -73,7 +73,7 @@ building a service or usecase straight from its dependency tree, `clean_db_after
 
 ## Architecture
 
-Projects follow a decoupled flow: **API (Router) → UseCase → Service → Repository**. Business logic goes in `BaseService` hooks rather than in routers. New feature modules can be scaffolded with [`app-tools`](../app-tools/README.md).
+Projects follow a decoupled flow: **API (Router) → UseCase → Service → Repository**. Business logic goes in service hooks rather than in routers. New feature modules can be scaffolded with [`app-tools`](../app-tools/README.md).
 
 See the developer guides for the full picture:
 

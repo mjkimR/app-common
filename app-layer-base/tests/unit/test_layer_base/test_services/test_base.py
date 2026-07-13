@@ -1,12 +1,21 @@
-"""Unit app_tests for app_layer_base.base.services.base module."""
+"""
+Unit tests for app_layer_base.base.services.base.
+
+The service mixins no longer chain hooks through the MRO: each service declares one
+ordered ``hooks`` tuple and the mixin executes it. These tests cover both the service
+semantics (what reaches the repository, what comes back) and the executor guarantees
+(ordering, isolation between hooks, per-call state).
+"""
 
 import uuid
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from typing import TypedDict
-from unittest.mock import AsyncMock, MagicMock
+from typing import Any, TypedDict
+from unittest.mock import MagicMock
 
 import pytest
 from app_layer_base.base.repos.query_options import ListQueryOptions
+from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
 from app_layer_base.base.schemas.paginated import PaginatedList
 from app_layer_base.base.services.base import (
     BaseContextKwargs,
@@ -16,6 +25,20 @@ from app_layer_base.base.services.base import (
     BaseGetServiceMixin,
     BaseServiceMixinInterface,
     BaseUpdateServiceMixin,
+)
+from app_layer_base.base.services.hooks import (
+    CreateHook,
+    DeleteHook,
+    GetHook,
+    GetMultiHook,
+    Operation,
+    UpdateHook,
+)
+from test_layer_base.mock_models import (
+    MockCreateSchema,
+    MockModel,
+    MockRepository,
+    MockUpdateSchema,
 )
 
 # =============================================================================
@@ -34,6 +57,182 @@ class OptionalContextKwargs(TypedDict, total=False):
 
     tenant_id: str
     is_admin: bool
+
+
+# =============================================================================
+# Concrete services under test
+#
+# A service is now just: a repo, an ordered `hooks` tuple, and a context model.
+# =============================================================================
+
+
+class _ServiceStub:
+    """Shared plumbing for the concrete services below."""
+
+    def __init__(self, repo, hooks: Sequence[Any] = (), context_model=BaseContextKwargs):
+        self._repo = repo
+        self.hooks = tuple(hooks)
+        self._context_model = context_model
+
+    @property
+    def repo(self):
+        return self._repo
+
+    @property
+    def context_model(self):
+        return self._context_model
+
+
+class CreateService(
+    _ServiceStub,
+    BaseCreateServiceMixin[MockRepository, MockModel, MockCreateSchema, BaseContextKwargs],
+):
+    pass
+
+
+class UpdateService(
+    _ServiceStub,
+    BaseUpdateServiceMixin[MockRepository, MockModel, MockUpdateSchema, MockUpdateSchema, BaseContextKwargs],
+):
+    pass
+
+
+class DeleteService(
+    _ServiceStub,
+    BaseDeleteServiceMixin[MockRepository, MockModel, BaseContextKwargs],
+):
+    pass
+
+
+class GetService(
+    _ServiceStub,
+    BaseGetServiceMixin[MockRepository, MockModel, BaseContextKwargs],
+):
+    pass
+
+
+class GetMultiService(
+    _ServiceStub,
+    BaseGetMultiServiceMixin[MockRepository, MockModel, BaseContextKwargs],
+):
+    pass
+
+
+class FullService(
+    _ServiceStub,
+    BaseCreateServiceMixin[MockRepository, MockModel, MockCreateSchema, BaseContextKwargs],
+    BaseUpdateServiceMixin[MockRepository, MockModel, MockUpdateSchema, MockUpdateSchema, BaseContextKwargs],
+    BaseDeleteServiceMixin[MockRepository, MockModel, BaseContextKwargs],
+    BaseGetServiceMixin[MockRepository, MockModel, BaseContextKwargs],
+    BaseGetMultiServiceMixin[MockRepository, MockModel, BaseContextKwargs],
+):
+    """Every operation on one service -- used for hook-selection and state tests."""
+
+
+# =============================================================================
+# Reusable test hooks
+# =============================================================================
+
+
+class RecordingHook(
+    CreateHook[MockModel, BaseContextKwargs],
+    UpdateHook[MockModel, BaseContextKwargs],
+    DeleteHook[BaseContextKwargs],
+    GetHook[MockModel, BaseContextKwargs],
+    GetMultiHook[MockModel, BaseContextKwargs],
+):
+    """Appends ``<name>:<event>`` to a shared log for every executor callback."""
+
+    def __init__(self, name: str, log: list[str]):
+        self.name = name
+        self.log = log
+
+    def _record(self, event: str) -> None:
+        self.log.append(f"{self.name}:{event}")
+
+    @asynccontextmanager
+    async def _span(self, event: str) -> AsyncIterator[None]:
+        self._record(f"{event}:enter")
+        try:
+            yield
+        finally:
+            self._record(f"{event}:exit")
+
+    # -- create ---------------------------------------------------------
+    @asynccontextmanager
+    async def create_context(self, op, data):
+        async with self._span("create_context"):
+            yield
+
+    def create_prepare_fields(self, op, data, fields):
+        self._record("create_prepare_fields")
+        return {**fields, f"{self.name}_field": self.name}
+
+    async def create_post(self, op, obj):
+        self._record("create_post")
+        return obj
+
+    # -- update ---------------------------------------------------------
+    @asynccontextmanager
+    async def update_context(self, op, pk, data, partial=True):
+        async with self._span("update_context"):
+            yield
+
+    def update_prepare_fields(self, op, data, fields, partial=True):
+        self._record("update_prepare_fields")
+        return {**fields, f"{self.name}_field": self.name}
+
+    async def update_post(self, op, obj, partial=True):
+        self._record("update_post")
+        return obj
+
+    # -- delete ---------------------------------------------------------
+    @asynccontextmanager
+    async def delete_context(self, op, pk):
+        async with self._span("delete_context"):
+            yield
+
+    async def delete_post(self, op, pk, result):
+        self._record("delete_post")
+        return result
+
+    # -- get ------------------------------------------------------------
+    @asynccontextmanager
+    async def get_context(self, op, pk):
+        async with self._span("get_context"):
+            yield
+
+    async def get_post(self, op, obj):
+        self._record("get_post")
+        return obj
+
+    # -- get_multi ------------------------------------------------------
+    @asynccontextmanager
+    async def get_multi_context(self, op):
+        async with self._span("get_multi_context"):
+            yield
+
+    def get_multi_prepare_filters(self, op):
+        self._record("get_multi_prepare_filters")
+        return [MagicMock(name=f"{self.name}_filter")]
+
+    async def get_multi_post(self, op, result):
+        self._record("get_multi_post")
+        return result
+
+
+class BoomError(RuntimeError):
+    """Raised by hooks that are meant to abort an operation."""
+
+
+@pytest.fixture
+def hook_log() -> list[str]:
+    return []
+
+
+@pytest.fixture
+def paginated(mock_model) -> PaginatedList:
+    return PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
 
 
 # =============================================================================
@@ -91,6 +290,107 @@ class TestEnsureContext:
 
 
 # =============================================================================
+# Tests for Operation construction (_new_operation)
+# =============================================================================
+
+
+class TestNewOperation:
+    """The Operation a service hands to its hooks."""
+
+    async def test_operation_carries_session_repo_and_validated_context(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """Hooks receive the session, the service repo and the validated context."""
+        seen: list[Operation] = []
+
+        class CaptureHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                seen.append(op)
+                yield
+
+        service = CreateService(mock_repo, hooks=(CaptureHook(),))
+        mock_repo.create.return_value = mock_model
+
+        await service.create(mock_async_session, mock_create_schema, context={})
+
+        (op,) = seen
+        assert op.session is mock_async_session
+        assert op.repo is mock_repo
+        assert op.context == {}
+        assert op.state == {}
+
+    async def test_operation_context_is_validated_against_context_model(
+        self, mock_repo, mock_async_session, mock_create_schema
+    ):
+        """A context that doesn't satisfy the service's context_model is rejected."""
+        service = CreateService(mock_repo, context_model=CustomContextKwargs)
+
+        with pytest.raises(ValueError, match=r"Invalid context provided"):
+            await service.create(mock_async_session, mock_create_schema, context={})
+
+        mock_repo.create.assert_not_called()
+
+    async def test_operation_context_accepts_valid_custom_context(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """A context matching the service's context_model reaches the hooks intact."""
+        user_id = uuid.uuid4()
+        seen: list[Any] = []
+
+        class CaptureHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                seen.append(op.context)
+                yield
+
+        service = CreateService(mock_repo, hooks=(CaptureHook(),), context_model=CustomContextKwargs)
+        mock_repo.create.return_value = mock_model
+
+        await service.create(mock_async_session, mock_create_schema, context={"user_id": user_id})
+
+        assert seen == [{"user_id": user_id}]
+
+
+# =============================================================================
+# Tests for hook selection
+# =============================================================================
+
+
+class TestHookSelection:
+    """One ``hooks`` tuple is split per operation by isinstance."""
+
+    def test_hooks_are_filtered_by_operation(self, mock_repo):
+        create_only = CreateHook()
+        delete_only = DeleteHook()
+        everything = RecordingHook("all", [])
+
+        service = FullService(mock_repo, hooks=(create_only, delete_only, everything))
+
+        assert service.create_hooks == (create_only, everything)
+        assert service.delete_hooks == (delete_only, everything)
+        assert service.update_hooks == (everything,)
+        assert service.get_hooks == (everything,)
+        assert service.get_multi_hooks == (everything,)
+
+    def test_default_hooks_is_empty(self, mock_repo):
+        service = FullService(mock_repo)
+
+        assert service.hooks == ()
+        assert service.create_hooks == ()
+        assert service.get_multi_hooks == ()
+
+    def test_hook_selection_preserves_declaration_order(self, mock_repo, hook_log):
+        first = RecordingHook("first", hook_log)
+        second = RecordingHook("second", hook_log)
+
+        service = FullService(mock_repo, hooks=(first, second))
+
+        assert service.create_hooks == (first, second)
+        assert service.delete_hooks == (first, second)
+
+
+# =============================================================================
 # Tests for BaseCreateServiceMixin
 # =============================================================================
 
@@ -98,198 +398,252 @@ class TestEnsureContext:
 class TestBaseCreateServiceMixin:
     """Tests for create service mixin."""
 
-    @pytest.fixture
-    def create_service(self):
-        """Create a service with mocked repository."""
-
-        class TestCreateService(BaseCreateServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-        return TestCreateService()
-
-    async def test_create_calls_repo_create(self, create_service, mock_async_session, mock_create_schema, mock_model):
+    async def test_create_calls_repo_create(self, mock_repo, mock_async_session, mock_create_schema, mock_model):
         """Should call repository create method."""
-        create_service.repo.create.return_value = mock_model
+        service = CreateService(mock_repo)
+        mock_repo.create.return_value = mock_model
 
-        result = await create_service.create(mock_async_session, mock_create_schema)
+        result = await service.create(mock_async_session, mock_create_schema)
 
         assert result == mock_model
-        create_service.repo.create.assert_called_once()
+        mock_repo.create.assert_called_once_with(mock_async_session, obj_in=mock_create_schema)
 
-    async def test_create_with_context(self, create_service, mock_async_session, mock_create_schema, mock_model):
+    async def test_create_with_context(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model, base_context
+    ):
         """Should pass context through create flow."""
-        create_service.repo.create.return_value = mock_model
+        service = CreateService(mock_repo)
+        mock_repo.create.return_value = mock_model
 
-        result = await create_service.create(mock_async_session, mock_create_schema, context={})
+        result = await service.create(mock_async_session, mock_create_schema, context=base_context)
 
         assert result == mock_model
 
-    async def test_create_with_prepare_fields_hook(self, mock_async_session, mock_create_schema, mock_model):
-        """Should call _prepare_create_fields hook."""
+    async def test_create_passes_extra_update_fields_to_repo(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """Caller-supplied **update_fields reach repo.create even without hooks."""
+        service = CreateService(mock_repo)
+        mock_repo.create.return_value = mock_model
 
-        class TestService(BaseCreateServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.repo.create.return_value = mock_model
+        await service.create(mock_async_session, mock_create_schema, owner_id="u1")
 
-            @property
-            def repo(self):
-                return self._repo
+        assert mock_repo.create.call_args.kwargs["owner_id"] == "u1"
 
-            @property
-            def context_model(self):
-                return BaseContextKwargs
+    async def test_create_with_prepare_fields_hook(self, mock_repo, mock_async_session, mock_create_schema, mock_model):
+        """create_prepare_fields adds columns to the repo.create call."""
 
-            def _prepare_create_fields(self, obj_data, context, **update_fields):
-                return {"extra_field": "extra_value"}
+        class ExtraFieldHook(CreateHook):
+            def create_prepare_fields(self, op, data, fields):
+                return {**fields, "extra_field": "extra_value"}
 
-        service = TestService()
+        service = CreateService(mock_repo, hooks=(ExtraFieldHook(),))
+        mock_repo.create.return_value = mock_model
+
         await service.create(mock_async_session, mock_create_schema)
 
-        # Verify extra fields were passed to repo.create
-        call_kwargs = service.repo.create.call_args
-        assert "extra_field" in call_kwargs.kwargs
+        assert mock_repo.create.call_args.kwargs["extra_field"] == "extra_value"
 
-    async def test_create_multi_runs_single_hook_fallback_when_only_single_hook_overridden(
-        self, mock_async_session, mock_create_schema, mock_model
+    async def test_create_prepare_fields_hook_can_override_caller_fields(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
     ):
-        """Should preserve per-item custom create hooks when no bulk hook exists."""
+        """Hooks see the caller's **update_fields and may rewrite them."""
 
-        class TestService(BaseCreateServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_data = []
+        class OverrideHook(CreateHook):
+            def create_prepare_fields(self, op, data, fields):
+                assert fields == {"owner_id": "caller"}
+                return {**fields, "owner_id": "hook"}
 
-            @property
-            def repo(self):
-                return self._repo
+        service = CreateService(mock_repo, hooks=(OverrideHook(),))
+        mock_repo.create.return_value = mock_model
 
-            @property
-            def context_model(self):
-                return BaseContextKwargs
+        await service.create(mock_async_session, mock_create_schema, owner_id="caller")
 
+        assert mock_repo.create.call_args.kwargs["owner_id"] == "hook"
+
+    async def test_create_post_hook_can_replace_returned_object(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """The object returned by create_post is what the service returns."""
+        replacement = MockModel(id=uuid.uuid4(), name="replaced")
+
+        class ReplaceHook(CreateHook):
+            async def create_post(self, op, obj):
+                return replacement
+
+        service = CreateService(mock_repo, hooks=(ReplaceHook(),))
+        mock_repo.create.return_value = mock_model
+
+        result = await service.create(mock_async_session, mock_create_schema)
+
+        assert result is replacement
+
+    async def test_create_multi_calls_repo_with_per_item_extra_fields(self, mock_repo, mock_async_session, mock_model):
+        """create_multi builds one extra-fields dict per item."""
+
+        class NameFieldHook(CreateHook):
+            def create_prepare_fields(self, op, data, fields):
+                return {**fields, "slug": data.name.lower()}
+
+        service = CreateService(mock_repo, hooks=(NameFieldHook(),))
+        data_list = [MockCreateSchema(name="A"), MockCreateSchema(name="B")]
+        mock_repo.create_multi.return_value = [mock_model, mock_model]
+
+        result = await service.create_multi(mock_async_session, data_list, tenant="t1")
+
+        assert result == [mock_model, mock_model]
+        kwargs = mock_repo.create_multi.call_args.kwargs
+        assert kwargs["objs_in"] == data_list
+        assert kwargs["extra_fields_list"] == [
+            {"tenant": "t1", "slug": "a"},
+            {"tenant": "t1", "slug": "b"},
+        ]
+
+    async def test_create_multi_applies_own_create_context_per_item_by_default(
+        self, mock_repo, mock_async_session, mock_model
+    ):
+        """A hook that only defines create_context gets it applied to every item."""
+        seen: list[Any] = []
+
+        class PerItemHook(CreateHook):
             @asynccontextmanager
-            async def _context_create(self, session, obj_data, context):
-                self.seen_data.append(obj_data)
+            async def create_context(self, op, data):
+                seen.append(data)
                 yield
 
-        service = TestService()
-        service.repo.create_multi.return_value = [mock_model]
+        service = CreateService(mock_repo, hooks=(PerItemHook(),))
+        data_list = [MockCreateSchema(name="A"), MockCreateSchema(name="B")]
+        mock_repo.create_multi.return_value = [mock_model, mock_model]
+
+        await service.create_multi(mock_async_session, data_list)
+
+        assert seen == data_list
+
+    async def test_create_multi_bulk_override_replaces_only_its_own_per_item_context(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """Overriding create_context_multi replaces that hook's own per-item context."""
+        calls: list[str] = []
+
+        class BulkHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                calls.append("per_item")
+                yield
+
+            @asynccontextmanager
+            async def create_context_multi(self, op, data_list):
+                calls.append("bulk")
+                yield
+
+        service = CreateService(mock_repo, hooks=(BulkHook(),))
+        mock_repo.create_multi.return_value = [mock_model]
 
         await service.create_multi(mock_async_session, [mock_create_schema])
 
-        assert service.seen_data == [mock_create_schema]
+        assert calls == ["bulk"]
 
-    async def test_create_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
-        self, mock_async_session, mock_create_schema, mock_model
+    @pytest.mark.parametrize("bulk_first", [True, False])
+    async def test_create_multi_bulk_override_does_not_suppress_other_hooks(
+        self, mock_repo, mock_async_session, mock_model, bulk_first
     ):
-        """Should let custom bulk hooks avoid the base per-item fallback."""
+        """
+        Regression: one hook's bulk override must not disable another hook's per-item context.
 
-        class TestService(BaseCreateServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_data = []
-                self.bulk_called = False
+        Under the old cooperative-super() chain, a hook that overrode the bulk context
+        without calling super() silently swallowed every later hook's per-item hook.
+        """
+        bulk_calls: list[str] = []
+        per_item_seen: list[Any] = []
 
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
+        class BulkHook(CreateHook):
             @asynccontextmanager
-            async def _context_create(self, session, obj_data, context):
-                self.seen_data.append(obj_data)
+            async def create_context_multi(self, op, data_list):
+                bulk_calls.append("bulk")
                 yield
 
+        class PerItemHook(CreateHook):
             @asynccontextmanager
-            async def _context_create_multi(self, session, obj_data_list, context):
-                self.bulk_called = True
-                async with super()._context_create_multi(session, obj_data_list, context):
-                    yield
+            async def create_context(self, op, data):
+                per_item_seen.append(data)
+                yield
 
-        service = TestService()
-        service.repo.create_multi.return_value = [mock_model]
+        hooks = (BulkHook(), PerItemHook()) if bulk_first else (PerItemHook(), BulkHook())
+        service = CreateService(mock_repo, hooks=hooks)
+        data_list = [MockCreateSchema(name="A"), MockCreateSchema(name="B")]
+        mock_repo.create_multi.return_value = [mock_model, mock_model]
+
+        await service.create_multi(mock_async_session, data_list)
+
+        assert bulk_calls == ["bulk"]
+        assert per_item_seen == data_list
+
+    async def test_create_multi_applies_own_create_post_per_item_by_default(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """A hook that only defines create_post gets it applied to every created object."""
+        seen: list[Any] = []
+
+        class PostHook(CreateHook):
+            async def create_post(self, op, obj):
+                seen.append(obj)
+                return obj
+
+        service = CreateService(mock_repo, hooks=(PostHook(),))
+        mock_repo.create_multi.return_value = [mock_model]
+
+        result = await service.create_multi(mock_async_session, [mock_create_schema])
+
+        assert result == [mock_model]
+        assert seen == [mock_model]
+
+    async def test_create_multi_bulk_post_override_replaces_only_its_own_per_item_post(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """Overriding create_post_multi replaces that hook's own per-item create_post."""
+        calls: list[str] = []
+
+        class BulkPostHook(CreateHook):
+            async def create_post(self, op, obj):
+                calls.append("per_item")
+                return obj
+
+            async def create_post_multi(self, op, objs):
+                calls.append("bulk")
+                return objs
+
+        service = CreateService(mock_repo, hooks=(BulkPostHook(),))
+        mock_repo.create_multi.return_value = [mock_model]
+
+        result = await service.create_multi(mock_async_session, [mock_create_schema])
+
+        assert result == [mock_model]
+        assert calls == ["bulk"]
+
+    async def test_create_multi_bulk_post_override_does_not_suppress_other_hooks(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """Regression: a bulk post override must not disable another hook's per-item post."""
+        bulk_calls: list[str] = []
+        per_item_seen: list[Any] = []
+
+        class BulkPostHook(CreateHook):
+            async def create_post_multi(self, op, objs):
+                bulk_calls.append("bulk")
+                return objs
+
+        class PerItemPostHook(CreateHook):
+            async def create_post(self, op, obj):
+                per_item_seen.append(obj)
+                return obj
+
+        service = CreateService(mock_repo, hooks=(BulkPostHook(), PerItemPostHook()))
+        mock_repo.create_multi.return_value = [mock_model]
 
         await service.create_multi(mock_async_session, [mock_create_schema])
 
-        assert service.bulk_called is True
-        assert service.seen_data == []
-
-    async def test_post_create_multi_runs_single_hook_fallback_when_only_single_hook_overridden(
-        self, mock_async_session, mock_model
-    ):
-        """Should preserve per-item custom post-create hooks when no bulk hook exists."""
-
-        class TestService(BaseCreateServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_objs = []
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            async def _post_create(self, session, obj, context):
-                self.seen_objs.append(obj)
-                return obj
-
-        service = TestService()
-
-        result = await service._post_create_multi(mock_async_session, [mock_model], {})
-
-        assert result == [mock_model]
-        assert service.seen_objs == [mock_model]
-
-    async def test_post_create_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
-        self, mock_async_session, mock_model
-    ):
-        """Should let custom bulk post hooks avoid the base per-item fallback."""
-
-        class TestService(BaseCreateServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_objs = []
-                self.bulk_called = False
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            async def _post_create(self, session, obj, context):
-                self.seen_objs.append(obj)
-                return obj
-
-            async def _post_create_multi(self, session, objs, context):
-                self.bulk_called = True
-                return await super()._post_create_multi(session, objs, context)
-
-        service = TestService()
-
-        result = await service._post_create_multi(mock_async_session, [mock_model], {})
-
-        assert result == [mock_model]
-        assert service.bulk_called is True
-        assert service.seen_objs == []
+        assert bulk_calls == ["bulk"]
+        assert per_item_seen == [mock_model]
 
 
 # =============================================================================
@@ -300,59 +654,133 @@ class TestBaseCreateServiceMixin:
 class TestBaseUpdateServiceMixin:
     """Tests for update service mixin."""
 
-    @pytest.fixture
-    def update_service(self):
-        """Create a service with mocked repository."""
-
-        class TestUpdateService(BaseUpdateServiceMixin[AsyncMock, MagicMock, MagicMock, MagicMock, BaseContextKwargs]):
-            def __init__(self):
-                self._repo = AsyncMock()
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-        return TestUpdateService()
-
     async def test_put_calls_repo_update_with_partial_false(
-        self,
-        update_service,
-        mock_async_session,
-        mock_update_schema,
-        mock_model,
-        sample_uuid,
+        self, mock_repo, mock_async_session, mock_update_schema, mock_model, sample_uuid
     ):
         """Should call repository update_by_pk method with partial=False."""
-        update_service.repo.update_by_pk.return_value = mock_model
+        service = UpdateService(mock_repo)
+        mock_repo.update_by_pk.return_value = mock_model
 
-        result = await update_service.put(mock_async_session, sample_uuid, mock_update_schema)
+        result = await service.put(mock_async_session, sample_uuid, mock_update_schema)
 
         assert result == mock_model
-        update_service.repo.update_by_pk.assert_called_once_with(
+        mock_repo.update_by_pk.assert_called_once_with(
             mock_async_session, pk=sample_uuid, obj_in=mock_update_schema, partial=False
         )
 
     async def test_patch_calls_repo_update_with_partial_true(
+        self, mock_repo, mock_async_session, mock_update_schema, mock_model, sample_uuid
+    ):
+        """Should call repository update_by_pk method with partial=True."""
+        service = UpdateService(mock_repo)
+        mock_repo.update_by_pk.return_value = mock_model
+
+        result = await service.patch(mock_async_session, sample_uuid, mock_update_schema)
+
+        assert result == mock_model
+        mock_repo.update_by_pk.assert_called_once_with(
+            mock_async_session, pk=sample_uuid, obj_in=mock_update_schema, partial=True
+        )
+
+    async def test_update_passes_extra_update_fields_to_repo(
+        self, mock_repo, mock_async_session, mock_update_schema, mock_model, sample_uuid
+    ):
+        """Caller-supplied **update_fields reach repo.update_by_pk."""
+        service = UpdateService(mock_repo)
+        mock_repo.update_by_pk.return_value = mock_model
+
+        await service.patch(mock_async_session, sample_uuid, mock_update_schema, updated_by="admin")
+
+        assert mock_repo.update_by_pk.call_args.kwargs["updated_by"] == "admin"
+
+    async def test_update_prepare_fields_hook_adds_fields(
+        self, mock_repo, mock_async_session, mock_update_schema, mock_model, sample_uuid
+    ):
+        """update_prepare_fields adds columns to the repo.update_by_pk call."""
+
+        class ExtraFieldHook(UpdateHook):
+            def update_prepare_fields(self, op, data, fields, partial=True):
+                return {**fields, "extra_field": "extra_value"}
+
+        service = UpdateService(mock_repo, hooks=(ExtraFieldHook(),))
+        mock_repo.update_by_pk.return_value = mock_model
+
+        await service.put(mock_async_session, sample_uuid, mock_update_schema)
+
+        assert mock_repo.update_by_pk.call_args.kwargs["extra_field"] == "extra_value"
+
+    @pytest.mark.parametrize(("method", "expected_partial"), [("put", False), ("patch", True)])
+    async def test_update_hooks_receive_partial_flag_and_pk(
         self,
-        update_service,
+        mock_repo,
         mock_async_session,
         mock_update_schema,
         mock_model,
         sample_uuid,
+        method,
+        expected_partial,
     ):
-        """Should call repository update_by_pk method with partial=True."""
-        update_service.repo.update_by_pk.return_value = mock_model
+        """Every update hook callback is told whether this is a PUT or a PATCH."""
+        seen: dict[str, Any] = {}
 
-        result = await update_service.patch(mock_async_session, sample_uuid, mock_update_schema)
+        class SpyHook(UpdateHook):
+            @asynccontextmanager
+            async def update_context(self, op, pk, data, partial=True):
+                seen["context"] = (pk, data, partial)
+                yield
 
-        assert result == mock_model
-        update_service.repo.update_by_pk.assert_called_once_with(
-            mock_async_session, pk=sample_uuid, obj_in=mock_update_schema, partial=True
-        )
+            def update_prepare_fields(self, op, data, fields, partial=True):
+                seen["fields"] = partial
+                return fields
+
+            async def update_post(self, op, obj, partial=True):
+                seen["post"] = partial
+                return obj
+
+        service = UpdateService(mock_repo, hooks=(SpyHook(),))
+        mock_repo.update_by_pk.return_value = mock_model
+
+        await getattr(service, method)(mock_async_session, sample_uuid, mock_update_schema)
+
+        assert seen["context"] == (sample_uuid, mock_update_schema, expected_partial)
+        assert seen["fields"] is expected_partial
+        assert seen["post"] is expected_partial
+
+    async def test_update_post_receives_none_when_row_missing(
+        self, mock_repo, mock_async_session, mock_update_schema, sample_uuid
+    ):
+        """update_post sees None (and the service returns None) when the row doesn't exist."""
+        seen: list[Any] = []
+
+        class SpyHook(UpdateHook):
+            async def update_post(self, op, obj, partial=True):
+                seen.append(obj)
+                return obj
+
+        service = UpdateService(mock_repo, hooks=(SpyHook(),))
+        mock_repo.update_by_pk.return_value = None
+
+        result = await service.patch(mock_async_session, sample_uuid, mock_update_schema)
+
+        assert result is None
+        assert seen == [None]
+
+    async def test_update_post_can_replace_returned_object(
+        self, mock_repo, mock_async_session, mock_update_schema, mock_model, sample_uuid
+    ):
+        """The object returned by update_post is what the service returns."""
+        replacement = MockModel(id=uuid.uuid4(), name="replaced")
+
+        class ReplaceHook(UpdateHook):
+            async def update_post(self, op, obj, partial=True):
+                return replacement
+
+        service = UpdateService(mock_repo, hooks=(ReplaceHook(),))
+        mock_repo.update_by_pk.return_value = mock_model
+
+        result = await service.put(mock_async_session, sample_uuid, mock_update_schema)
+
+        assert result is replacement
 
 
 # =============================================================================
@@ -363,108 +791,115 @@ class TestBaseUpdateServiceMixin:
 class TestBaseDeleteServiceMixin:
     """Tests for delete service mixin."""
 
-    @pytest.fixture
-    def delete_service(self):
-        """Create a service with mocked repository."""
-
-        class TestDeleteService(BaseDeleteServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-        return TestDeleteService()
-
-    async def test_delete_calls_repo_delete(self, delete_service, mock_async_session, sample_uuid):
+    async def test_delete_calls_repo_delete(self, mock_repo, mock_async_session, sample_uuid):
         """Should call repository delete_by_pk method."""
-        delete_service.repo.delete_by_pk.return_value = True
+        service = DeleteService(mock_repo)
+        mock_repo.delete_by_pk.return_value = True
 
-        result = await delete_service.delete(mock_async_session, sample_uuid)
+        result = await service.delete(mock_async_session, sample_uuid)
 
         assert result.success is True
-        delete_service.repo.delete_by_pk.assert_called_once_with(mock_async_session, pk=sample_uuid)
+        assert result.identity == sample_uuid
+        mock_repo.delete_by_pk.assert_called_once_with(mock_async_session, pk=sample_uuid)
 
-    async def test_delete_returns_false_when_not_found(self, delete_service, mock_async_session, sample_uuid):
+    async def test_delete_returns_false_when_not_found(self, mock_repo, mock_async_session, sample_uuid):
         """Should return False when record not found."""
-        delete_service.repo.delete_by_pk.return_value = False
+        service = DeleteService(mock_repo)
+        mock_repo.delete_by_pk.return_value = False
 
-        result = await delete_service.delete(mock_async_session, sample_uuid)
+        result = await service.delete(mock_async_session, sample_uuid)
 
         assert result.success is False
 
-    async def test_delete_multi_runs_single_hook_fallback_when_only_single_hook_overridden(
-        self, mock_async_session, sample_uuid
+    async def test_delete_post_hook_can_enrich_response(self, mock_repo, mock_async_session, sample_uuid):
+        """delete_post receives the pk plus the DeleteResponse and may replace it."""
+        seen: list[Any] = []
+
+        class DetailHook(DeleteHook):
+            async def delete_post(self, op, pk, result):
+                seen.append((pk, result.success))
+                return result.model_copy(update={"representation": f"Item({pk})"})
+
+        service = DeleteService(mock_repo, hooks=(DetailHook(),))
+        mock_repo.delete_by_pk.return_value = True
+
+        result = await service.delete(mock_async_session, sample_uuid)
+
+        assert seen == [(sample_uuid, True)]
+        assert result.representation == f"Item({sample_uuid})"
+
+    async def test_delete_multi_applies_own_delete_context_per_item_by_default(
+        self, mock_repo, mock_async_session, sample_uuid
     ):
-        """Should preserve per-item custom delete hooks when no bulk hook exists."""
+        """A hook that only defines delete_context gets it applied to every pk."""
+        seen: list[Any] = []
 
-        class TestService(BaseDeleteServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_pks = []
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
+        class PerItemHook(DeleteHook):
             @asynccontextmanager
-            async def _context_delete(self, session, obj_pk, context):
-                self.seen_pks.append(obj_pk)
+            async def delete_context(self, op, pk):
+                seen.append(pk)
                 yield
 
-        service = TestService()
-        service.repo.delete_by_pk_multi.return_value = 1
+        service = DeleteService(mock_repo, hooks=(PerItemHook(),))
+        mock_repo.delete_by_pk_multi.return_value = 1
 
         await service.delete_multi(mock_async_session, [sample_uuid])
 
-        assert service.seen_pks == [sample_uuid]
+        assert seen == [sample_uuid]
 
-    async def test_delete_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
-        self, mock_async_session, sample_uuid
+    async def test_delete_multi_bulk_override_replaces_only_its_own_per_item_context(
+        self, mock_repo, mock_async_session, sample_uuid
     ):
-        """Should let custom bulk hooks avoid the base per-item fallback."""
+        """Overriding delete_context_multi replaces that hook's own per-item context."""
+        calls: list[str] = []
 
-        class TestService(BaseDeleteServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_pks = []
-                self.bulk_called = False
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
+        class BulkHook(DeleteHook):
             @asynccontextmanager
-            async def _context_delete(self, session, obj_pk, context):
-                self.seen_pks.append(obj_pk)
+            async def delete_context(self, op, pk):
+                calls.append("per_item")
                 yield
 
             @asynccontextmanager
-            async def _context_delete_multi(self, session, obj_pks, context):
-                self.bulk_called = True
-                async with super()._context_delete_multi(session, obj_pks, context):
-                    yield
+            async def delete_context_multi(self, op, pks):
+                calls.append("bulk")
+                yield
 
-        service = TestService()
-        service.repo.delete_by_pk_multi.return_value = 1
+        service = DeleteService(mock_repo, hooks=(BulkHook(),))
+        mock_repo.delete_by_pk_multi.return_value = 1
 
         await service.delete_multi(mock_async_session, [sample_uuid])
 
-        assert service.bulk_called is True
-        assert service.seen_pks == []
+        assert calls == ["bulk"]
+
+    @pytest.mark.parametrize("bulk_first", [True, False])
+    async def test_delete_multi_bulk_override_does_not_suppress_other_hooks(
+        self, mock_repo, mock_async_session, bulk_first
+    ):
+        """Regression: one hook's bulk delete context must not disable another's per-item one."""
+        bulk_calls: list[str] = []
+        per_item_seen: list[Any] = []
+
+        class BulkHook(DeleteHook):
+            @asynccontextmanager
+            async def delete_context_multi(self, op, pks):
+                bulk_calls.append("bulk")
+                yield
+
+        class PerItemHook(DeleteHook):
+            @asynccontextmanager
+            async def delete_context(self, op, pk):
+                per_item_seen.append(pk)
+                yield
+
+        hooks = (BulkHook(), PerItemHook()) if bulk_first else (PerItemHook(), BulkHook())
+        service = DeleteService(mock_repo, hooks=hooks)
+        pks = [uuid.uuid4(), uuid.uuid4()]
+        mock_repo.delete_by_pk_multi.return_value = 2
+
+        await service.delete_multi(mock_async_session, pks)
+
+        assert bulk_calls == ["bulk"]
+        assert per_item_seen == pks
 
     @pytest.mark.parametrize(
         ("requested", "deleted_count", "expected_failed"),
@@ -476,120 +911,103 @@ class TestBaseDeleteServiceMixin:
         ],
     )
     async def test_delete_multi_derives_failed_count_from_aggregate(
-        self, mock_async_session, requested, deleted_count, expected_failed
+        self, mock_repo, mock_async_session, requested, deleted_count, expected_failed
     ):
         """failed_count is derived as max(0, requested - deleted_count), no extra query."""
-
-        class TestService(BaseDeleteServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-        service = TestService()
-        service.repo.delete_by_pk_multi.return_value = deleted_count
+        service = DeleteService(mock_repo)
+        mock_repo.delete_by_pk_multi.return_value = deleted_count
         pks = [uuid.uuid4() for _ in range(requested)]
 
         result = await service.delete_multi(mock_async_session, pks)
 
         assert result.deleted_count == deleted_count
         assert result.failed_count == expected_failed
+        mock_repo.delete_by_pk_multi.assert_called_once_with(mock_async_session, pks=pks)
 
-    async def test_post_delete_multi_runs_single_hook_fallback_when_all_requested_items_deleted(
-        self, mock_async_session, sample_uuid
-    ):
-        """Should preserve per-item custom post-delete hooks when all PKs were deleted."""
+    async def test_delete_post_multi_applies_per_item_post_when_all_deleted(self, mock_repo, mock_async_session):
+        """The default bulk post applies per-item delete_post when every pk was deleted."""
+        seen: list[Any] = []
 
-        class TestService(BaseDeleteServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_pks = []
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            async def _post_delete(self, session, obj_pk, result, context):
-                self.seen_pks.append(obj_pk)
+        class PostHook(DeleteHook):
+            async def delete_post(self, op, pk, result):
+                seen.append((pk, result.success, result.identity))
                 return result
 
-        service = TestService()
-        result = await service._post_delete_multi(mock_async_session, [sample_uuid], MagicMock(deleted_count=1), {})
+        service = DeleteService(mock_repo, hooks=(PostHook(),))
+        pks = [uuid.uuid4(), uuid.uuid4()]
+        mock_repo.delete_by_pk_multi.return_value = 2
 
-        assert result.deleted_count == 1
-        assert service.seen_pks == [sample_uuid]
+        result = await service.delete_multi(mock_async_session, pks)
 
-    async def test_post_delete_multi_skips_single_hook_fallback_when_bulk_hook_overridden(
-        self, mock_async_session, sample_uuid
-    ):
-        """Should let custom bulk post hooks avoid the base per-item fallback."""
+        assert result.deleted_count == 2
+        assert seen == [(pks[0], True, pks[0]), (pks[1], True, pks[1])]
 
-        class TestService(BaseDeleteServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_pks = []
-                self.bulk_called = False
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            async def _post_delete(self, session, obj_pk, result, context):
-                self.seen_pks.append(obj_pk)
-                return result
-
-            async def _post_delete_multi(self, session, obj_pks, result, context):
-                self.bulk_called = True
-                return await super()._post_delete_multi(session, obj_pks, result, context)
-
-        service = TestService()
-        result = await service._post_delete_multi(mock_async_session, [sample_uuid], MagicMock(deleted_count=1), {})
-
-        assert result.deleted_count == 1
-        assert service.bulk_called is True
-        assert service.seen_pks == []
-
-    async def test_post_delete_multi_skips_single_hook_fallback_when_delete_result_is_partial(
-        self, mock_async_session, sample_uuid
-    ):
+    async def test_delete_post_multi_skips_per_item_post_on_partial_result(self, mock_repo, mock_async_session):
         """Should not fabricate per-item post-delete success for partial bulk results."""
+        seen: list[Any] = []
 
-        class TestService(BaseDeleteServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.seen_pks = []
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            async def _post_delete(self, session, obj_pk, result, context):
-                self.seen_pks.append(obj_pk)
+        class PostHook(DeleteHook):
+            async def delete_post(self, op, pk, result):
+                seen.append(pk)
                 return result
 
-        service = TestService()
-        result = await service._post_delete_multi(mock_async_session, [sample_uuid], MagicMock(deleted_count=0), {})
+        service = DeleteService(mock_repo, hooks=(PostHook(),))
+        pks = [uuid.uuid4(), uuid.uuid4()]
+        mock_repo.delete_by_pk_multi.return_value = 1
 
-        assert result.deleted_count == 0
-        assert service.seen_pks == []
+        result = await service.delete_multi(mock_async_session, pks)
+
+        assert result.deleted_count == 1
+        assert result.failed_count == 1
+        assert seen == []
+
+    async def test_delete_post_multi_bulk_override_replaces_only_its_own_per_item_post(
+        self, mock_repo, mock_async_session, sample_uuid
+    ):
+        """Overriding delete_post_multi replaces that hook's own per-item delete_post."""
+        calls: list[str] = []
+
+        class BulkPostHook(DeleteHook):
+            async def delete_post(self, op, pk, result):
+                calls.append("per_item")
+                return result
+
+            async def delete_post_multi(self, op, pks, result):
+                calls.append("bulk")
+                return result.model_copy(update={"meta": {"bulk": True}})
+
+        service = DeleteService(mock_repo, hooks=(BulkPostHook(),))
+        mock_repo.delete_by_pk_multi.return_value = 1
+
+        result = await service.delete_multi(mock_async_session, [sample_uuid])
+
+        assert calls == ["bulk"]
+        assert result.meta == {"bulk": True}
+
+    async def test_delete_post_multi_bulk_override_does_not_suppress_other_hooks(
+        self, mock_repo, mock_async_session, sample_uuid
+    ):
+        """Regression: a bulk post override must not disable another hook's per-item post."""
+        bulk_calls: list[str] = []
+        per_item_seen: list[Any] = []
+
+        class BulkPostHook(DeleteHook):
+            async def delete_post_multi(self, op, pks, result):
+                bulk_calls.append("bulk")
+                return result
+
+        class PerItemPostHook(DeleteHook):
+            async def delete_post(self, op, pk, result):
+                per_item_seen.append(pk)
+                return result
+
+        service = DeleteService(mock_repo, hooks=(BulkPostHook(), PerItemPostHook()))
+        mock_repo.delete_by_pk_multi.return_value = 1
+
+        await service.delete_multi(mock_async_session, [sample_uuid])
+
+        assert bulk_calls == ["bulk"]
+        assert per_item_seen == [sample_uuid]
 
 
 # =============================================================================
@@ -600,66 +1018,77 @@ class TestBaseDeleteServiceMixin:
 class TestBaseGetServiceMixin:
     """Tests for get service mixin."""
 
-    @pytest.fixture
-    def get_service(self):
-        """Create a service with mocked repository."""
-
-        class TestGetService(BaseGetServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-        return TestGetService()
-
-    async def test_get_calls_repo_get_by_pk(self, get_service, mock_async_session, mock_model, sample_uuid):
+    async def test_get_calls_repo_get_by_pk(self, mock_repo, mock_async_session, mock_model, sample_uuid):
         """Should call repository get_by_pk method."""
-        get_service.repo.get_by_pk.return_value = mock_model
+        service = GetService(mock_repo)
+        mock_repo.get_by_pk.return_value = mock_model
 
-        result = await get_service.get(mock_async_session, sample_uuid)
+        result = await service.get(mock_async_session, sample_uuid)
 
         assert result == mock_model
-        get_service.repo.get_by_pk.assert_called_once_with(mock_async_session, pk=sample_uuid)
+        mock_repo.get_by_pk.assert_called_once_with(mock_async_session, pk=sample_uuid)
 
-    async def test_get_returns_none_when_not_found(self, get_service, mock_async_session, sample_uuid):
+    async def test_get_returns_none_when_not_found(self, mock_repo, mock_async_session, sample_uuid):
         """Should return None when record not found."""
-        get_service.repo.get_by_pk.return_value = None
+        service = GetService(mock_repo)
+        mock_repo.get_by_pk.return_value = None
 
-        result = await get_service.get(mock_async_session, sample_uuid)
+        result = await service.get(mock_async_session, sample_uuid)
 
         assert result is None
 
-    async def test_get_with_post_get_hook(self, mock_async_session, mock_model, sample_uuid):
-        """Should call _post_get hook."""
+    async def test_get_with_post_get_hook(self, mock_repo, mock_async_session, mock_model, sample_uuid):
+        """get_post can mutate/replace the fetched object."""
 
-        class TestService(BaseGetServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                self.repo.get_by_pk.return_value = mock_model
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            async def _post_get(self, session, obj, context):
+        class ModifyHook(GetHook):
+            async def get_post(self, op, obj):
                 if obj:
                     obj.name = "Modified by hook"
                 return obj
 
-        service = TestService()
+        service = GetService(mock_repo, hooks=(ModifyHook(),))
+        mock_repo.get_by_pk.return_value = mock_model
+
         result = await service.get(mock_async_session, sample_uuid)
+
         assert result is not None
         assert result.name == "Modified by hook"
+
+    async def test_get_post_hook_receives_none_when_not_found(self, mock_repo, mock_async_session, sample_uuid):
+        """get_post still runs, with None, when the row doesn't exist."""
+        seen: list[Any] = []
+
+        class SpyHook(GetHook):
+            async def get_post(self, op, obj):
+                seen.append(obj)
+                return obj
+
+        service = GetService(mock_repo, hooks=(SpyHook(),))
+        mock_repo.get_by_pk.return_value = None
+
+        assert await service.get(mock_async_session, sample_uuid) is None
+        assert seen == [None]
+
+    async def test_get_context_hook_wraps_the_repo_call(
+        self, mock_repo, mock_async_session, mock_model, sample_uuid, hook_log
+    ):
+        """get_context is entered before, and exited after, the repository call."""
+
+        class SpanHook(GetHook):
+            @asynccontextmanager
+            async def get_context(self, op, pk):
+                hook_log.append("enter")
+                try:
+                    yield
+                finally:
+                    hook_log.append("exit")
+
+        service = GetService(mock_repo, hooks=(SpanHook(),))
+        mock_repo.get_by_pk.side_effect = lambda *a, **k: hook_log.append("repo") or mock_model
+
+        await service.get(mock_async_session, sample_uuid)
+
+        assert hook_log == ["enter", "repo", "exit"]
 
 
 # =============================================================================
@@ -667,107 +1096,512 @@ class TestBaseGetServiceMixin:
 # =============================================================================
 
 
+class _FilterHook(GetMultiHook):
+    """Contributes one extra WHERE clause."""
+
+    def __init__(self, name: str = "extra_filter"):
+        self.clause = MagicMock(name=name)
+
+    def get_multi_prepare_filters(self, op):
+        return [self.clause]
+
+
 class TestBaseGetMultiServiceMixin:
     """Tests for get multi service mixin."""
 
-    @pytest.fixture
-    def get_multi_service(self):
-        """Create a service with mocked repository."""
-
-        class TestGetMultiService(BaseGetMultiServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-        return TestGetMultiService()
-
-    async def test_get_multi_calls_repo_get_multi(self, get_multi_service, mock_async_session, mock_model):
+    async def test_get_multi_calls_repo_get_multi(self, mock_repo, mock_async_session, paginated):
         """Should call repository get_multi method."""
-        paginated = PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
-        get_multi_service.repo.get_multi.return_value = paginated
+        service = GetMultiService(mock_repo)
+        mock_repo.get_multi.return_value = paginated
 
-        result = await get_multi_service.get_multi(
-            mock_async_session,
-            query_options=ListQueryOptions(offset=0, limit=10),
-        )
+        result = await service.get_multi(mock_async_session, query_options=ListQueryOptions(offset=0, limit=10))
 
         assert result == paginated
-        get_multi_service.repo.get_multi.assert_called_once()
+        mock_repo.get_multi.assert_called_once()
 
-    async def test_get_multi_with_where_conditions(self, get_multi_service, mock_async_session, mock_model):
-        """Should pass where conditions to repository."""
-        paginated = PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
-        get_multi_service.repo.get_multi.return_value = paginated
+    async def test_get_multi_uses_default_query_options_when_omitted(self, mock_repo, mock_async_session, paginated):
+        """A missing query_options becomes the ListQueryOptions default."""
+        service = GetMultiService(mock_repo)
+        mock_repo.get_multi.return_value = paginated
 
-        where_conditions = [MagicMock()]
-        await get_multi_service.get_multi(
-            mock_async_session,
-            query_options=ListQueryOptions(where=where_conditions),
-        )
-
-        call_kwargs = get_multi_service.repo.get_multi.call_args.kwargs
-        assert call_kwargs["query_options"].where == where_conditions
-
-    async def test_get_multi_merges_extra_filters(self, mock_async_session, mock_model):
-        """Should merge extra filters from _prepare_get_multi_filters hook."""
-
-        class TestService(BaseGetMultiServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                paginated = PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
-                self.repo.get_multi.return_value = paginated
-
-            @property
-            def repo(self):
-                return self._repo
-
-            @property
-            def context_model(self):
-                return BaseContextKwargs
-
-            def _prepare_get_multi_filters(self, context):
-                return [MagicMock(name="extra_filter")]
-
-        service = TestService()
         await service.get_multi(mock_async_session)
 
-        call_kwargs = service.repo.get_multi.call_args.kwargs
-        assert len(call_kwargs["query_options"].where) == 1
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert options.offset == 0
+        assert options.limit == 100
+        assert list(options.where) == []
 
-    async def test_get_multi_merges_where_list_with_extra_filters(self, mock_async_session, mock_model):
-        """Should merge where list with extra filters."""
+    async def test_get_multi_with_where_conditions(self, mock_repo, mock_async_session, paginated):
+        """Should pass where conditions to repository."""
+        service = GetMultiService(mock_repo)
+        mock_repo.get_multi.return_value = paginated
 
-        class TestService(BaseGetMultiServiceMixin):
-            def __init__(self):
-                self._repo = AsyncMock()
-                paginated = PaginatedList(items=[mock_model], total_count=1, offset=0, limit=10)
-                self.repo.get_multi.return_value = paginated
+        where_conditions = [MagicMock()]
+        await service.get_multi(mock_async_session, query_options=ListQueryOptions(where=where_conditions))
 
-            @property
-            def repo(self):
-                return self._repo
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert options.where == where_conditions
 
-            @property
-            def context_model(self):
-                return BaseContextKwargs
+    async def test_get_multi_merges_extra_filters(self, mock_repo, mock_async_session, paginated):
+        """Should merge extra filters from the get_multi_prepare_filters hook."""
+        hook = _FilterHook()
+        service = GetMultiService(mock_repo, hooks=(hook,))
+        mock_repo.get_multi.return_value = paginated
 
-            def _prepare_get_multi_filters(self, context):
-                return [MagicMock(name="extra_filter")]
+        await service.get_multi(mock_async_session)
 
-        service = TestService()
-        where_conditions = [MagicMock(name="user_filter")]
-        await service.get_multi(
-            mock_async_session,
-            query_options=ListQueryOptions(where=where_conditions),
-        )
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert list(options.where) == [hook.clause]
 
-        call_kwargs = service.repo.get_multi.call_args.kwargs
-        # Should have both original and extra filters
-        assert len(call_kwargs["query_options"].where) == 2
+    async def test_get_multi_merges_where_list_with_extra_filters(self, mock_repo, mock_async_session, paginated):
+        """Should merge a caller-supplied where list with hook filters."""
+        hook = _FilterHook()
+        service = GetMultiService(mock_repo, hooks=(hook,))
+        mock_repo.get_multi.return_value = paginated
+
+        user_filter = MagicMock(name="user_filter")
+        await service.get_multi(mock_async_session, query_options=ListQueryOptions(where=[user_filter]))
+
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert list(options.where) == [user_filter, hook.clause]
+
+    async def test_get_multi_merges_single_where_clause_with_extra_filters(
+        self, mock_repo, mock_async_session, paginated
+    ):
+        """A bare (non-sequence) where clause is wrapped into a list with the hook filters."""
+        hook = _FilterHook()
+        service = GetMultiService(mock_repo, hooks=(hook,))
+        mock_repo.get_multi.return_value = paginated
+
+        single_clause = MagicMock(name="single_clause")
+        assert not isinstance(single_clause, Sequence)
+        await service.get_multi(mock_async_session, query_options=ListQueryOptions(where=single_clause))
+
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert list(options.where) == [single_clause, hook.clause]
+
+    async def test_get_multi_leaves_single_where_clause_untouched_without_hooks(
+        self, mock_repo, mock_async_session, paginated
+    ):
+        """No hook filters -> a bare where clause is passed through as-is."""
+        service = GetMultiService(mock_repo)
+        mock_repo.get_multi.return_value = paginated
+
+        single_clause = MagicMock(name="single_clause")
+        await service.get_multi(mock_async_session, query_options=ListQueryOptions(where=single_clause))
+
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert options.where is single_clause
+
+    async def test_get_multi_where_none_becomes_extra_filters(self, mock_repo, mock_async_session, paginated):
+        """where=None is replaced by the hook filters."""
+        hook = _FilterHook()
+        service = GetMultiService(mock_repo, hooks=(hook,))
+        mock_repo.get_multi.return_value = paginated
+
+        await service.get_multi(mock_async_session, query_options=ListQueryOptions(where=None))
+
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert list(options.where) == [hook.clause]
+
+    async def test_get_multi_filters_from_several_hooks_are_concatenated_in_order(
+        self, mock_repo, mock_async_session, paginated
+    ):
+        """Filters accumulate in hooks order."""
+        first, second = _FilterHook("first"), _FilterHook("second")
+        service = GetMultiService(mock_repo, hooks=(first, second))
+        mock_repo.get_multi.return_value = paginated
+
+        await service.get_multi(mock_async_session)
+
+        options = mock_repo.get_multi.call_args.kwargs["query_options"]
+        assert list(options.where) == [first.clause, second.clause]
+
+    async def test_get_multi_post_hook_can_replace_result(self, mock_repo, mock_async_session, paginated):
+        """get_multi_post may return a different PaginatedList."""
+        replacement = PaginatedList(items=[], total_count=0, offset=0, limit=10)
+
+        class ReplaceHook(GetMultiHook):
+            async def get_multi_post(self, op, result):
+                return replacement
+
+        service = GetMultiService(mock_repo, hooks=(ReplaceHook(),))
+        mock_repo.get_multi.return_value = paginated
+
+        result = await service.get_multi(mock_async_session)
+
+        assert result is replacement
+
+
+# =============================================================================
+# Executor guarantees
+# =============================================================================
+
+
+class TestExecutorOrdering:
+    """Contexts enter forward and exit backward; prepare forward, post backward."""
+
+    async def test_create_executes_hooks_in_documented_order(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model, hook_log
+    ):
+        service = CreateService(mock_repo, hooks=(RecordingHook("a", hook_log), RecordingHook("b", hook_log)))
+        mock_repo.create.side_effect = lambda *a, **k: hook_log.append("repo:create") or mock_model
+
+        result = await service.create(mock_async_session, mock_create_schema)
+
+        assert result == mock_model
+        assert hook_log == [
+            "a:create_context:enter",
+            "b:create_context:enter",
+            "a:create_prepare_fields",
+            "b:create_prepare_fields",
+            "repo:create",
+            "b:create_post",
+            "a:create_post",
+            "b:create_context:exit",
+            "a:create_context:exit",
+        ]
+        # forward prepare order means the later hook wins on a shared key
+        assert mock_repo.create.call_args.kwargs == {
+            "obj_in": mock_create_schema,
+            "a_field": "a",
+            "b_field": "b",
+        }
+
+    async def test_update_executes_hooks_in_documented_order(
+        self, mock_repo, mock_async_session, mock_update_schema, mock_model, sample_uuid, hook_log
+    ):
+        service = UpdateService(mock_repo, hooks=(RecordingHook("a", hook_log), RecordingHook("b", hook_log)))
+        mock_repo.update_by_pk.side_effect = lambda *a, **k: hook_log.append("repo:update") or mock_model
+
+        await service.patch(mock_async_session, sample_uuid, mock_update_schema)
+
+        assert hook_log == [
+            "a:update_context:enter",
+            "b:update_context:enter",
+            "a:update_prepare_fields",
+            "b:update_prepare_fields",
+            "repo:update",
+            "b:update_post",
+            "a:update_post",
+            "b:update_context:exit",
+            "a:update_context:exit",
+        ]
+
+    async def test_delete_executes_hooks_in_documented_order(
+        self, mock_repo, mock_async_session, sample_uuid, hook_log
+    ):
+        service = DeleteService(mock_repo, hooks=(RecordingHook("a", hook_log), RecordingHook("b", hook_log)))
+        mock_repo.delete_by_pk.side_effect = lambda *a, **k: hook_log.append("repo:delete") or True
+
+        await service.delete(mock_async_session, sample_uuid)
+
+        assert hook_log == [
+            "a:delete_context:enter",
+            "b:delete_context:enter",
+            "repo:delete",
+            "b:delete_post",
+            "a:delete_post",
+            "b:delete_context:exit",
+            "a:delete_context:exit",
+        ]
+
+    async def test_get_executes_hooks_in_documented_order(
+        self, mock_repo, mock_async_session, mock_model, sample_uuid, hook_log
+    ):
+        service = GetService(mock_repo, hooks=(RecordingHook("a", hook_log), RecordingHook("b", hook_log)))
+        mock_repo.get_by_pk.side_effect = lambda *a, **k: hook_log.append("repo:get") or mock_model
+
+        await service.get(mock_async_session, sample_uuid)
+
+        assert hook_log == [
+            "a:get_context:enter",
+            "b:get_context:enter",
+            "repo:get",
+            "b:get_post",
+            "a:get_post",
+            "b:get_context:exit",
+            "a:get_context:exit",
+        ]
+
+    async def test_get_multi_executes_hooks_in_documented_order(
+        self, mock_repo, mock_async_session, paginated, hook_log
+    ):
+        service = GetMultiService(mock_repo, hooks=(RecordingHook("a", hook_log), RecordingHook("b", hook_log)))
+        mock_repo.get_multi.side_effect = lambda *a, **k: hook_log.append("repo:list") or paginated
+
+        await service.get_multi(mock_async_session)
+
+        assert hook_log == [
+            # Filters are collected inside the contexts, like every other
+            # operation's *_prepare_* step, so a hook can filter on what its own
+            # context set up.
+            "a:get_multi_context:enter",
+            "b:get_multi_context:enter",
+            "a:get_multi_prepare_filters",
+            "b:get_multi_prepare_filters",
+            "repo:list",
+            "b:get_multi_post",
+            "a:get_multi_post",
+            "b:get_multi_context:exit",
+            "a:get_multi_context:exit",
+        ]
+
+    async def test_create_post_hooks_compose_in_reverse_order(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """The last hook's create_post sees the repo object; the first sees its output."""
+
+        class TagHook(CreateHook):
+            def __init__(self, tag: str):
+                self.tag = tag
+
+            async def create_post(self, op, obj):
+                obj.name = f"{obj.name}|{self.tag}"
+                return obj
+
+        service = CreateService(mock_repo, hooks=(TagHook("a"), TagHook("b")))
+        mock_model.name = "base"
+        mock_repo.create.return_value = mock_model
+
+        result = await service.create(mock_async_session, mock_create_schema)
+
+        assert result.name == "base|b|a"
+
+
+class TestExecutorFailureIsolation:
+    """A hook that raises in its context aborts the operation cleanly."""
+
+    async def test_raising_create_context_blocks_repo_and_later_hooks(
+        self, mock_repo, mock_async_session, mock_create_schema, hook_log
+    ):
+        class RaisingHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                hook_log.append("raiser")
+                raise BoomError("nope")
+                yield  # pragma: no cover
+
+        class SpanHook(CreateHook):
+            def __init__(self, name: str):
+                self.name = name
+
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                hook_log.append(f"{self.name}:enter")
+                try:
+                    yield
+                finally:
+                    hook_log.append(f"{self.name}:exit")
+
+            def create_prepare_fields(self, op, data, fields):
+                hook_log.append(f"{self.name}:fields")
+                return fields
+
+        service = CreateService(mock_repo, hooks=(SpanHook("early"), RaisingHook(), SpanHook("late")))
+
+        with pytest.raises(BoomError):
+            await service.create(mock_async_session, mock_create_schema)
+
+        # repo never ran, the later hook's context never opened, the earlier one unwound
+        mock_repo.create.assert_not_called()
+        assert hook_log == ["early:enter", "raiser", "early:exit"]
+
+    async def test_raising_delete_context_multi_blocks_repo(self, mock_repo, mock_async_session, sample_uuid):
+        class RaisingHook(DeleteHook):
+            @asynccontextmanager
+            async def delete_context(self, op, pk):
+                raise BoomError("nope")
+                yield  # pragma: no cover
+
+        service = DeleteService(mock_repo, hooks=(RaisingHook(),))
+
+        with pytest.raises(BoomError):
+            await service.delete_multi(mock_async_session, [sample_uuid])
+
+        mock_repo.delete_by_pk_multi.assert_not_called()
+
+    async def test_raising_get_multi_context_blocks_repo(self, mock_repo, mock_async_session, hook_log):
+        class RaisingHook(GetMultiHook):
+            @asynccontextmanager
+            async def get_multi_context(self, op):
+                raise BoomError("nope")
+                yield  # pragma: no cover
+
+        class SpanHook(GetMultiHook):
+            @asynccontextmanager
+            async def get_multi_context(self, op):
+                hook_log.append("enter")
+                try:
+                    yield
+                finally:
+                    hook_log.append("exit")
+
+        service = GetMultiService(mock_repo, hooks=(SpanHook(), RaisingHook()))
+
+        with pytest.raises(BoomError):
+            await service.get_multi(mock_async_session)
+
+        mock_repo.get_multi.assert_not_called()
+        assert hook_log == ["enter", "exit"]
+
+    async def test_repo_failure_still_unwinds_every_context(
+        self, mock_repo, mock_async_session, mock_create_schema, hook_log
+    ):
+        service = CreateService(mock_repo, hooks=(RecordingHook("a", hook_log), RecordingHook("b", hook_log)))
+        mock_repo.create.side_effect = BoomError("db down")
+
+        with pytest.raises(BoomError):
+            await service.create(mock_async_session, mock_create_schema)
+
+        assert hook_log[-2:] == ["b:create_context:exit", "a:create_context:exit"]
+        assert "a:create_post" not in hook_log
+        assert "b:create_post" not in hook_log
+
+
+class TestOperationState:
+    """``Operation.state`` is the sanctioned place for per-call scratch data."""
+
+    async def test_state_is_shared_between_context_and_post_within_one_call(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        seen: list[Any] = []
+
+        class StatefulHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                op.state["captured"] = data.name
+                yield
+
+            async def create_post(self, op, obj):
+                seen.append(op.state["captured"])
+                return obj
+
+        service = CreateService(mock_repo, hooks=(StatefulHook(),))
+        mock_repo.create.return_value = mock_model
+
+        await service.create(mock_async_session, MockCreateSchema(name="first"))
+        await service.create(mock_async_session, MockCreateSchema(name="second"))
+
+        assert seen == ["first", "second"]
+
+    async def test_state_is_fresh_for_each_service_call(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """A value written in one call must not leak into the next."""
+        snapshots: list[dict] = []
+        ops: list[Operation] = []
+
+        class LeakyHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                snapshots.append(dict(op.state))
+                ops.append(op)
+                op.state["leak"] = "value"
+                yield
+
+        service = CreateService(mock_repo, hooks=(LeakyHook(),))
+        mock_repo.create.return_value = mock_model
+
+        await service.create(mock_async_session, mock_create_schema)
+        await service.create(mock_async_session, mock_create_schema)
+
+        assert snapshots == [{}, {}]
+        assert ops[0] is not ops[1]
+        assert ops[0].state is not ops[1].state
+
+    async def test_state_is_fresh_across_different_operations(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model, sample_uuid
+    ):
+        """create and get on the same service each get their own Operation.state."""
+        states: list[dict] = []
+
+        class BothHook(CreateHook, GetHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                states.append(op.state)
+                op.state["from_create"] = True
+                yield
+
+            @asynccontextmanager
+            async def get_context(self, op, pk):
+                states.append(op.state)
+                yield
+
+        service = FullService(mock_repo, hooks=(BothHook(),))
+        mock_repo.create.return_value = mock_model
+        mock_repo.get_by_pk.return_value = mock_model
+
+        await service.create(mock_async_session, mock_create_schema)
+        await service.get(mock_async_session, sample_uuid)
+
+        assert states[0] is not states[1]
+        assert states[1] == {}
+
+    async def test_state_is_shared_between_hooks_of_the_same_call(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model
+    ):
+        """All hooks in one call see the same Operation instance."""
+        seen: list[Any] = []
+
+        class WriterHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                op.state["written_by"] = "writer"
+                yield
+
+        class ReaderHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                seen.append(op.state.get("written_by"))
+                yield
+
+        service = CreateService(mock_repo, hooks=(WriterHook(), ReaderHook()))
+        mock_repo.create.return_value = mock_model
+
+        await service.create(mock_async_session, mock_create_schema)
+
+        assert seen == ["writer"]
+
+    async def test_create_multi_shares_one_operation_across_items(self, mock_repo, mock_async_session, mock_model):
+        """The per-item fallback reuses the same Operation (hence the same state)."""
+        ops: list[Operation] = []
+
+        class CountingHook(CreateHook):
+            @asynccontextmanager
+            async def create_context(self, op, data):
+                ops.append(op)
+                op.state["count"] = op.state.get("count", 0) + 1
+                yield
+
+        service = CreateService(mock_repo, hooks=(CountingHook(),))
+        mock_repo.create_multi.return_value = [mock_model, mock_model]
+
+        await service.create_multi(mock_async_session, [MockCreateSchema(name="A"), MockCreateSchema(name="B")])
+
+        assert len(ops) == 2
+        assert ops[0] is ops[1]
+        assert ops[0].state["count"] == 2
+
+
+# =============================================================================
+# Response schema sanity (delete responses produced by the service)
+# =============================================================================
+
+
+class TestDeleteResponseShapes:
+    async def test_delete_returns_delete_response(self, mock_repo, mock_async_session, sample_uuid):
+        service = DeleteService(mock_repo)
+        mock_repo.delete_by_pk.return_value = True
+
+        result = await service.delete(mock_async_session, sample_uuid)
+
+        assert isinstance(result, DeleteResponse)
+
+    async def test_delete_multi_returns_multiple_delete_response(self, mock_repo, mock_async_session, sample_uuid):
+        service = DeleteService(mock_repo)
+        mock_repo.delete_by_pk_multi.return_value = 1
+
+        result = await service.delete_multi(mock_async_session, [sample_uuid])
+
+        assert isinstance(result, MultipleDeleteResponse)

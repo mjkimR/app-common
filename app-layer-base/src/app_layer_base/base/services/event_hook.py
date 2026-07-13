@@ -2,155 +2,123 @@ import abc
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app_layer_base.base.repos.base import PrimaryKeyType
 from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
-from app_layer_base.base.services.base import (
+from app_layer_base.base.services.hooks import (
     BaseContextKwargs,
-    BaseCreateHooks,
-    BaseDeleteHooks,
-    BaseUpdateHooks,
+    CreateHook,
+    DeleteHook,
+    Operation,
+    UpdateHook,
 )
 
 
-class DomainEventHooksMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](
-    BaseCreateHooks[ModelType, TContextKwargs],
-    BaseUpdateHooks[ModelType, TContextKwargs],
-    BaseDeleteHooks[TContextKwargs],
+class DomainEventHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    CreateHook[ModelType, TContextKwargs],
+    UpdateHook[ModelType, TContextKwargs],
+    DeleteHook[TContextKwargs],
     metaclass=abc.ABCMeta,
 ):
     """
-    A base hook that publishes domain events after CUD (Create, Update, Delete) operations are completed.
-    By default, it publishes the resource ID to topics such as 'ModelName.created'.
+    Publishes a domain event after each CUD operation, e.g. 'Book.created'.
+
+    Bulk operations publish one aggregate event ('Book.created_multi') instead of
+    one per item -- that override replaces only this hook's per-item publishing.
+    Other hooks still run per item.
     """
 
     @abc.abstractmethod
     async def publish_event(self, topic: str, payload: dict[str, Any]) -> None:
-        # Example: await self.event_bus.publish(topic, payload)
-        pass
+        """[Override Required] e.g. await self.event_bus.publish(topic, payload)"""
 
     # ============================================================
     # PK Helpers
     # ============================================================
 
-    def _get_pk_from_obj(self, obj: ModelType) -> PrimaryKeyType:
+    def _get_pk_from_obj(self, op: Operation[TContextKwargs], obj: ModelType) -> PrimaryKeyType:
         """Extracts the primary key value(s) from a given model object dynamically."""
-        pk_cols = self.repo.primary_keys
+        pk_cols = op.repo.primary_keys
         if len(pk_cols) == 1:
             return getattr(obj, pk_cols[0].key)
         return tuple(getattr(obj, col.key) for col in pk_cols)
 
-    def _pk_to_string(self, pk: PrimaryKeyType) -> str:
+    def _pk_to_string(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> str:
+        """Composite keys are comma-separated."""
+        return ",".join(op.repo.normalize_pk_as_str(pk))
+
+    def payload(
+        self,
+        op: Operation[TContextKwargs],
+        event_type: str,
+        pk: PrimaryKeyType,
+        obj: ModelType | None = None,
+    ) -> dict[str, Any]:
         """
-        Converts a single or composite primary key into a string for event payloads.
-        Composite keys will be comma-separated.
+        The event payload.
+
+        Defaults to the resource id and event type. Override to add more.
         """
-        pk_tuple = self.repo.normalize_pk_as_str(pk)
-        return ",".join(pk_tuple)
+        return {
+            "resource_id": self._pk_to_string(op, pk),
+            "resource_type": op.repo.model_name(),
+            "event_type": event_type,
+        }
+
+    def _bulk_payload(
+        self, op: Operation[TContextKwargs], event_type: str, pks: Sequence[PrimaryKeyType]
+    ) -> dict[str, Any]:
+        return {
+            "resource_ids": [self._pk_to_string(op, pk) for pk in pks],
+            "resource_type": op.repo.model_name(),
+            "event_type": event_type,
+        }
 
     # ============================================================
     # Hooks
     # ============================================================
 
-    def _get_event_payload(
-        self, event_type: str, obj_pk: PrimaryKeyType, obj: ModelType | None = None
-    ) -> dict[str, Any]:
-        """
-        Get the event payload.
-
-        The default payload only includes the resource ID and event type.
-        If necessary, override this method in a child class to include more information.
-        """
-        return {
-            "resource_id": self._pk_to_string(obj_pk),
-            "resource_type": self.repo.model_name(),
-            "event_type": event_type,
-        }
-
-    async def _post_create(self, session: AsyncSession, obj: ModelType, context: TContextKwargs) -> ModelType:
-        """
-        Publish a domain event after an object is created.
-        """
-        obj = await super()._post_create(session, obj, context)
-        topic = f"{self.repo.model_name()}.created"
-
-        obj_pk = self._get_pk_from_obj(obj)
-        payload = self._get_event_payload("created", obj_pk, obj)
-        await self.publish_event(topic, payload)
-
+    async def create_post(self, op: Operation[TContextKwargs], obj: ModelType) -> ModelType:
+        pk = self._get_pk_from_obj(op, obj)
+        await self.publish_event(f"{op.repo.model_name()}.created", self.payload(op, "created", pk, obj))
         return obj
 
-    async def _post_create_multi(
-        self, session: AsyncSession, objs: Sequence[ModelType], context: TContextKwargs
-    ) -> Sequence[ModelType]:
-        """
-        Publish a single bulk domain event after multiple objects are created.
-        """
-        objs = await super()._post_create_multi(session, objs, context)
+    async def create_post_multi(self, op: Operation[TContextKwargs], objs: Sequence[ModelType]) -> Sequence[ModelType]:
+        """One aggregate event instead of one per item."""
         if objs:
-            topic = f"{self.repo.model_name()}.created_multi"
-            payload = {
-                "resource_ids": [self._pk_to_string(self._get_pk_from_obj(obj)) for obj in objs],
-                "resource_type": self.repo.model_name(),
-                "event_type": "created_multi",
-            }
-            await self.publish_event(topic, payload)
+            pks = [self._get_pk_from_obj(op, obj) for obj in objs]
+            await self.publish_event(
+                f"{op.repo.model_name()}.created_multi",
+                self._bulk_payload(op, "created_multi", pks),
+            )
         return objs
 
-    async def _post_update(
-        self, session: AsyncSession, obj: ModelType | None, context: TContextKwargs, partial: bool = True
+    async def update_post(
+        self, op: Operation[TContextKwargs], obj: ModelType | None, partial: bool = True
     ) -> ModelType | None:
-        """
-        Publish a domain event after an object is updated.
-        """
-        obj = await super()._post_update(session, obj, context, partial=partial)
         if obj is None:
             return None
 
-        topic = f"{self.repo.model_name()}.updated"
-        obj_pk = self._get_pk_from_obj(obj)
-        payload = self._get_event_payload("updated", obj_pk, obj)
-        await self.publish_event(topic, payload)
-
+        pk = self._get_pk_from_obj(op, obj)
+        await self.publish_event(f"{op.repo.model_name()}.updated", self.payload(op, "updated", pk, obj))
         return obj
 
-    async def _post_delete(
-        self,
-        session: AsyncSession,
-        obj_pk: PrimaryKeyType,
-        result: DeleteResponse,
-        context: TContextKwargs,
+    async def delete_post(
+        self, op: Operation[TContextKwargs], pk: PrimaryKeyType, result: DeleteResponse
     ) -> DeleteResponse:
-        """
-        Publish a domain event after an object is deleted.
-        """
-        result = await super()._post_delete(session, obj_pk, result, context)
-
         if result.success:
-            topic = f"{self.repo.model_name()}.deleted"
-            payload = self._get_event_payload("deleted", obj_pk)
-            await self.publish_event(topic, payload)
-
+            await self.publish_event(f"{op.repo.model_name()}.deleted", self.payload(op, "deleted", pk))
         return result
 
-    async def _post_delete_multi(
+    async def delete_post_multi(
         self,
-        session: AsyncSession,
-        obj_pks: Sequence[PrimaryKeyType],
+        op: Operation[TContextKwargs],
+        pks: Sequence[PrimaryKeyType],
         result: MultipleDeleteResponse,
-        context: TContextKwargs,
     ) -> MultipleDeleteResponse:
-        """
-        Publish a single bulk domain event after multiple objects are deleted.
-        """
-        result = await super()._post_delete_multi(session, obj_pks, result, context)
+        """One aggregate event instead of one per item."""
         if result.deleted_count > 0:
-            topic = f"{self.repo.model_name()}.deleted_multi"
-            payload = {
-                "resource_ids": [self._pk_to_string(pk) for pk in obj_pks],
-                "resource_type": self.repo.model_name(),
-                "event_type": "deleted_multi",
-            }
-            await self.publish_event(topic, payload)
+            await self.publish_event(
+                f"{op.repo.model_name()}.deleted_multi",
+                self._bulk_payload(op, "deleted_multi", pks),
+            )
         return result

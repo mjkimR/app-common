@@ -1,0 +1,241 @@
+"""
+Hook protocols for service operations.
+
+A hook implements only its own behaviour and never calls the next hook. The
+service executor (see ``services/base.py``) owns the chain: it enters every
+hook's context in declaration order, runs the repository call, then unwinds in
+reverse. A hook therefore cannot break the chain for the hooks after it.
+
+The bulk variants (``*_multi``) exist so a hook can replace *its own* per-item
+behaviour with a single bulk query -- e.g. checking a parent row once instead of
+once per item. Overriding a bulk method never affects the other hooks: the
+executor asks each hook separately, and any hook that has not overridden the
+bulk method still gets its single-item hook applied to every item.
+
+Per-operation state belongs on ``Operation.state``, never on the hook instance:
+hooks may be shared, and the per-item fallback reuses the same hook object for
+every item.
+"""
+
+from collections.abc import AsyncIterator, Sequence
+from contextlib import AsyncExitStack, asynccontextmanager
+from dataclasses import dataclass, field
+from typing import Any, TypedDict
+
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app_layer_base.base.repos.base import BaseRepository, PrimaryKeyType
+from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
+from app_layer_base.base.schemas.paginated import PaginatedList
+
+
+class BaseContextKwargs(TypedDict):
+    """Base context kwargs (empty, for extension)."""
+
+    pass
+
+
+@dataclass(slots=True)
+class Operation[TContextKwargs: BaseContextKwargs]:
+    """
+    Everything a hook needs for one service call.
+
+    ``state`` is scratch space scoped to a single service call. A hook that needs
+    to carry a value from its context hook to its post hook must put it here --
+    storing it on the hook instance leaks across calls and across items.
+    """
+
+    session: AsyncSession
+    context: TContextKwargs
+    repo: BaseRepository
+    state: dict[str, Any] = field(default_factory=dict)
+
+
+# ============================================================
+# Create
+# ============================================================
+
+
+class CreateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+    """Hook for create / create_multi."""
+
+    @asynccontextmanager
+    async def create_context(self, op: Operation[TContextKwargs], data: BaseModel) -> AsyncIterator[None]:
+        """Wraps the create. Validate before the yield, clean up after it."""
+        yield
+
+    def create_prepare_fields(
+        self, op: Operation[TContextKwargs], data: BaseModel, fields: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Add or rewrite the extra column values passed to ``repo.create``."""
+        return fields
+
+    async def create_post(self, op: Operation[TContextKwargs], obj: ModelType) -> ModelType:
+        """Runs after the row is created, inside every hook's context."""
+        return obj
+
+    @asynccontextmanager
+    async def create_context_multi(
+        self, op: Operation[TContextKwargs], data_list: Sequence[BaseModel]
+    ) -> AsyncIterator[None]:
+        """
+        Bulk form of ``create_context``.
+
+        The default applies this hook's own ``create_context`` to every item.
+        Override only to replace that with a bulk-level equivalent.
+        """
+        async with AsyncExitStack() as stack:
+            for data in data_list:
+                await stack.enter_async_context(self.create_context(op, data))
+            yield
+
+    async def create_post_multi(self, op: Operation[TContextKwargs], objs: Sequence[ModelType]) -> Sequence[ModelType]:
+        """
+        Bulk form of ``create_post``.
+
+        The default applies this hook's own ``create_post`` to every item.
+        Override only to replace that with a bulk-level equivalent.
+        """
+        return [await self.create_post(op, obj) for obj in objs]
+
+
+# ============================================================
+# Update
+# ============================================================
+
+
+class UpdateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+    """Hook for put / patch."""
+
+    @asynccontextmanager
+    async def update_context(
+        self,
+        op: Operation[TContextKwargs],
+        pk: PrimaryKeyType,
+        data: BaseModel,
+        partial: bool = True,
+    ) -> AsyncIterator[None]:
+        """Wraps the update. Validate before the yield, clean up after it."""
+        yield
+
+    def update_prepare_fields(
+        self,
+        op: Operation[TContextKwargs],
+        data: BaseModel,
+        fields: dict[str, Any],
+        partial: bool = True,
+    ) -> dict[str, Any]:
+        """Add or rewrite the extra column values passed to ``repo.update_by_pk``."""
+        return fields
+
+    async def update_post(
+        self,
+        op: Operation[TContextKwargs],
+        obj: ModelType | None,
+        partial: bool = True,
+    ) -> ModelType | None:
+        """Runs after the row is updated. ``obj`` is None when the row did not exist."""
+        return obj
+
+
+# ============================================================
+# Delete
+# ============================================================
+
+
+class DeleteHook[TContextKwargs: BaseContextKwargs]:
+    """Hook for delete / delete_multi."""
+
+    @asynccontextmanager
+    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+        """Wraps the delete. The row still exists before the yield, not after it."""
+        yield
+
+    async def delete_post(
+        self, op: Operation[TContextKwargs], pk: PrimaryKeyType, result: DeleteResponse
+    ) -> DeleteResponse:
+        """Runs after the row is deleted, inside every hook's context."""
+        return result
+
+    @asynccontextmanager
+    async def delete_context_multi(
+        self, op: Operation[TContextKwargs], pks: Sequence[PrimaryKeyType]
+    ) -> AsyncIterator[None]:
+        """
+        Bulk form of ``delete_context``.
+
+        The default applies this hook's own ``delete_context`` to every item.
+        Override only to replace that with a bulk-level equivalent.
+        """
+        async with AsyncExitStack() as stack:
+            for pk in pks:
+                await stack.enter_async_context(self.delete_context(op, pk))
+            yield
+
+    async def delete_post_multi(
+        self,
+        op: Operation[TContextKwargs],
+        pks: Sequence[PrimaryKeyType],
+        result: MultipleDeleteResponse,
+    ) -> MultipleDeleteResponse:
+        """
+        Bulk form of ``delete_post``.
+
+        MultipleDeleteResponse carries no per-item outcome, so the default only
+        applies this hook's ``delete_post`` per item when the count proves every
+        requested pk was deleted. Override to handle partial success.
+        """
+        if result.deleted_count == len(pks):
+            for pk in pks:
+                await self.delete_post(op, pk, DeleteResponse(success=True, identity=pk))
+        return result
+
+
+# ============================================================
+# Get (single)
+# ============================================================
+
+
+class GetHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+    """Hook for get."""
+
+    @asynccontextmanager
+    async def get_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+        yield
+
+    async def get_post(self, op: Operation[TContextKwargs], obj: ModelType | None) -> ModelType | None:
+        return obj
+
+
+# ============================================================
+# Get multi (list)
+# ============================================================
+
+
+class GetMultiHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+    """Hook for get_multi."""
+
+    @asynccontextmanager
+    async def get_multi_context(self, op: Operation[TContextKwargs]) -> AsyncIterator[None]:
+        yield
+
+    def get_multi_prepare_filters(self, op: Operation[TContextKwargs]) -> list[Any]:
+        """Extra WHERE conditions ANDed into the list query."""
+        return []
+
+    async def get_multi_post(
+        self, op: Operation[TContextKwargs], result: PaginatedList[ModelType]
+    ) -> PaginatedList[ModelType]:
+        return result
+
+
+__all__ = [
+    "BaseContextKwargs",
+    "CreateHook",
+    "DeleteHook",
+    "GetHook",
+    "GetMultiHook",
+    "Operation",
+    "UpdateHook",
+]

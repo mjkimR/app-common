@@ -4,116 +4,93 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import and_
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, not_
 from sqlalchemy.sql.expression import ColumnElement
 
-from app_layer_base.base.exceptions.basic import BadRequestException
+from app_layer_base.base.exceptions.basic import ConflictException
 from app_layer_base.base.repos.base import PrimaryKeyType
-from app_layer_base.base.services.base import (
+from app_layer_base.base.services.hooks import (
     BaseContextKwargs,
-    BaseCreateHooks,
-    BaseUpdateHooks,
+    CreateHook,
+    Operation,
+    UpdateHook,
 )
 
 
-class UniqueConstraintHooksMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](
-    BaseCreateHooks[ModelType, TContextKwargs], BaseUpdateHooks[ModelType, TContextKwargs], metaclass=abc.ABCMeta
+class UniqueConstraintHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    CreateHook[ModelType, TContextKwargs],
+    UpdateHook[ModelType, TContextKwargs],
+    metaclass=abc.ABCMeta,
 ):
     """
-    Async Generator-based Unique Constraint Check Hook.
+    Checks for duplicates before create and update.
 
-    This mixin allows services to define unique constraints using a generator pattern.
-    It automatically checks for duplicates before Create and Update operations.
+    Subclass and implement ``constraints`` to declare what must be unique:
 
-    Usage Example:
-        class UserService(UniqueConstraintHooks, ...):
-            async def _unique_constraints(
-                self,
-                obj_data: Union[UserCreate, UserUpdate],
-                context: TContextKwargs
-            ) -> AsyncIterator[Tuple[ColumnElement[bool], str]]:
-                if obj_data.email:
-                    yield User.email == obj_data.email, "Email already exists."
+        class UserUniqueHook(UniqueConstraintHook[User, BaseContextKwargs]):
+            async def constraints(self, op, data):
+                if data.email:
+                    yield User.email == data.email, "Email already exists."
+
+        class UserService(BaseCreateServiceMixin, ...):
+            hooks = (UserUniqueHook(),)
     """
 
     @abc.abstractmethod
-    async def _unique_constraints(
+    async def constraints(
         self,
-        obj_data: BaseModel,
-        context: TContextKwargs,
+        op: Operation[TContextKwargs],
+        data: BaseModel,
     ) -> AsyncIterator[tuple[ColumnElement[bool], str]]:
         """
-        [Override Required] Yields SQLAlchemy conditions to check for uniqueness.
+        [Override Required] Yields (SQLAlchemy condition, error message) pairs.
 
-        Args:
-            obj_data: The Pydantic schema data (Create or Update).
-            context: The context dictionary.
-
-        Yields:
-            A tuple containing the (SQLAlchemy Condition, Error Message).
+        A row matching any yielded condition makes the operation a duplicate.
         """
         # This is an async generator abstract method.
         # Subclasses must implement this method and use 'yield'.
-        yield  # type: ignore (abstract async generator)
+        yield  # type: ignore[misc]
 
-    async def _check_constraint(
+    def _is_not(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> ColumnElement[bool]:
+        """'Any row but this one' -- built from the model's real primary key, single or composite."""
+        pk_cols = op.repo.primary_keys
+        pk_values = op.repo.normalize_pk(pk)
+        return not_(and_(*[col == value for col, value in zip(pk_cols, pk_values, strict=True)]))
+
+    async def _check(
         self,
-        session: AsyncSession,
-        condition: ColumnElement[bool],
-        message: str,
-        exclude_id: Any = None,
+        op: Operation[TContextKwargs],
+        data: BaseModel,
+        exclude_pk: PrimaryKeyType | None = None,
     ) -> None:
-        """Executes the DB query to check if the unique condition is violated."""
-        query_condition = and_(condition, self.repo.model.id != exclude_id) if exclude_id is not None else condition
-
-        is_exists = await self.repo.exists(session, query_condition)
-        if is_exists:
-            raise BadRequestException(message, status_code=409)
-
-    async def _process_constraints(
-        self,
-        session: AsyncSession,
-        constraints: AsyncIterator[tuple[ColumnElement[bool], str]],
-        exclude_id: Any = None,
-    ) -> None:
-        """Iterates over the constraints generator and performs checks."""
-        async for item in constraints:
+        async for item in self.constraints(op, data):
             if isinstance(item, tuple):
                 condition, message = item
             else:
                 condition = item
                 message = "Data already exists."  # Default fallback message
 
-            await self._check_constraint(session, condition, message, exclude_id)
+            if exclude_pk is not None:
+                condition = and_(condition, self._is_not(op, exclude_pk))
+            if await op.repo.exists(op.session, condition):
+                raise ConflictException(message)
 
     # ============================================================
-    # Hooks Implementation
+    # Hooks
     # ============================================================
 
     @asynccontextmanager
-    async def _context_create(self, session: AsyncSession, obj_data: BaseModel, context: TContextKwargs):
-        """
-        Extends the create context to run unique constraint checks.
-        """
-        async with super()._context_create(session, obj_data, context):
-            constraints = self._unique_constraints(obj_data, context)
-            await self._process_constraints(session, constraints)
-            yield
+    async def create_context(self, op: Operation[TContextKwargs], data: BaseModel) -> AsyncIterator[None]:
+        await self._check(op, data)
+        yield
 
     @asynccontextmanager
-    async def _context_update(
+    async def update_context(
         self,
-        session: AsyncSession,
-        obj_pk: PrimaryKeyType,
-        obj_data: BaseModel,
-        context: TContextKwargs,
+        op: Operation[TContextKwargs],
+        pk: PrimaryKeyType,
+        data: BaseModel,
         partial: bool = True,
-    ):
-        """
-        Extends the update context to run unique constraint checks, excluding the current object.
-        """
-        async with super()._context_update(session, obj_pk, obj_data, context, partial=partial):
-            constraints = self._unique_constraints(obj_data, context)
-            await self._process_constraints(session, constraints, exclude_id=obj_pk)
-            yield
+    ) -> AsyncIterator[None]:
+        await self._check(op, data, exclude_pk=pk)
+        yield

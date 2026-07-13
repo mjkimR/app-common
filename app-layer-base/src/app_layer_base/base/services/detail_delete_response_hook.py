@@ -1,42 +1,67 @@
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app_layer_base.base.repos.base import PrimaryKeyType
-from app_layer_base.base.schemas.delete_resp import DeleteResponse
-from app_layer_base.base.services.base import BaseContextKwargs, BaseDeleteHooks
+from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
+from app_layer_base.base.services.hooks import BaseContextKwargs, DeleteHook, Operation
 
 
-class DetailDeleteResponseHookMixin[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseDeleteHooks[TContextKwargs]):
-    _delete_represent_text: str | None = None
+class DetailDeleteResponseHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
+    DeleteHook[TContextKwargs], metaclass=ABCMeta
+):
+    """
+    Puts a human-readable representation of the deleted row on the response.
+
+    The row is read before the delete and the text is stashed on the operation,
+    keyed by pk -- not on the hook -- so that delete_multi gives each item its
+    own representation and nothing leaks between calls.
+    """
+
+    _STATE_KEY = "detail_delete_represent_text"
 
     @abstractmethod
-    def _parse_delete_represent_text(self, obj: ModelType) -> str:
-        pass
+    def represent(self, obj: ModelType) -> str:
+        """[Override Required] Render the object being deleted as a string."""
 
-    def _set_delete_represent_text(self, text: str) -> None:
-        self._delete_represent_text = text
+    def _texts(self, op: Operation[TContextKwargs]) -> dict[str, str]:
+        return op.state.setdefault(self._STATE_KEY, {})
 
     @asynccontextmanager
-    async def _context_delete(self, session: AsyncSession, obj_pk: PrimaryKeyType, context: TContextKwargs):
-        async with super()._context_delete(session, obj_pk, context):
-            obj = await self.repo.get_by_pk(session, pk=obj_pk)
-            if obj:
-                represent_text = self._parse_delete_represent_text(obj)
-                self._set_delete_represent_text(represent_text)
-            yield
+    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+        obj = await op.repo.get_by_pk(op.session, pk=pk)
+        if obj is not None:
+            self._texts(op)[str(pk)] = self.represent(obj)
+        yield
 
-    async def _post_delete(
-        self,
-        session: AsyncSession,
-        obj_pk: PrimaryKeyType,
-        result: DeleteResponse,
-        context: TContextKwargs,
+    async def delete_post(
+        self, op: Operation[TContextKwargs], pk: PrimaryKeyType, result: DeleteResponse
     ) -> DeleteResponse:
-        """Hook executed after delete."""
-        result = await super()._post_delete(session, obj_pk, result, context)
-        if self._delete_represent_text:
-            result.representation = self._delete_represent_text
+        text = self._texts(op).get(str(pk))
+        if text is not None:
+            result.representation = text
+        return result
+
+    # ------------------------------------------------------------------
+    # delete_multi: this hook has nothing to say.
+    #
+    # MultipleDeleteResponse has no per-item representation field, so reading
+    # every row just to render text the caller can never see would be N queries
+    # for nothing. Override these two if you want bulk representations somewhere
+    # (MultipleDeleteResponse.meta is the natural home).
+    # ------------------------------------------------------------------
+
+    @asynccontextmanager
+    async def delete_context_multi(
+        self, op: Operation[TContextKwargs], pks: Sequence[PrimaryKeyType]
+    ) -> AsyncIterator[None]:
+        yield
+
+    async def delete_post_multi(
+        self,
+        op: Operation[TContextKwargs],
+        pks: Sequence[PrimaryKeyType],
+        result: MultipleDeleteResponse,
+    ) -> MultipleDeleteResponse:
         return result

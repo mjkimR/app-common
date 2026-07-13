@@ -5,6 +5,7 @@ Integration tests for base Repository and Service with real DB.
 import uuid
 
 import pytest
+from app_layer_base.base.exceptions.basic import NotFoundException
 from app_layer_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
 from app_layer_base.base.repos.base import BaseRepository
 from app_layer_base.base.repos.query_options import ListQueryOptions
@@ -15,8 +16,8 @@ from app_layer_base.base.services.base import (
     BaseGetServiceMixin,
     BaseUpdateServiceMixin,
 )
-from app_layer_base.base.services.exists_check_hook import ExistsCheckHooksMixin
-from app_layer_base.base.services.user_aware_hook import UserAwareHooksMixin, UserContextKwargs
+from app_layer_base.base.services.exists_check_hook import ExistsCheckHook
+from app_layer_base.base.services.user_aware_hook import UserAwareHook, UserContextKwargs
 from pydantic import BaseModel
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -59,11 +60,11 @@ class ItemService(
     BaseGetServiceMixin,
     BaseGetMultiServiceMixin,
     BaseDeleteServiceMixin,
-    ExistsCheckHooksMixin,
-    UserAwareHooksMixin,
 ):
     def __init__(self, repo: ItemRepository):
         self._repo = repo
+        # Existence is checked first, so a missing row fails before anything else runs.
+        self.hooks = (ExistsCheckHook(), UserAwareHook())
 
     @property
     def repo(self):
@@ -125,8 +126,6 @@ async def test_exists_check_hook_integration(session):
     repo = ItemRepository()
     service = ItemService(repo)
     non_existent_id = uuid.uuid4()
-
-    from app_layer_base.base.exceptions.basic import NotFoundException
 
     with pytest.raises(NotFoundException):
         await service.patch(session, non_existent_id, ItemUpdate(name="Fail"), context={"user_id": uuid.uuid4()})

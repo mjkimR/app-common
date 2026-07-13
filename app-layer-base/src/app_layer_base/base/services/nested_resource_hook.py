@@ -1,21 +1,20 @@
-from abc import abstractmethod
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any, Required
 
 from pydantic import BaseModel
 from sqlalchemy import tuple_
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_layer_base.base.exceptions.basic import NotFoundException
 from app_layer_base.base.repos.base import BaseRepository, PrimaryKeyType
-from app_layer_base.base.services.base import (
+from app_layer_base.base.services.hooks import (
     BaseContextKwargs,
-    BaseCreateHooks,
-    BaseDeleteHooks,
-    BaseGetHooks,
-    BaseGetMultiHooks,
-    BaseUpdateHooks,
+    CreateHook,
+    DeleteHook,
+    GetHook,
+    GetMultiHook,
+    Operation,
+    UpdateHook,
 )
 
 
@@ -25,207 +24,184 @@ class NestedResourceContextKwargs(BaseContextKwargs):
     parent_id: Required[PrimaryKeyType]
 
 
-class NestedResourceHooksMixin[ModelType: Any, TNestedResourceContextKwargs: NestedResourceContextKwargs](
-    BaseCreateHooks[ModelType, TNestedResourceContextKwargs],
-    BaseUpdateHooks[ModelType, TNestedResourceContextKwargs],
-    BaseGetHooks[ModelType, TNestedResourceContextKwargs],
-    BaseGetMultiHooks[ModelType, TNestedResourceContextKwargs],
-    BaseDeleteHooks[TNestedResourceContextKwargs],
+class NestedResourceHook[ModelType: Any, TNestedResourceContextKwargs: NestedResourceContextKwargs](
+    CreateHook[ModelType, TNestedResourceContextKwargs],
+    UpdateHook[ModelType, TNestedResourceContextKwargs],
+    GetHook[ModelType, TNestedResourceContextKwargs],
+    GetMultiHook[ModelType, TNestedResourceContextKwargs],
+    DeleteHook[TNestedResourceContextKwargs],
 ):
-    @property
-    @abstractmethod
-    def parent_repo(self) -> BaseRepository:
-        """The repository of the parent resource."""
-        pass
+    """
+    Scopes every operation to ``context["parent_id"]``.
 
-    @property
-    def fk_name(self) -> str | Sequence[str]:
+    Creates get the foreign key injected; reads, updates and deletes are refused
+    when the row belongs to a different parent; lists are filtered by parent.
+
+        class ChapterService(BaseCreateServiceMixin, ...):
+            @cached_property
+            def hooks(self):
+                return (NestedResourceHook(self.book_repo, fk_name="book_id"),)
+    """
+
+    def __init__(self, parent_repo: BaseRepository, fk_name: str | Sequence[str] = "parent_id"):
         """
-        The name of the foreign key field(s) in the child model that references the parent.
-        Returns a string for a single foreign key, or a sequence of strings for composite foreign keys.
+        Args:
+            parent_repo: repository of the parent resource.
+            fk_name: foreign key field(s) on the child model pointing at the parent.
+                A string for a single key, a sequence for a composite key.
         """
-        return "parent_id"
+        self.parent_repo = parent_repo
+        self.fk_name = fk_name
 
     # ============================================================
     # Helpers
     # ============================================================
 
-    def _get_parent_pk_from_obj(self, obj: ModelType) -> tuple[str, ...]:
-        """
-        Extracts the parent's PK value(s) from the child object and
-        returns them as a normalized string tuple for safe comparison.
-        """
+    def _parent_pk_of(self, obj: ModelType) -> tuple[str, ...]:
+        """The object's parent pk, normalized to a string tuple for safe comparison."""
         if isinstance(self.fk_name, str):
-            extracted_vals = getattr(obj, self.fk_name)
+            extracted = getattr(obj, self.fk_name)
         else:
-            extracted_vals = [getattr(obj, fk) for fk in self.fk_name]
+            extracted = [getattr(obj, fk) for fk in self.fk_name]
+        return self.parent_repo.normalize_pk_as_str(extracted)
 
-        return self.parent_repo.normalize_pk_as_str(extracted_vals)
-
-    async def _check_parent_exists(self, session: AsyncSession, parent_id: PrimaryKeyType) -> None:
-        """Check if parent exists, raise NotFoundException if not."""
-        if not await self.parent_repo.get_by_pk(session, parent_id):
+    async def _check_parent_exists(
+        self, op: Operation[TNestedResourceContextKwargs], parent_id: PrimaryKeyType
+    ) -> None:
+        if not await self.parent_repo.get_by_pk(op.session, parent_id):
             raise NotFoundException(log_message=f"Parent {self.parent_repo.model_repr(parent_id)} not found.")
 
-    async def _ensure_ownership(self, session: AsyncSession, obj_pk: PrimaryKeyType, parent_id: PrimaryKeyType):
+    async def _ensure_ownership(self, op: Operation[TNestedResourceContextKwargs], pk: PrimaryKeyType) -> None:
         """
-        Ensure the object belongs to the specific parent.
-        This prevents accessing/modifying a child object through a wrong parent URL.
+        Refuse to touch a child through the wrong parent.
+
+        A missing row is left alone -- that is ExistsCheckHook's call to make.
         """
-        obj = await self.repo.get_by_pk(session, obj_pk)
+        obj = await op.repo.get_by_pk(op.session, pk)
         if not obj:
             return
 
-        # Normalize both keys as string tuples to avoid type mismatches (e.g., UUID vs str)
-        obj_parent_pk_normalized = self._get_parent_pk_from_obj(obj)
-        parent_id_normalized = self.parent_repo.normalize_pk_as_str(parent_id)
-
-        if obj_parent_pk_normalized != parent_id_normalized:
+        parent_id = op.context["parent_id"]
+        if self._parent_pk_of(obj) != self.parent_repo.normalize_pk_as_str(parent_id):
             raise NotFoundException(
-                log_message=f"{self.repo.model_repr(obj_pk)} does not belong to {self.parent_repo.model_repr(parent_id)}"
+                log_message=f"{op.repo.model_repr(pk)} does not belong to {self.parent_repo.model_repr(parent_id)}"
             )
 
     # ============================================================
-    # Create Hooks
+    # Create
     # ============================================================
 
     @asynccontextmanager
-    async def _context_create(self, session: AsyncSession, obj_data: BaseModel, context: TNestedResourceContextKwargs):
-        async with super()._context_create(session, obj_data, context):
-            parent_id = context["parent_id"]
-            await self._check_parent_exists(session, parent_id)
-            yield
+    async def create_context(self, op: Operation[TNestedResourceContextKwargs], data: BaseModel) -> AsyncIterator[None]:
+        await self._check_parent_exists(op, op.context["parent_id"])
+        yield
 
     @asynccontextmanager
-    async def _context_create_multi(
-        self, session: AsyncSession, obj_data_list: Sequence[BaseModel], context: TNestedResourceContextKwargs
-    ):
-        """
-        Check parent existence before delegating to the chained Mixins.
-        """
-        parent_id = context["parent_id"]
-        await self._check_parent_exists(session, parent_id)
-        async with super()._context_create_multi(session, obj_data_list, context):
-            yield
+    async def create_context_multi(
+        self, op: Operation[TNestedResourceContextKwargs], data_list: Sequence[BaseModel]
+    ) -> AsyncIterator[None]:
+        """Replaces this hook's per-item parent lookup with a single one."""
+        await self._check_parent_exists(op, op.context["parent_id"])
+        yield
 
-    def _prepare_create_fields(
-        self, obj_data: BaseModel, context: TNestedResourceContextKwargs, **update_fields: Any
+    def create_prepare_fields(
+        self,
+        op: Operation[TNestedResourceContextKwargs],
+        data: BaseModel,
+        fields: dict[str, Any],
     ) -> dict[str, Any]:
-        """Inject parent_id(s) into the creation data."""
-        data = super()._prepare_create_fields(obj_data, context, **update_fields)
-        parent_id = context["parent_id"]
+        """Inject the parent key(s) into the row being created."""
+        fields = dict(fields)
+        parent_id = op.context["parent_id"]
 
         if isinstance(self.fk_name, str):
-            data[self.fk_name] = parent_id
+            fields[self.fk_name] = parent_id
         else:
-            # Map composite parent keys to their corresponding foreign key fields
-            normalized_parent_id = self.parent_repo.normalize_pk(parent_id)
-            for fk, p_id_val in zip(self.fk_name, normalized_parent_id, strict=False):
-                data[fk] = p_id_val
+            normalized = self.parent_repo.normalize_pk(parent_id)
+            for fk, value in zip(self.fk_name, normalized, strict=False):
+                fields[fk] = value
 
-        return data
+        return fields
 
     # ============================================================
-    # Get Multi (List) Hooks
+    # Get multi (list)
     # ============================================================
 
-    def _prepare_get_multi_filters(self, context: TNestedResourceContextKwargs) -> list[Any]:
-        """Automatically filter by parent_id(s)."""
-        filters = super()._prepare_get_multi_filters(context)
-        parent_id = context["parent_id"]
+    def get_multi_prepare_filters(self, op: Operation[TNestedResourceContextKwargs]) -> list[Any]:
+        """Filter the list down to this parent's children."""
+        filters: list[Any] = []
+        parent_id = op.context["parent_id"]
 
         if isinstance(self.fk_name, str):
-            filters.append(getattr(self.repo.model, self.fk_name) == parent_id)
+            filters.append(getattr(op.repo.model, self.fk_name) == parent_id)
         else:
-            # Create AND conditions for each part of a composite foreign key
-            normalized_parent_id = self.parent_repo.normalize_pk(parent_id)
-            for fk, p_id_val in zip(self.fk_name, normalized_parent_id, strict=False):
-                filters.append(getattr(self.repo.model, fk) == p_id_val)
+            normalized = self.parent_repo.normalize_pk(parent_id)
+            for fk, value in zip(self.fk_name, normalized, strict=False):
+                filters.append(getattr(op.repo.model, fk) == value)
 
         return filters
 
     @asynccontextmanager
-    async def _context_get_multi(self, session: AsyncSession, context: TNestedResourceContextKwargs):
-        """Optionally check if parent exists before listing children."""
-        async with super()._context_get_multi(session, context):
-            # Fail fast if parent doesn't exist, even if list would just be empty.
-            await self._check_parent_exists(session, context["parent_id"])
-            yield
+    async def get_multi_context(self, op: Operation[TNestedResourceContextKwargs]) -> AsyncIterator[None]:
+        # Fail fast if the parent doesn't exist, rather than returning an empty list.
+        await self._check_parent_exists(op, op.context["parent_id"])
+        yield
 
     # ============================================================
-    # Get (Single) Hooks
+    # Get / Update / Delete -- ownership
     # ============================================================
 
     @asynccontextmanager
-    async def _context_get(self, session: AsyncSession, obj_pk: PrimaryKeyType, context: TNestedResourceContextKwargs):
-        """Ensure the requested object belongs to the parent context."""
-        async with super()._context_get(session, obj_pk, context):
-            await self._ensure_ownership(session, obj_pk, context["parent_id"])
-            yield
-
-    # ============================================================
-    # Update Hooks
-    # ============================================================
+    async def get_context(self, op: Operation[TNestedResourceContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+        await self._ensure_ownership(op, pk)
+        yield
 
     @asynccontextmanager
-    async def _context_update(
+    async def update_context(
         self,
-        session: AsyncSession,
-        obj_pk: PrimaryKeyType,
-        obj_data: BaseModel,
-        context: TNestedResourceContextKwargs,
+        op: Operation[TNestedResourceContextKwargs],
+        pk: PrimaryKeyType,
+        data: BaseModel,
         partial: bool = True,
-    ):
-        """Ensure the object being updated belongs to the parent context."""
-        async with super()._context_update(session, obj_pk, obj_data, context, partial=partial):
-            await self._ensure_ownership(session, obj_pk, context["parent_id"])
-            yield
-
-    # ============================================================
-    # Delete Hooks
-    # ============================================================
+    ) -> AsyncIterator[None]:
+        await self._ensure_ownership(op, pk)
+        yield
 
     @asynccontextmanager
-    async def _context_delete(
-        self, session: AsyncSession, obj_pk: PrimaryKeyType, context: TNestedResourceContextKwargs
-    ):
-        """Ensure the object being deleted belongs to the parent context."""
-        async with super()._context_delete(session, obj_pk, context):
-            await self._ensure_ownership(session, obj_pk, context["parent_id"])
-            yield
+    async def delete_context(
+        self, op: Operation[TNestedResourceContextKwargs], pk: PrimaryKeyType
+    ) -> AsyncIterator[None]:
+        await self._ensure_ownership(op, pk)
+        yield
 
     @asynccontextmanager
-    async def _context_delete_multi(
-        self, session: AsyncSession, obj_pks: Sequence[PrimaryKeyType], context: TNestedResourceContextKwargs
-    ):
-        """Bulk ownership check using a single IN query supporting both single and composite keys."""
-        async with super()._context_delete_multi(session, obj_pks, context):
-            if obj_pks:
-                parent_id = context["parent_id"]
-                pk_cols = self.repo.primary_keys
+    async def delete_context_multi(
+        self, op: Operation[TNestedResourceContextKwargs], pks: Sequence[PrimaryKeyType]
+    ) -> AsyncIterator[None]:
+        """Replaces this hook's per-item ownership lookup with a single IN query."""
+        if pks:
+            parent_id = op.context["parent_id"]
+            pk_cols = op.repo.primary_keys
 
-                # Handle IN clause for single vs composite primary keys
-                if len(pk_cols) == 1:
-                    val_list = [self.repo.normalize_pk(pk)[0] for pk in obj_pks]
-                    where_clause = pk_cols[0].in_(val_list)
-                else:
-                    val_list = [self.repo.normalize_pk(pk) for pk in obj_pks]
-                    where_clause = tuple_(*pk_cols).in_(val_list)
+            if len(pk_cols) == 1:
+                val_list = [op.repo.normalize_pk(pk)[0] for pk in pks]
+                where_clause = pk_cols[0].in_(val_list)
+            else:
+                val_list = [op.repo.normalize_pk(pk) for pk in pks]
+                where_clause = tuple_(*pk_cols).in_(val_list)
 
-                objs = await self.repo.get_all(session, where=[where_clause])
-                parent_id_normalized = self.parent_repo.normalize_pk_as_str(parent_id)
+            objs = await op.repo.get_all(op.session, where=[where_clause])
+            parent_id_normalized = self.parent_repo.normalize_pk_as_str(parent_id)
 
-                for obj in objs:
-                    obj_parent_pk_normalized = self._get_parent_pk_from_obj(obj)
-                    if obj_parent_pk_normalized != parent_id_normalized:
-                        # Extract the actual PK from the object for the error message
-                        if len(pk_cols) == 1:
-                            err_pk = getattr(obj, pk_cols[0].key)
-                        else:
-                            err_pk = tuple(getattr(obj, col.key) for col in pk_cols)
+            for obj in objs:
+                if self._parent_pk_of(obj) != parent_id_normalized:
+                    if len(pk_cols) == 1:
+                        err_pk = getattr(obj, pk_cols[0].key)
+                    else:
+                        err_pk = tuple(getattr(obj, col.key) for col in pk_cols)
 
-                        raise NotFoundException(
-                            log_message=f"{self.repo.model_repr(err_pk)} does not belong to "
-                            f"{self.parent_repo.model_repr(parent_id)}"
-                        )
-            yield
+                    raise NotFoundException(
+                        log_message=f"{op.repo.model_repr(err_pk)} does not belong to "
+                        f"{self.parent_repo.model_repr(parent_id)}"
+                    )
+        yield

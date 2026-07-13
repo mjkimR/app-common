@@ -1,3 +1,17 @@
+"""
+Transaction-wrapping CRUD use cases.
+
+Each ``execute()`` owns exactly one ``AsyncTransaction``. Two rules follow:
+
+- Never call a use case from inside a use case: the inner ``execute()`` opens a
+  second, independent session, which commits separately from -- and can deadlock
+  with -- the outer one. Compose at the service layer instead: a composite use
+  case opens one transaction and calls several services with that session.
+- ``_execute`` / ``_post_execute`` overrides are orchestration seams for one
+  scenario, not a home for business rules. An invariant that must hold on every
+  write path belongs in a service hook, where every caller gets it.
+"""
+
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 

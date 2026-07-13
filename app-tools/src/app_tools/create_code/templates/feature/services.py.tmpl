@@ -28,6 +28,10 @@ class ${class_name}Service(
 ):
     def __init__(self, repo: Annotated[${class_name}Repository, Depends()]):
         self._repo = repo
+        # Contexts are entered in this order and exited in reverse; *_post hooks
+        # likewise run in reverse. Each hook implements only its own behaviour.
+        # e.g. self.hooks = (ExistsCheckHook(), NestedResourceHook(parent_repo))
+        self.hooks = ()
 
     @property
     def repo(self) -> ${class_name}Repository:

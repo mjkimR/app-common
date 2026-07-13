@@ -37,10 +37,13 @@ Use the provided scripts to install it automatically:
 - **Lint & format one module**: `just lint <module-name>` (e.g., `just lint app-file-storage`)
 - **Type check all modules**: `just check`
 - **Type check one module**: `just check <module-name>`
-- **Run tests**: `just test` (every module, SQLite)
-- **Run tests on PostgreSQL**: `just test-pg` — **requires Docker** (testcontainers). Row-locking tests skip on SQLite, so this is the only run that verifies them.
+- **Run tests**: `just test` — every module on SQLite, no Docker needed. Container-backed tests are deselected, so this is the fast one you run constantly.
+- **Run tests on PostgreSQL**: `just test-pg` — **needs Docker**. `SELECT ... FOR UPDATE SKIP LOCKED` is a no-op on SQLite, so this is the only run that verifies the outbox's row locking.
+- **Run container-backed tests**: `just test-docker` — **needs Docker**. Adds the tests marked `docker`, e.g. the S3 storage contract against a real MinIO (mocked aiobotocore hid three real bugs; see `app-file-storage/tests/integrate/`).
 - **Run targeted tests**: `uv run pytest <package-directory>/tests` (e.g., `uv run pytest app-layer-base/tests`)
-- **Run tests with coverage**: `just test-cov` or `just test-cov <module-name>` (per-package + combined report, HTML in `htmlcov/`)
+- **Run tests with coverage**: `just test-cov` or `just test-cov <module-name>` — per-package + combined report, HTML in `htmlcov/`. Includes the container-backed tests (uses Docker if present) so it does not under-report. Coverage is a finder, not a target: there is no `fail_under` and it is deliberately not a CI gate.
+
+CI runs all three test legs on every push, so anything deselected locally is still verified before merge. A test that needs a real backend must be marked `docker` (or gated behind `--db-type postgres`) — never left to silently skip.
 
 ---
 
@@ -80,7 +83,7 @@ That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `ses
 ### 2. Core Architecture
 
 - **Layered Flow**: `API (Router) -> UseCase -> Service -> Repository`.
-- **Service Hooks**: All business logic should be implemented using `BaseService` hooks (e.g., `_context_create`, `_pre_create_hook`) defined in `app-layer-base`.
+- **Service Hooks**: All business logic should be implemented as service hooks defined in `app-layer-base`. A hook is a standalone object implementing one or more of the protocols in `base/services/hooks.py` (`CreateHook`, `UpdateHook`, `DeleteHook`, `GetHook`, `GetMultiHook`); a service declares them as one ordered `hooks = (...)` tuple. The executor enters each hook's context in that order, runs the repository call, then unwinds in reverse — hooks never call `super()` and never call each other.
 - **DI**: Extensive use of FastAPI's `Depends` and `Annotated[T, Depends(func)]`.
 - **Settings Composition**: Each package owns its own `Settings` class. There is no central aggregator — `app_layer_base.config` holds only the base `AppSettings`, and an application composes the per-package settings it actually needs, so importing one adapter never drags in another's dependencies.
 
@@ -93,7 +96,7 @@ That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `ses
 3. **Testing**: Always check if new code requires tests. Run tests in the modified package before finalizing.
 4. **No Emojis**: Do not use emojis in commit messages, code comments, or docs.
 5. **Security**: Never commit `.env` or log sensitive PII/secrets.
-6. **Git Commit**: NEVER execute `git commit` commands or perform commits automatically. Committing changes must be left entirely to the user.
+6. **Git Commit**: Do not execute `git commit` commands or perform commits automatically unless explicitly requested by the user.
 
 ---
 

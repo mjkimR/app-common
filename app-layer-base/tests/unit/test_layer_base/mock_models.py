@@ -1,3 +1,5 @@
+import uuid
+
 from app_layer_base.base.models.mixin import Base, SoftDeleteMixin, TimestampMixin, UUIDMixin
 from app_layer_base.base.repos.base import BaseRepository
 from pydantic import BaseModel
@@ -24,6 +26,28 @@ class MockSoftDeleteModel(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "mock_soft_delete_items"
 
     name: Mapped[str] = mapped_column(String(100))
+
+
+class MockChildModel(Base, UUIDMixin, TimestampMixin):
+    """Child model carrying FK columns to a parent -- single key and composite key."""
+
+    __tablename__ = "mock_child_items"
+
+    name: Mapped[str] = mapped_column(String(100))
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
+    parent_tenant_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
+    parent_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+
+class MockCompositeModel(Base, TimestampMixin):
+    """Mock model with a two-column primary key."""
+
+    __tablename__ = "mock_composite_items"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(50), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
 
 
 # =============================================================================
@@ -62,3 +86,15 @@ class MockSoftDeleteRepository(
     """Mock repository with soft delete model."""
 
     model = MockSoftDeleteModel
+
+
+class MockChildRepository(BaseRepository[MockChildModel, MockCreateSchema, MockUpdateSchema, MockUpdateSchema]):
+    """Mock repository for the child model."""
+
+    model = MockChildModel
+
+
+class MockCompositeRepository(BaseRepository[MockCompositeModel, MockCreateSchema, MockUpdateSchema, MockUpdateSchema]):
+    """Mock repository for the composite-primary-key model."""
+
+    model = MockCompositeModel

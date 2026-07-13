@@ -1,22 +1,54 @@
-"""Unit tests for DomainEventHooksMixin."""
+"""Unit tests for DomainEventHook."""
 
 import uuid
-from unittest.mock import MagicMock
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
-from app_layer_base.base.services.base import BaseContextKwargs
-from app_layer_base.base.services.event_hook import DomainEventHooksMixin
+from app_layer_base.base.services.base import BaseContextKwargs, BaseCreateServiceMixin
+from app_layer_base.base.services.event_hook import DomainEventHook
+from app_layer_base.base.services.hooks import Operation
+from test_layer_base.mock_models import MockCreateSchema, MockModel, MockRepository
 
 # =============================================================================
-# Concrete service for testing
+# Concrete hooks for testing
 # =============================================================================
 
 
-class ConcreteEventHookService(DomainEventHooksMixin):
-    def __init__(self, repo):
+class RecordingEventHook(DomainEventHook[MockModel, BaseContextKwargs]):
+    """Records what it would have published."""
+
+    def __init__(self):
+        self.published: list[tuple[str, dict]] = []
+
+    async def publish_event(self, topic: str, payload: dict[str, Any]) -> None:
+        self.published.append((topic, payload))
+
+    @property
+    def topics(self) -> list[str]:
+        return [topic for topic, _ in self.published]
+
+
+class EnrichedEventHook(RecordingEventHook):
+    """Overrides `payload` to prove the extension point is used."""
+
+    def payload(self, op, event_type, pk, obj=None):
+        base = super().payload(op, event_type, pk, obj)
+        return {**base, "name": getattr(obj, "name", None)}
+
+
+# =============================================================================
+# Service wiring the hook, for the end-to-end checks
+# =============================================================================
+
+
+class EventCreateService(
+    BaseCreateServiceMixin[MockRepository, MockModel, MockCreateSchema, BaseContextKwargs],
+):
+    def __init__(self, repo, hook):
         self._repo = repo
-        self.published_events: list[tuple[str, dict]] = []
+        self.hooks = (hook,)
 
     @property
     def repo(self):
@@ -26,108 +58,185 @@ class ConcreteEventHookService(DomainEventHooksMixin):
     def context_model(self):
         return BaseContextKwargs
 
-    async def publish_event(self, topic: str, payload: dict) -> None:
-        self.published_events.append((topic, payload))
-
 
 # =============================================================================
-# Tests
+# Fixtures / helpers
 # =============================================================================
 
 
-class TestDomainEventHookPost:
-    @pytest.fixture
-    def service(self, mock_repo):
-        return ConcreteEventHookService(mock_repo)
+@pytest.fixture
+def hook():
+    return RecordingEventHook()
 
-    async def test_post_create_publishes_created_event(self, service, mock_async_session, base_context):
-        obj = MagicMock()
-        pk_col = service.repo.primary_keys[0]
+
+@pytest.fixture
+def composite_op(mock_async_session, composite_repo_mock) -> Operation:
+    return Operation(session=mock_async_session, context={}, repo=composite_repo_mock)
+
+
+def _row(repo, pk, **attrs) -> MagicMock:
+    """A row whose pk columns carry `pk` (single value or composite tuple)."""
+    obj = MagicMock()
+    for col, value in zip(repo.primary_keys, repo.normalize_pk(pk), strict=True):
+        setattr(obj, col.key, value)
+    for key, value in attrs.items():
+        setattr(obj, key, value)
+    return obj
+
+
+# =============================================================================
+# create
+# =============================================================================
+
+
+class TestDomainEventCreate:
+    async def test_create_post_publishes_created(self, hook, base_op):
         obj_id = uuid.uuid4()
-        setattr(obj, pk_col.key, obj_id)
 
-        await service._post_create(mock_async_session, obj, base_context)
+        returned = await hook.create_post(base_op, _row(base_op.repo, obj_id))
 
-        assert len(service.published_events) == 1
-        topic, payload = service.published_events[0]
+        assert len(hook.published) == 1
+        topic, payload = hook.published[0]
         assert topic == "MockModel.created"
         assert payload["event_type"] == "created"
         assert payload["resource_type"] == "MockModel"
         assert payload["resource_id"] == str(obj_id)
+        assert returned is not None
 
-    async def test_post_create_multi_publishes_created_multi_event(self, service, mock_async_session, base_context):
-        pk_col = service.repo.primary_keys[0]
-        objs = []
-        for _ in range(3):
-            obj = MagicMock()
-            setattr(obj, pk_col.key, uuid.uuid4())
-            objs.append(obj)
+    async def test_create_post_multi_publishes_one_aggregate_event(self, hook, base_op):
+        objs = [_row(base_op.repo, uuid.uuid4()) for _ in range(3)]
 
-        await service._post_create_multi(mock_async_session, objs, base_context)
+        await hook.create_post_multi(base_op, objs)
 
-        topics = [e[0] for e in service.published_events]
-        assert "MockModel.created_multi" in topics
-        _, payload = next(e for e in service.published_events if e[0] == "MockModel.created_multi")
+        assert hook.topics == ["MockModel.created_multi"]
+        _, payload = hook.published[0]
         assert payload["event_type"] == "created_multi"
         assert len(payload["resource_ids"]) == 3
 
-    async def test_post_create_multi_does_not_publish_for_empty_list(self, service, mock_async_session, base_context):
-        await service._post_create_multi(mock_async_session, [], base_context)
+    async def test_create_post_multi_publishes_nothing_for_an_empty_list(self, hook, base_op):
+        await hook.create_post_multi(base_op, [])
 
-        assert not any(e[0] == "MockModel.created_multi" for e in service.published_events)
+        assert hook.published == []
 
-    async def test_post_update_publishes_updated_event(self, service, mock_async_session, base_context):
-        obj = MagicMock()
-        pk_col = service.repo.primary_keys[0]
+    async def test_payload_override_is_used(self, base_op):
+        enriched = EnrichedEventHook()
+
+        await enriched.create_post(base_op, _row(base_op.repo, uuid.uuid4(), name="Widget"))
+
+        _, payload = enriched.published[0]
+        assert payload["name"] == "Widget"
+
+
+# =============================================================================
+# update
+# =============================================================================
+
+
+class TestDomainEventUpdate:
+    async def test_update_post_publishes_updated(self, hook, base_op):
         obj_id = uuid.uuid4()
-        setattr(obj, pk_col.key, obj_id)
 
-        await service._post_update(mock_async_session, obj, base_context)
+        await hook.update_post(base_op, _row(base_op.repo, obj_id))
 
-        assert len(service.published_events) == 1
-        topic, payload = service.published_events[0]
+        assert len(hook.published) == 1
+        topic, payload = hook.published[0]
         assert topic == "MockModel.updated"
         assert payload["event_type"] == "updated"
+        assert payload["resource_id"] == str(obj_id)
 
-    async def test_post_delete_publishes_deleted_event_on_success(
-        self, service, mock_async_session, sample_uuid, base_context
-    ):
-        result = DeleteResponse(success=True)
+    async def test_update_post_of_a_missing_row_publishes_nothing(self, hook, base_op):
+        """No row was updated, so there is nothing to announce."""
+        result = await hook.update_post(base_op, None)
 
-        await service._post_delete(mock_async_session, sample_uuid, result, base_context)
+        assert result is None
+        assert hook.published == []
 
-        assert len(service.published_events) == 1
-        topic, payload = service.published_events[0]
+
+# =============================================================================
+# delete
+# =============================================================================
+
+
+class TestDomainEventDelete:
+    async def test_delete_post_publishes_deleted_on_success(self, hook, base_op, sample_uuid):
+        result = await hook.delete_post(base_op, sample_uuid, DeleteResponse(success=True))
+
+        assert len(hook.published) == 1
+        topic, payload = hook.published[0]
         assert topic == "MockModel.deleted"
         assert payload["event_type"] == "deleted"
+        assert payload["resource_id"] == str(sample_uuid)
+        assert result.success is True
 
-    async def test_post_delete_does_not_publish_on_failure(
-        self, service, mock_async_session, sample_uuid, base_context
-    ):
-        result = DeleteResponse(success=False)
+    async def test_delete_post_publishes_nothing_on_failure(self, hook, base_op, sample_uuid):
+        await hook.delete_post(base_op, sample_uuid, DeleteResponse(success=False))
 
-        await service._post_delete(mock_async_session, sample_uuid, result, base_context)
+        assert hook.published == []
 
-        assert len(service.published_events) == 0
-
-    async def test_post_delete_multi_publishes_event_when_deleted(
-        self, service, mock_async_session, sample_uuid, base_context
-    ):
-        result = MultipleDeleteResponse(deleted_count=2)
+    async def test_delete_post_multi_publishes_one_aggregate_event(self, hook, base_op):
         pks = [uuid.uuid4(), uuid.uuid4()]
 
-        await service._post_delete_multi(mock_async_session, pks, result, base_context)
+        await hook.delete_post_multi(base_op, pks, MultipleDeleteResponse(deleted_count=2))
 
-        assert len(service.published_events) == 1
-        topic, payload = service.published_events[0]
-        assert topic == "MockModel.deleted_multi"
-        assert len(payload["resource_ids"]) == 2
+        assert hook.topics == ["MockModel.deleted_multi"]
+        _, payload = hook.published[0]
+        assert payload["event_type"] == "deleted_multi"
+        assert payload["resource_ids"] == [str(pk) for pk in pks]
 
-    async def test_post_delete_multi_does_not_publish_when_deleted_count_zero(
-        self, service, mock_async_session, base_context
-    ):
-        result = MultipleDeleteResponse(deleted_count=0)
+    async def test_delete_post_multi_publishes_nothing_when_nothing_was_deleted(self, hook, base_op):
+        await hook.delete_post_multi(base_op, [], MultipleDeleteResponse(deleted_count=0))
 
-        await service._post_delete_multi(mock_async_session, [], result, base_context)
+        assert hook.published == []
 
-        assert not any(e[0] == "MockModel.deleted_multi" for e in service.published_events)
+
+# =============================================================================
+# Composite primary keys
+# =============================================================================
+
+
+class TestDomainEventCompositePk:
+    async def test_created_event_joins_the_key_parts_with_a_comma(self, hook, composite_op):
+        tenant = uuid.uuid4()
+
+        await hook.create_post(composite_op, _row(composite_op.repo, (tenant, "A")))
+
+        _, payload = hook.published[0]
+        assert payload["resource_id"] == f"{tenant},A"
+        assert payload["resource_type"] == "MockCompositeModel"
+
+    async def test_deleted_multi_event_joins_every_key(self, hook, composite_op):
+        tenant = uuid.uuid4()
+        pks = [(tenant, "A"), (tenant, "B")]
+
+        await hook.delete_post_multi(composite_op, pks, MultipleDeleteResponse(deleted_count=2))
+
+        _, payload = hook.published[0]
+        assert payload["resource_ids"] == [f"{tenant},A", f"{tenant},B"]
+
+
+# =============================================================================
+# End-to-end through a service
+# =============================================================================
+
+
+class TestDomainEventThroughService:
+    async def test_create_publishes_after_the_row_exists(self, mock_repo, mock_async_session):
+        hook = RecordingEventHook()
+        service = EventCreateService(mock_repo, hook)
+        obj_id = uuid.uuid4()
+        mock_repo.create = AsyncMock(return_value=_row(mock_repo, obj_id))
+
+        await service.create(mock_async_session, MockCreateSchema(name="x"))
+
+        assert hook.topics == ["MockModel.created"]
+        assert hook.published[0][1]["resource_id"] == str(obj_id)
+
+    async def test_create_multi_publishes_a_single_event(self, mock_repo, mock_async_session):
+        hook = RecordingEventHook()
+        service = EventCreateService(mock_repo, hook)
+        objs = [_row(mock_repo, uuid.uuid4()) for _ in range(2)]
+        mock_repo.create_multi = AsyncMock(return_value=objs)
+
+        await service.create_multi(mock_async_session, [MockCreateSchema(name="a"), MockCreateSchema(name="b")])
+
+        assert hook.topics == ["MockModel.created_multi"]

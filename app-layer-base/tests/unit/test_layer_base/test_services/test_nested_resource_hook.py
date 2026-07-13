@@ -1,99 +1,43 @@
-"""Unit tests for NestedResourceHooksMixin."""
+"""Unit tests for NestedResourceHook."""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from app_layer_base.base.exceptions.basic import NotFoundException
-from app_layer_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
-from app_layer_base.base.repos.base import BaseRepository
+from app_layer_base.base.services.base import BaseCreateServiceMixin, BaseDeleteServiceMixin
+from app_layer_base.base.services.hooks import Operation
 from app_layer_base.base.services.nested_resource_hook import (
     NestedResourceContextKwargs,
-    NestedResourceHooksMixin,
+    NestedResourceHook,
 )
-from pydantic import BaseModel
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-from test_layer_base.mock_models import MockModel, MockRepository
+from test_layer_base.mock_models import MockChildModel, MockChildRepository, MockCreateSchema
 
 # =============================================================================
-# Nested-aware test models
+# Service wiring the hook, for the end-to-end checks
 # =============================================================================
 
 
-class MockChildModel(Base, UUIDMixin, TimestampMixin):
-    """Child model that has a parent_id FK for testing nested hooks."""
-
-    __tablename__ = "mock_child_items"
-
-    name: Mapped[str] = mapped_column(String(100))
-    parent_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
-
-
-class MockChildRepository(BaseRepository[MockChildModel, BaseModel, BaseModel, BaseModel]):
-    model = MockChildModel
-
-
-# =============================================================================
-# Concrete service for testing
-# =============================================================================
-
-
-class ConcreteNestedService(NestedResourceHooksMixin):
+class NestedService(
+    BaseCreateServiceMixin[MockChildRepository, MockChildModel, MockCreateSchema, NestedResourceContextKwargs],
+    BaseDeleteServiceMixin[MockChildRepository, MockChildModel, NestedResourceContextKwargs],
+):
     def __init__(self, repo, parent_repo):
         self._repo = repo
-        self._parent_repo = parent_repo
+        self.hooks = (NestedResourceHook(parent_repo, fk_name="parent_id"),)
 
     @property
     def repo(self):
         return self._repo
 
     @property
-    def parent_repo(self):
-        return self._parent_repo
-
-    @property
     def context_model(self):
         return NestedResourceContextKwargs
 
-    @property
-    def fk_name(self):
-        return "parent_id"
-
 
 # =============================================================================
-# Fixtures
+# Fixtures / helpers
 # =============================================================================
-
-
-@pytest.fixture
-def parent_repo_mock():
-    repo = AsyncMock(spec=MockRepository)
-    repo.primary_keys = MockRepository().primary_keys
-    repo.model = MockModel
-    repo.model_name = MockRepository.model_name
-    repo.model_repr = MockRepository().model_repr
-    repo.normalize_pk = MockRepository().normalize_pk
-    repo.normalize_pk_as_str = MockRepository().normalize_pk_as_str
-    return repo
-
-
-@pytest.fixture
-def child_repo_mock():
-    """Child repo backed by MockChildModel (which has a parent_id column)."""
-    repo = AsyncMock(spec=MockChildRepository)
-    repo.primary_keys = MockChildRepository().primary_keys
-    repo.model = MockChildModel
-    repo.model_name = MockChildRepository.model_name
-    repo.model_repr = MockChildRepository().model_repr
-    repo.normalize_pk = MockChildRepository().normalize_pk
-    repo.normalize_pk_as_str = MockChildRepository().normalize_pk_as_str
-    return repo
-
-
-@pytest.fixture
-def service(child_repo_mock, parent_repo_mock):
-    return ConcreteNestedService(child_repo_mock, parent_repo_mock)
 
 
 @pytest.fixture
@@ -102,143 +46,329 @@ def parent_id():
 
 
 @pytest.fixture
-def nested_context(parent_id) -> NestedResourceContextKwargs:
-    return {"parent_id": parent_id}
+def parent_repo_mock(mock_repo):
+    """The parent is a plain MockModel repo (single UUID pk)."""
+    return mock_repo
+
+
+@pytest.fixture
+def hook(parent_repo_mock):
+    return NestedResourceHook(parent_repo_mock, fk_name="parent_id")
+
+
+@pytest.fixture
+def op(mock_async_session, child_repo_mock, parent_id) -> Operation:
+    """Operation over the child repo, scoped to `parent_id`."""
+    return Operation(session=mock_async_session, context={"parent_id": parent_id}, repo=child_repo_mock)
+
+
+def _child(parent_id=None, **attrs) -> MagicMock:
+    obj = MagicMock()
+    obj.parent_id = parent_id
+    for key, value in attrs.items():
+        setattr(obj, key, value)
+    return obj
 
 
 # =============================================================================
-# Tests for _check_parent_exists
+# Parent existence
 # =============================================================================
 
 
-class TestCheckParentExists:
-    async def test_passes_when_parent_exists(self, service, mock_async_session, parent_id):
-        service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
+class TestParentExistence:
+    async def test_create_passes_when_the_parent_exists(self, hook, op, parent_repo_mock):
+        parent_repo_mock.get_by_pk = AsyncMock(return_value=MagicMock())
 
-        await service._check_parent_exists(mock_async_session, parent_id)  # No exception
+        async with hook.create_context(op, MockCreateSchema(name="x")):
+            pass
 
-    async def test_raises_not_found_when_parent_missing(self, service, mock_async_session, parent_id):
-        service.parent_repo.get_by_pk = AsyncMock(return_value=None)
+        parent_repo_mock.get_by_pk.assert_awaited_once()
+
+    async def test_create_raises_when_the_parent_is_missing(self, hook, op, parent_repo_mock):
+        parent_repo_mock.get_by_pk = AsyncMock(return_value=None)
+
+        with pytest.raises(NotFoundException, match=r"Not Found") as exc:
+            async with hook.create_context(op, MockCreateSchema(name="x")):
+                pass
+
+        assert "Parent MockModel(" in exc.value.log_message
+
+    async def test_create_multi_checks_the_parent_exactly_once(self, hook, op, parent_repo_mock):
+        parent_repo_mock.get_by_pk = AsyncMock(return_value=MagicMock())
+
+        async with hook.create_context_multi(
+            op, [MockCreateSchema(name="a"), MockCreateSchema(name="b"), MockCreateSchema(name="c")]
+        ):
+            pass
+
+        parent_repo_mock.get_by_pk.assert_awaited_once()
+
+    async def test_get_multi_fails_fast_when_the_parent_is_missing(self, hook, op, parent_repo_mock):
+        """A missing parent is a 404, not an empty list."""
+        parent_repo_mock.get_by_pk = AsyncMock(return_value=None)
 
         with pytest.raises(NotFoundException):
-            await service._check_parent_exists(mock_async_session, parent_id)
+            async with hook.get_multi_context(op):
+                pass
+
+    async def test_get_multi_passes_when_the_parent_exists(self, hook, op, parent_repo_mock):
+        parent_repo_mock.get_by_pk = AsyncMock(return_value=MagicMock())
+
+        async with hook.get_multi_context(op):
+            pass
+
+        parent_repo_mock.get_by_pk.assert_awaited_once()
 
 
 # =============================================================================
-# Tests for _ensure_ownership
+# Ownership -- get / update / delete
 # =============================================================================
 
 
-class TestEnsureOwnership:
-    async def test_passes_when_obj_belongs_to_parent(self, service, mock_async_session, sample_uuid, parent_id):
-        mock_obj = MagicMock()
-        mock_obj.parent_id = parent_id
-        service.repo.get_by_pk = AsyncMock(return_value=mock_obj)
+class TestOwnership:
+    @pytest.fixture(params=["get", "update", "delete"])
+    def enter_context(self, request, hook):
+        """The three single-item contexts all enforce ownership the same way."""
 
-        await service._ensure_ownership(mock_async_session, sample_uuid, parent_id)  # No exception
+        def _enter(op, pk):
+            if request.param == "get":
+                return hook.get_context(op, pk)
+            if request.param == "update":
+                return hook.update_context(op, pk, MockCreateSchema(name="x"))
+            return hook.delete_context(op, pk)
 
-    async def test_raises_when_obj_belongs_to_different_parent(
-        self, service, mock_async_session, sample_uuid, parent_id
-    ):
-        other_parent_id = uuid.uuid4()
-        mock_obj = MagicMock()
-        mock_obj.parent_id = other_parent_id
-        service.repo.get_by_pk = AsyncMock(return_value=mock_obj)
+        return _enter
 
-        with pytest.raises(NotFoundException):
-            await service._ensure_ownership(mock_async_session, sample_uuid, parent_id)
+    async def test_passes_when_the_row_belongs_to_the_parent(self, enter_context, op, sample_uuid, parent_id):
+        op.repo.get_by_pk = AsyncMock(return_value=_child(parent_id=parent_id))
 
-    async def test_passes_when_obj_not_found(self, service, mock_async_session, sample_uuid, parent_id):
-        service.repo.get_by_pk = AsyncMock(return_value=None)
+        async with enter_context(op, sample_uuid):
+            pass  # No exception expected
 
-        await service._ensure_ownership(mock_async_session, sample_uuid, parent_id)  # Should not raise
+    async def test_raises_when_the_row_belongs_to_another_parent(self, enter_context, op, sample_uuid):
+        op.repo.get_by_pk = AsyncMock(return_value=_child(parent_id=uuid.uuid4()))
+
+        with pytest.raises(NotFoundException) as exc:
+            async with enter_context(op, sample_uuid):
+                pass
+
+        assert "does not belong to" in exc.value.log_message
+
+    async def test_passes_when_the_row_does_not_exist(self, enter_context, op, sample_uuid):
+        """A missing row is ExistsCheckHook's call to make, not this hook's."""
+        op.repo.get_by_pk = AsyncMock(return_value=None)
+
+        async with enter_context(op, sample_uuid):
+            pass  # No exception expected
+
+    async def test_string_fk_matches_a_uuid_parent(self, hook, op, sample_uuid, parent_id):
+        """Ownership compares normalized strings, so str vs UUID is not a mismatch."""
+        op.repo.get_by_pk = AsyncMock(return_value=_child(parent_id=str(parent_id)))
+
+        async with hook.get_context(op, sample_uuid):
+            pass  # No exception expected
 
 
 # =============================================================================
-# Tests for _prepare_create_fields
+# Field injection and list filtering
 # =============================================================================
 
 
-class TestPrepareCreateFields:
-    def test_injects_parent_id_into_fields(self, service, parent_id, nested_context):
-        result = service._prepare_create_fields(obj_data=None, context=nested_context)
+class TestFieldInjectionAndFilters:
+    def test_create_injects_the_parent_key(self, hook, op, parent_id):
+        result = hook.create_prepare_fields(op, MockCreateSchema(name="x"), {})
 
         assert result["parent_id"] == parent_id
 
-    def test_merges_extra_fields(self, service, parent_id, nested_context):
-        result = service._prepare_create_fields(obj_data=None, context=nested_context, extra="value")
+    def test_create_merges_incoming_extra_fields(self, hook, op, parent_id):
+        result = hook.create_prepare_fields(op, MockCreateSchema(name="x"), {"extra": "value"})
 
         assert result["parent_id"] == parent_id
         assert result["extra"] == "value"
 
+    def test_create_does_not_mutate_the_incoming_fields_dict(self, hook, op):
+        fields: dict = {}
 
-# =============================================================================
-# Tests for _prepare_get_multi_filters
-# =============================================================================
+        hook.create_prepare_fields(op, MockCreateSchema(name="x"), fields)
 
+        assert fields == {}
 
-class TestPrepareGetMultiFilters:
-    def test_adds_parent_id_filter(self, service, nested_context):
-        filters = service._prepare_get_multi_filters(nested_context)
+    def test_get_multi_filters_by_the_parent_key(self, hook, op, parent_id):
+        filters = hook.get_multi_prepare_filters(op)
 
         assert len(filters) == 1
+        assert "mock_child_items.parent_id =" in str(filters[0])
 
 
 # =============================================================================
-# Tests for context hooks
+# delete_multi -- one IN query instead of one lookup per pk
 # =============================================================================
 
 
-class TestNestedContextHooks:
-    async def test_context_create_checks_parent_exists(self, service, mock_async_session, nested_context):
-        service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
+class TestOwnershipDeleteMulti:
+    async def test_uses_a_single_in_query(self, hook, op, parent_id):
+        pks = [uuid.uuid4(), uuid.uuid4()]
+        op.repo.get_all = AsyncMock(return_value=[_child(parent_id=parent_id) for _ in pks])
 
-        async with service._context_create(mock_async_session, MagicMock(), nested_context):
+        async with hook.delete_context_multi(op, pks):
             pass
 
-        service.parent_repo.get_by_pk.assert_called_once()
+        op.repo.get_all.assert_awaited_once()
+        op.repo.get_by_pk.assert_not_awaited()
+        where = op.repo.get_all.await_args.kwargs["where"]
+        assert "mock_child_items.id IN" in str(where[0])
 
-    async def test_context_create_raises_when_parent_missing(self, service, mock_async_session, nested_context):
-        service.parent_repo.get_by_pk = AsyncMock(return_value=None)
+    async def test_raises_when_any_row_belongs_to_another_parent(self, hook, op, parent_id):
+        pks = [uuid.uuid4(), uuid.uuid4()]
+        pk_col = op.repo.primary_keys[0].key
+        mine = _child(parent_id=parent_id, **{pk_col: pks[0]})
+        theirs = _child(parent_id=uuid.uuid4(), **{pk_col: pks[1]})
+        op.repo.get_all = AsyncMock(return_value=[mine, theirs])
 
-        with pytest.raises(NotFoundException):
-            async with service._context_create(mock_async_session, MagicMock(), nested_context):
+        with pytest.raises(NotFoundException) as exc:
+            async with hook.delete_context_multi(op, pks):
                 pass
 
-    async def test_context_create_multi_checks_parent_exists_once(self, service, mock_async_session, nested_context):
-        service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
+        assert str(pks[1]) in exc.value.log_message
+        assert "does not belong to" in exc.value.log_message
 
-        async with service._context_create_multi(mock_async_session, [MagicMock(), MagicMock()], nested_context):
+    async def test_skips_the_query_for_an_empty_list(self, hook, op):
+        async with hook.delete_context_multi(op, []):
             pass
 
-        service.parent_repo.get_by_pk.assert_called_once()
+        op.repo.get_all.assert_not_awaited()
 
-    async def test_context_get_multi_checks_parent_exists(self, service, mock_async_session, nested_context):
-        service.parent_repo.get_by_pk = AsyncMock(return_value=MagicMock())
-
-        async with service._context_get_multi(mock_async_session, nested_context):
-            pass
-
-        service.parent_repo.get_by_pk.assert_called_once()
-
-    async def test_context_update_raises_when_wrong_parent(
-        self, service, mock_async_session, sample_uuid, nested_context, parent_id
+    async def test_composite_child_pk_uses_a_tuple_in_query(
+        self, hook, mock_async_session, composite_repo_mock, parent_id
     ):
-        mock_obj = MagicMock()
-        mock_obj.parent_id = uuid.uuid4()  # Different parent
-        service.repo.get_by_pk = AsyncMock(return_value=mock_obj)
+        composite_op = Operation(session=mock_async_session, context={"parent_id": parent_id}, repo=composite_repo_mock)
+        tenant = uuid.uuid4()
+        pks = [(tenant, "A"), (tenant, "B")]
+        composite_op.repo.get_all = AsyncMock(
+            return_value=[_child(parent_id=parent_id, tenant_id=tenant, code=code) for _, code in pks]
+        )
 
-        with pytest.raises(NotFoundException):
-            async with service._context_update(mock_async_session, sample_uuid, MagicMock(), nested_context):
-                pass
+        async with hook.delete_context_multi(composite_op, pks):
+            pass
 
-    async def test_context_delete_raises_when_wrong_parent(
-        self, service, mock_async_session, sample_uuid, nested_context
+        rendered = str(composite_op.repo.get_all.await_args.kwargs["where"][0])
+        assert "tenant_id" in rendered
+        assert "code" in rendered
+        assert "IN" in rendered
+
+    async def test_composite_child_pk_reports_the_whole_key_of_the_foreign_row(
+        self, hook, mock_async_session, composite_repo_mock, parent_id
     ):
-        mock_obj = MagicMock()
-        mock_obj.parent_id = uuid.uuid4()  # Different parent
-        service.repo.get_by_pk = AsyncMock(return_value=mock_obj)
+        composite_op = Operation(session=mock_async_session, context={"parent_id": parent_id}, repo=composite_repo_mock)
+        tenant = uuid.uuid4()
+        composite_op.repo.get_all = AsyncMock(return_value=[_child(parent_id=uuid.uuid4(), tenant_id=tenant, code="B")])
+
+        with pytest.raises(NotFoundException) as exc:
+            async with hook.delete_context_multi(composite_op, [(tenant, "B")]):
+                pass
+
+        assert f"MockCompositeModel(tenant_id={tenant}, code=B)" in exc.value.log_message
+
+
+# =============================================================================
+# Composite parent key
+# =============================================================================
+
+
+class TestCompositeParentKey:
+    @pytest.fixture
+    def composite_parent_id(self):
+        return (uuid.uuid4(), "ACME")
+
+    @pytest.fixture
+    def hook(self, composite_repo_mock):
+        return NestedResourceHook(composite_repo_mock, fk_name=("parent_tenant_id", "parent_code"))
+
+    @pytest.fixture
+    def op(self, mock_async_session, child_repo_mock, composite_parent_id) -> Operation:
+        return Operation(
+            session=mock_async_session,
+            context={"parent_id": composite_parent_id},
+            repo=child_repo_mock,
+        )
+
+    def test_create_injects_every_key_column(self, hook, op, composite_parent_id):
+        result = hook.create_prepare_fields(op, MockCreateSchema(name="x"), {})
+
+        assert result["parent_tenant_id"] == composite_parent_id[0]
+        assert result["parent_code"] == "ACME"
+
+    def test_get_multi_filters_on_every_key_column(self, hook, op):
+        filters = hook.get_multi_prepare_filters(op)
+
+        assert len(filters) == 2
+        rendered = " ".join(str(f) for f in filters)
+        assert "mock_child_items.parent_tenant_id =" in rendered
+        assert "mock_child_items.parent_code =" in rendered
+
+    async def test_ownership_compares_the_whole_key(self, hook, op, sample_uuid, composite_parent_id):
+        tenant, code = composite_parent_id
+        op.repo.get_by_pk = AsyncMock(return_value=_child(parent_tenant_id=tenant, parent_code=code))
+
+        async with hook.get_context(op, sample_uuid):
+            pass  # No exception expected
+
+    async def test_ownership_rejects_a_row_matching_only_part_of_the_key(
+        self, hook, op, sample_uuid, composite_parent_id
+    ):
+        tenant, _ = composite_parent_id
+        op.repo.get_by_pk = AsyncMock(return_value=_child(parent_tenant_id=tenant, parent_code="OTHER"))
 
         with pytest.raises(NotFoundException):
-            async with service._context_delete(mock_async_session, sample_uuid, nested_context):
+            async with hook.get_context(op, sample_uuid):
                 pass
+
+
+# =============================================================================
+# End-to-end through a service
+# =============================================================================
+
+
+class TestNestedThroughService:
+    @pytest.fixture
+    def service(self, child_repo_mock, parent_repo_mock):
+        return NestedService(child_repo_mock, parent_repo_mock)
+
+    async def test_create_scopes_the_row_to_the_parent(
+        self, service, mock_async_session, child_repo_mock, parent_repo_mock, parent_id
+    ):
+        parent_repo_mock.get_by_pk = AsyncMock(return_value=MagicMock())
+
+        await service.create(mock_async_session, MockCreateSchema(name="x"), context={"parent_id": parent_id})
+
+        assert child_repo_mock.create.await_args.kwargs["parent_id"] == parent_id
+
+    async def test_create_under_a_missing_parent_never_reaches_the_repo(
+        self, service, mock_async_session, child_repo_mock, parent_repo_mock, parent_id
+    ):
+        parent_repo_mock.get_by_pk = AsyncMock(return_value=None)
+
+        with pytest.raises(NotFoundException):
+            await service.create(mock_async_session, MockCreateSchema(name="x"), context={"parent_id": parent_id})
+
+        child_repo_mock.create.assert_not_awaited()
+
+    async def test_delete_through_the_wrong_parent_never_reaches_the_repo(
+        self, service, mock_async_session, child_repo_mock, parent_id, sample_uuid
+    ):
+        child_repo_mock.get_by_pk = AsyncMock(return_value=_child(parent_id=uuid.uuid4()))
+
+        with pytest.raises(NotFoundException):
+            await service.delete(mock_async_session, sample_uuid, context={"parent_id": parent_id})
+
+        child_repo_mock.delete_by_pk.assert_not_awaited()
+
+    async def test_delete_through_the_right_parent_goes_through(
+        self, service, mock_async_session, child_repo_mock, parent_id, sample_uuid
+    ):
+        child_repo_mock.get_by_pk = AsyncMock(return_value=_child(parent_id=parent_id))
+        child_repo_mock.delete_by_pk = AsyncMock(return_value=True)
+
+        result = await service.delete(mock_async_session, sample_uuid, context={"parent_id": parent_id})
+
+        assert result.success is True
