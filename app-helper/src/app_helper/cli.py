@@ -1,5 +1,6 @@
 import click
 
+from app_helper.diff import copy_diff
 from app_helper.prompts import prompt
 
 
@@ -11,6 +12,7 @@ def cli():
 
 # Register command groups
 cli.add_command(prompt)
+cli.add_command(copy_diff)
 
 if __name__ == "__main__":
     cli()
