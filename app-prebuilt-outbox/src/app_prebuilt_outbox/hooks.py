@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any, TypedDict
 
@@ -134,7 +134,7 @@ class OutboxHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
         return obj
 
     @asynccontextmanager
-    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncGenerator[None]:
         """Read the row while it still exists; the event is written in delete_post."""
         obj = await op.repo.get_by_pk(op.session, pk)
         if obj is not None:
@@ -154,7 +154,7 @@ class OutboxHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
     @asynccontextmanager
     async def delete_context_multi(
         self, op: Operation[TContextKwargs], pks: Sequence[PrimaryKeyType]
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         """Replaces this hook's per-item read with a single IN query."""
         if pks:
             for obj in await op.repo.get_all(op.session, where=[self._pk_in(op, pks)]):
