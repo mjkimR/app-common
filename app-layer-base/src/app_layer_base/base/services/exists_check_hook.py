@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 
 from pydantic import BaseModel
@@ -34,13 +34,13 @@ class ExistsCheckHook[TContextKwargs: BaseContextKwargs](
         pk: PrimaryKeyType,
         data: BaseModel,
         partial: bool = True,
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         if not await op.repo.get_by_pk(op.session, pk):
             raise NotFoundException(log_message=f"{op.repo.model_repr(pk)} does not exist.")
         yield
 
     @asynccontextmanager
-    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncGenerator[None]:
         if not await op.repo.get_by_pk(op.session, pk):
             raise NotFoundException(log_message=f"{op.repo.model_repr(pk)} does not exist.")
         yield
@@ -48,7 +48,7 @@ class ExistsCheckHook[TContextKwargs: BaseContextKwargs](
     @asynccontextmanager
     async def delete_context_multi(
         self, op: Operation[TContextKwargs], pks: Sequence[PrimaryKeyType]
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         """Replaces this hook's per-item check with a single IN query."""
         if pks:
             pk_cols = op.repo.primary_keys

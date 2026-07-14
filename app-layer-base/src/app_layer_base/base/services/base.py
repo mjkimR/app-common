@@ -10,7 +10,6 @@ Hooks never call each other. Adding, reordering, or removing a hook cannot
 silently disable another one.
 """
 
-import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from contextlib import AsyncExitStack
@@ -103,6 +102,32 @@ class BaseServiceMixinInterface[TContextKwargs: BaseContextKwargs]:
         """Get Pydantic TypeAdapter for the given context type."""
         return TypeAdapter(cast_to)
 
+    @cached_property
+    def _hook_context_keys_checked(self) -> bool:
+        """
+        Fail loudly (vs. silently no-op'ing) when a hook reads context keys the
+        context model never declares: validation would drop (or, with
+        ``extra="forbid"``, reject) them before the hook ever sees them.
+
+        Runs once per service instance, on the first operation -- not in
+        ``__init__``: the mixins do not own one (consumer services define their
+        own without calling ``super().__init__()``), and services are
+        request-scoped dependencies, so construction and first use coincide
+        within the same request anyway.
+        """
+        model = self.context_model
+        declared = getattr(model, "__required_keys__", frozenset()) | getattr(model, "__optional_keys__", frozenset())
+        for hook in self.hooks:
+            missing = frozenset(getattr(hook, "required_context_keys", ())) - declared
+            if missing:
+                raise TypeError(
+                    f"{type(self).__name__}.context_model ({model.__name__}) does not declare "
+                    f"context key(s) {sorted(missing)} required by {type(hook).__name__}. "
+                    "Declare them on the context model (Required or NotRequired); otherwise "
+                    "context validation drops them and the hook silently no-ops."
+                )
+        return True
+
     @classmethod
     def _ensure_context(
         cls,
@@ -129,6 +154,7 @@ class BaseServiceMixinInterface[TContextKwargs: BaseContextKwargs]:
             raise ValueError(f"Invalid context provided: {e}") from e
 
     def _new_operation(self, session: AsyncSession, context: TContextKwargs | None) -> Operation[TContextKwargs]:
+        _ = self._hook_context_keys_checked
         return Operation(
             session=session,
             context=self._ensure_context(context, self.context_model),
@@ -320,7 +346,7 @@ class BaseDeleteServiceMixin[TRepo: BaseRepository, ModelType, TContextKwargs: B
     async def delete_multi(
         self,
         session: AsyncSession,
-        obj_pks: Sequence[uuid.UUID],
+        obj_pks: Sequence[PrimaryKeyType],
         context: TContextKwargs | None = None,
     ) -> MultipleDeleteResponse:
         op = self._new_operation(session, context)

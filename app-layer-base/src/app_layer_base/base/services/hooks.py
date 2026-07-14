@@ -17,12 +17,12 @@ hooks may be shared, and the per-item fallback reuses the same hook object for
 every item.
 """
 
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, TypedDict
+from typing import Any, ClassVar, TypedDict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, with_config
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_layer_base.base.repos.base import BaseRepository, PrimaryKeyType
@@ -30,10 +30,30 @@ from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDele
 from app_layer_base.base.schemas.paginated import PaginatedList
 
 
+@with_config(ConfigDict(extra="forbid"))
 class BaseContextKwargs(TypedDict):
-    """Base context kwargs (empty, for extension)."""
+    """
+    Base context kwargs (empty, for extension).
 
-    pass
+    ``extra="forbid"`` applies to every subclass: passing a context key the
+    model does not declare raises at validation instead of being silently
+    dropped -- a dropped key would make context-reading hooks (audit stamping,
+    parent scoping) silently no-op.
+    """
+
+
+class BaseHook:
+    """Behaviour shared by every hook protocol."""
+
+    required_context_keys: ClassVar[frozenset[str]] = frozenset()
+    """Context keys this hook reads from ``op.context``.
+
+    The service's ``context_model`` must declare every one of them (as
+    ``Required`` or ``NotRequired`` -- that choice decides whether callers may
+    omit the key). An undeclared key would be dropped by context validation, so
+    the hook would silently no-op; the service executor therefore fails fast
+    with a ``TypeError`` on the first operation instead.
+    """
 
 
 @dataclass(slots=True)
@@ -57,11 +77,11 @@ class Operation[TContextKwargs: BaseContextKwargs]:
 # ============================================================
 
 
-class CreateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+class CreateHook[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHook):
     """Hook for create / create_multi."""
 
     @asynccontextmanager
-    async def create_context(self, op: Operation[TContextKwargs], data: BaseModel) -> AsyncIterator[None]:
+    async def create_context(self, op: Operation[TContextKwargs], data: BaseModel) -> AsyncGenerator[None]:
         """Wraps the create. Validate before the yield, clean up after it."""
         yield
 
@@ -78,7 +98,7 @@ class CreateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
     @asynccontextmanager
     async def create_context_multi(
         self, op: Operation[TContextKwargs], data_list: Sequence[BaseModel]
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         """
         Bulk form of ``create_context``.
 
@@ -105,7 +125,7 @@ class CreateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
 # ============================================================
 
 
-class UpdateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+class UpdateHook[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHook):
     """Hook for put / patch."""
 
     @asynccontextmanager
@@ -115,7 +135,7 @@ class UpdateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
         pk: PrimaryKeyType,
         data: BaseModel,
         partial: bool = True,
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         """Wraps the update. Validate before the yield, clean up after it."""
         yield
 
@@ -144,11 +164,11 @@ class UpdateHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
 # ============================================================
 
 
-class DeleteHook[TContextKwargs: BaseContextKwargs]:
+class DeleteHook[TContextKwargs: BaseContextKwargs](BaseHook):
     """Hook for delete / delete_multi."""
 
     @asynccontextmanager
-    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncGenerator[None]:
         """Wraps the delete. The row still exists before the yield, not after it."""
         yield
 
@@ -161,7 +181,7 @@ class DeleteHook[TContextKwargs: BaseContextKwargs]:
     @asynccontextmanager
     async def delete_context_multi(
         self, op: Operation[TContextKwargs], pks: Sequence[PrimaryKeyType]
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         """
         Bulk form of ``delete_context``.
 
@@ -197,11 +217,11 @@ class DeleteHook[TContextKwargs: BaseContextKwargs]:
 # ============================================================
 
 
-class GetHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+class GetHook[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHook):
     """Hook for get."""
 
     @asynccontextmanager
-    async def get_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+    async def get_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncGenerator[None]:
         yield
 
     async def get_post(self, op: Operation[TContextKwargs], obj: ModelType | None) -> ModelType | None:
@@ -213,11 +233,11 @@ class GetHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
 # ============================================================
 
 
-class GetMultiHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
+class GetMultiHook[ModelType: Any, TContextKwargs: BaseContextKwargs](BaseHook):
     """Hook for get_multi."""
 
     @asynccontextmanager
-    async def get_multi_context(self, op: Operation[TContextKwargs]) -> AsyncIterator[None]:
+    async def get_multi_context(self, op: Operation[TContextKwargs]) -> AsyncGenerator[None]:
         yield
 
     def get_multi_prepare_filters(self, op: Operation[TContextKwargs]) -> list[Any]:
@@ -232,6 +252,7 @@ class GetMultiHook[ModelType: Any, TContextKwargs: BaseContextKwargs]:
 
 __all__ = [
     "BaseContextKwargs",
+    "BaseHook",
     "CreateHook",
     "DeleteHook",
     "GetHook",

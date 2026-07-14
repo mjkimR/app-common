@@ -1,5 +1,5 @@
 import abc
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -80,7 +80,7 @@ class UniqueConstraintHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
     # ============================================================
 
     @asynccontextmanager
-    async def create_context(self, op: Operation[TContextKwargs], data: BaseModel) -> AsyncIterator[None]:
+    async def create_context(self, op: Operation[TContextKwargs], data: BaseModel) -> AsyncGenerator[None]:
         await self._check(op, data)
         yield
 
@@ -91,6 +91,6 @@ class UniqueConstraintHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
         pk: PrimaryKeyType,
         data: BaseModel,
         partial: bool = True,
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         await self._check(op, data, exclude_pk=pk)
         yield

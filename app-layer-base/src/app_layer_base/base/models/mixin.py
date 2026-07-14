@@ -36,7 +36,7 @@ class SoftDeleteMixin:
 
     def mark_deleted(self):
         self.is_deleted = True
-        self.deleted_at = func.now()
+        self.deleted_at = datetime.datetime.now(datetime.UTC)
 
 
 class TaggableMixin:

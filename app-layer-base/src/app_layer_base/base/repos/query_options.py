@@ -16,3 +16,6 @@ class ListQueryOptions:
     order_by: SeqOrOneOrNone[UnaryExpression] = ()
     select_options: SeqOrOneOrNone[ExecutableOption] = ()
     skip_count: bool = False
+    include_deleted: bool = False
+    """Include soft-deleted rows. Only valid on a repository with
+    ``soft_delete_enabled``; True on any other repository raises."""

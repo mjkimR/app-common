@@ -27,6 +27,8 @@ class UserAwareHook[ModelType: Any, TUserContextKwargs: UserContextKwargs](
     Stateless and dependency-free; a single instance can be shared.
     """
 
+    required_context_keys = frozenset({"user_id"})
+
     def create_prepare_fields(
         self,
         op: Operation[TUserContextKwargs],

@@ -8,9 +8,9 @@ semantics (what reaches the repository, what comes back) and the executor guaran
 """
 
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 from unittest.mock import MagicMock
 
 import pytest
@@ -151,7 +151,7 @@ class RecordingHook(
         self.log.append(f"{self.name}:{event}")
 
     @asynccontextmanager
-    async def _span(self, event: str) -> AsyncIterator[None]:
+    async def _span(self, event: str) -> AsyncGenerator[None]:
         self._record(f"{event}:enter")
         try:
             yield
@@ -287,6 +287,81 @@ class TestEnsureContext:
 
         result_with_values = BaseServiceMixinInterface._ensure_context(context, OptionalContextKwargs)
         assert result_with_values["tenant_id"] == "abc"
+
+
+# =============================================================================
+# Tests for the context contract: undeclared keys and hook key declarations
+# =============================================================================
+
+
+class DeclaredTenantContext(BaseContextKwargs):
+    """BaseContextKwargs subclass probing the inherited ``extra="forbid"``."""
+
+    tenant_id: NotRequired[str]
+
+
+class NeedsUserIdHook(CreateHook[MockModel, BaseContextKwargs]):
+    required_context_keys = frozenset({"user_id"})
+
+
+class TestContextContractForbidsUndeclaredKeys:
+    """An undeclared context key must fail validation, never be silently dropped."""
+
+    def test_base_context_rejects_any_key(self):
+        with pytest.raises(ValueError, match=r"Invalid context provided"):
+            BaseServiceMixinInterface._ensure_context({"user_id": uuid.uuid4()})
+
+    def test_subclass_inherits_forbid_for_undeclared_keys(self):
+        with pytest.raises(ValueError, match=r"Invalid context provided"):
+            BaseServiceMixinInterface._ensure_context({"tenant_id": "abc", "oops": 1}, DeclaredTenantContext)
+
+    def test_declared_keys_still_validate(self):
+        result = BaseServiceMixinInterface._ensure_context({"tenant_id": "abc"}, DeclaredTenantContext)
+        assert result == {"tenant_id": "abc"}
+
+    async def test_service_rejects_undeclared_context_key(self, mock_repo, mock_async_session, mock_create_schema):
+        """The create path surfaces the rejection before any repo call."""
+        service = CreateService(mock_repo)
+
+        with pytest.raises(ValueError, match=r"Invalid context provided"):
+            await service.create(mock_async_session, mock_create_schema, context={"user_id": uuid.uuid4()})
+
+        mock_repo.create.assert_not_called()
+
+
+class TestRequiredContextKeys:
+    """A hook's required_context_keys must be declared on the service's context model."""
+
+    async def test_undeclared_hook_key_fails_fast(self, mock_repo, mock_async_session, mock_create_schema):
+        """A context model missing a hook's keys raises before any repo call."""
+        service = CreateService(mock_repo, hooks=(NeedsUserIdHook(),))
+
+        with pytest.raises(TypeError, match=r"user_id.*NeedsUserIdHook"):
+            await service.create(mock_async_session, mock_create_schema)
+
+        mock_repo.create.assert_not_called()
+
+    async def test_declared_hook_key_passes(self, mock_repo, mock_async_session, mock_create_schema, mock_model):
+        class UserIdContext(BaseContextKwargs):
+            user_id: NotRequired[uuid.UUID]
+
+        service = CreateService(mock_repo, hooks=(NeedsUserIdHook(),), context_model=UserIdContext)
+        mock_repo.create.return_value = mock_model
+
+        result = await service.create(mock_async_session, mock_create_schema, context={"user_id": uuid.uuid4()})
+
+        assert result is mock_model
+
+    async def test_hooks_without_declared_keys_are_unaffected(
+        self, mock_repo, mock_async_session, mock_create_schema, mock_model, hook_log
+    ):
+        """Hooks that declare no required keys keep working against any model."""
+        service = CreateService(mock_repo, hooks=(RecordingHook("a", hook_log),))
+        mock_repo.create.return_value = mock_model
+
+        result = await service.create(mock_async_session, mock_create_schema)
+
+        assert result is mock_model
 
 
 # =============================================================================

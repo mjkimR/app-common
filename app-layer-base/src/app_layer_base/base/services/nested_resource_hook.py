@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any, Required
 
@@ -42,6 +42,8 @@ class NestedResourceHook[ModelType: Any, TNestedResourceContextKwargs: NestedRes
             def hooks(self):
                 return (NestedResourceHook(self.book_repo, fk_name="book_id"),)
     """
+
+    required_context_keys = frozenset({"parent_id"})
 
     def __init__(self, parent_repo: BaseRepository, fk_name: str | Sequence[str] = "parent_id"):
         """
@@ -92,14 +94,16 @@ class NestedResourceHook[ModelType: Any, TNestedResourceContextKwargs: NestedRes
     # ============================================================
 
     @asynccontextmanager
-    async def create_context(self, op: Operation[TNestedResourceContextKwargs], data: BaseModel) -> AsyncIterator[None]:
+    async def create_context(
+        self, op: Operation[TNestedResourceContextKwargs], data: BaseModel
+    ) -> AsyncGenerator[None]:
         await self._check_parent_exists(op, op.context["parent_id"])
         yield
 
     @asynccontextmanager
     async def create_context_multi(
         self, op: Operation[TNestedResourceContextKwargs], data_list: Sequence[BaseModel]
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         """Replaces this hook's per-item parent lookup with a single one."""
         await self._check_parent_exists(op, op.context["parent_id"])
         yield
@@ -142,7 +146,7 @@ class NestedResourceHook[ModelType: Any, TNestedResourceContextKwargs: NestedRes
         return filters
 
     @asynccontextmanager
-    async def get_multi_context(self, op: Operation[TNestedResourceContextKwargs]) -> AsyncIterator[None]:
+    async def get_multi_context(self, op: Operation[TNestedResourceContextKwargs]) -> AsyncGenerator[None]:
         # Fail fast if the parent doesn't exist, rather than returning an empty list.
         await self._check_parent_exists(op, op.context["parent_id"])
         yield
@@ -152,7 +156,9 @@ class NestedResourceHook[ModelType: Any, TNestedResourceContextKwargs: NestedRes
     # ============================================================
 
     @asynccontextmanager
-    async def get_context(self, op: Operation[TNestedResourceContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+    async def get_context(
+        self, op: Operation[TNestedResourceContextKwargs], pk: PrimaryKeyType
+    ) -> AsyncGenerator[None]:
         await self._ensure_ownership(op, pk)
         yield
 
@@ -163,21 +169,21 @@ class NestedResourceHook[ModelType: Any, TNestedResourceContextKwargs: NestedRes
         pk: PrimaryKeyType,
         data: BaseModel,
         partial: bool = True,
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         await self._ensure_ownership(op, pk)
         yield
 
     @asynccontextmanager
     async def delete_context(
         self, op: Operation[TNestedResourceContextKwargs], pk: PrimaryKeyType
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         await self._ensure_ownership(op, pk)
         yield
 
     @asynccontextmanager
     async def delete_context_multi(
         self, op: Operation[TNestedResourceContextKwargs], pks: Sequence[PrimaryKeyType]
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         """Replaces this hook's per-item ownership lookup with a single IN query."""
         if pks:
             parent_id = op.context["parent_id"]

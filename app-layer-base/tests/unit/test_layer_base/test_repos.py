@@ -4,6 +4,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
+from app_layer_base.base.repos.base import BaseRepository
 from app_layer_base.base.repos.query_options import ListQueryOptions
 from app_layer_base.base.schemas.paginated import PaginatedList
 
@@ -279,13 +280,14 @@ class TestBaseRepositoryUpdate:
         assert result is not None
 
     async def test_update_by_pk_empty_data_raises_error(self, mock_repository, mock_async_session, sample_uuid):
-        """Should raise error when update data is empty."""
+        """Should raise BadRequestException (client-reachable via empty PATCH) when update data is empty."""
+        from app_layer_base.base.exceptions.basic import BadRequestException
         from test_layer_base.mock_models import MockUpdateSchema
 
         # Schema with no fields set
         update_schema = MockUpdateSchema()
 
-        with pytest.raises(ValueError, match=r"Update data cannot be empty"):
+        with pytest.raises(BadRequestException, match=r"Update data cannot be empty"):
             await mock_repository.update_by_pk(mock_async_session, sample_uuid, update_schema)
 
     async def test_update_by_pk_extra_fields_are_filtered(
@@ -340,22 +342,45 @@ class TestBaseRepositoryDelete:
         mock_async_session.flush.assert_not_called()
 
     async def test_delete_by_pk_soft_delete(self, mock_soft_delete_repository, mock_async_session, sample_uuid):
-        """Should perform soft delete when flag is True."""
+        """Should soft-delete (UPDATE, not DELETE) when the repo opts in."""
         mock_result = MagicMock()
         mock_result.rowcount = 1
         mock_async_session.execute.return_value = mock_result
 
-        result = await mock_soft_delete_repository.delete_by_pk(mock_async_session, sample_uuid, soft_delete=True)
+        result = await mock_soft_delete_repository.delete_by_pk(mock_async_session, sample_uuid)
 
         assert result is True
         mock_async_session.flush.assert_called_once()
+        stmt = mock_async_session.execute.call_args[0][0]
+        assert stmt.is_dml and stmt.is_update
 
-    async def test_delete_by_pk_soft_delete_without_column_raises_error(
+    async def test_soft_delete_enabled_without_column_raises_at_init(self):
+        """Opting in on a model without the is_deleted column fails at construction."""
+        from test_layer_base.mock_models import MockCreateSchema, MockModel, MockUpdateSchema
+
+        class BadSoftDeleteRepository(BaseRepository[MockModel, MockCreateSchema, MockUpdateSchema, MockUpdateSchema]):
+            model = MockModel
+            soft_delete_enabled = True
+
+        with pytest.raises(ValueError, match=r"soft_delete_enabled requires the column"):
+            BadSoftDeleteRepository()
+
+    async def test_include_deleted_requires_soft_delete_enabled(self, mock_repository, mock_async_session, sample_uuid):
+        """include_deleted=True on a repo without soft delete is a programming error."""
+        with pytest.raises(ValueError, match=r"include_deleted=True requires soft_delete_enabled"):
+            await mock_repository.get_by_pk(mock_async_session, sample_uuid, include_deleted=True)
+
+        with pytest.raises(ValueError, match=r"include_deleted=True requires soft_delete_enabled"):
+            await mock_repository.get_multi(mock_async_session, ListQueryOptions(include_deleted=True))
+
+    async def test_restore_and_purge_require_soft_delete_enabled(
         self, mock_repository, mock_async_session, sample_uuid
     ):
-        """Should raise error when soft delete requested but model lacks is_deleted column."""
-        with pytest.raises(ValueError, match=r"Soft delete requires"):
-            await mock_repository.delete_by_pk(mock_async_session, sample_uuid, soft_delete=True)
+        with pytest.raises(ValueError, match=r"restore_by_pk requires soft_delete_enabled"):
+            await mock_repository.restore_by_pk(mock_async_session, sample_uuid)
+
+        with pytest.raises(ValueError, match=r"purge_soft_deleted requires soft_delete_enabled"):
+            await mock_repository.purge_soft_deleted(mock_async_session)
 
 
 class TestBaseRepositoryModelName:

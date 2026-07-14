@@ -19,7 +19,7 @@ Provides standard SQLAlchemy declarative mixins to ensure consistency across dat
   class User(Base, UUIDMixin, TimestampMixin):
       __tablename__ = "users"
   ```
-- **Precautions**: `SoftDeleteMixin` adds an `is_deleted` flag and `deleted_at` timestamp. Our repository queries automatically filter by `is_deleted == False` when fetching active records.
+- **Precautions**: `SoftDeleteMixin` only adds the `is_deleted` flag and `deleted_at` timestamp columns. Rows are actually hidden from queries only when the repository opts in with `soft_delete_enabled = True` — see the Repositories section.
 
 ---
 
@@ -32,7 +32,19 @@ Provides generic classes to handle standard database CRUD operations using SQLAl
 - **Import**: `from app_layer_base.base.repos.base import BaseRepository`
 - **Classes**: `BaseRepository[ModelType, CreateSchemaType, PutSchemaType, PatchSchemaType]`
 - **Usage**: Automatically handles `get`, `create`, `update`, `delete`, `exists`, and paginated list queries.
-- **Precautions**: Configure `is_deleted_column` properly for models that support soft deletion.
+- **Soft delete (opt-in)**: set `soft_delete_enabled = True` on the repository (the model needs the columns, e.g. via `SoftDeleteMixin`; validated at construction). Then:
+  - `delete_by_pk` / `delete_by_pk_multi` stamp `is_deleted` + `deleted_at` instead of deleting; re-deleting is an idempotent no-op, and counts report only newly deleted rows.
+  - **Every read hides stamped rows by default** — `get`, `get_by_pk`, `get_all`, `exists`, `get_multi` (including its total count). Updates on a stamped row return `None` (404 semantics).
+  - Opt out per call: `include_deleted=True` on the point-read methods, `ListQueryOptions(include_deleted=True)` for lists. `include_deleted=True` on a repository without soft delete raises (programming error).
+  - Lifecycle: `restore_by_pk(session, pk)` clears the flags; `purge_soft_deleted(session, older_than=timedelta(...), limit=N)` hard-deletes stamped rows past the retention window, at most `limit` per call. Purge is a one-shot operation — *when* to run it (a scheduler job, cron, pg_cron) and how hard to push are the app's policy. To drain a large backlog without one giant transaction, loop **one transaction per batch**:
+    ```python
+    while True:
+        async with AsyncTransaction() as session:
+            purged = await repo.purge_soft_deleted(session, older_than=timedelta(days=30), limit=1000)
+        if purged < 1000:
+            break
+    ```
+  - Caveat: DB-level unique constraints need a partial index (`WHERE NOT is_deleted`) so a deleted row does not block re-creation; app-level `UniqueConstraintHook` checks already treat deleted rows as absent.
 
 ---
 
@@ -59,6 +71,7 @@ Provides the business logic layer with a Hook system to manage operations like v
   | `GetMultiHook` | `get_multi_context`, `get_multi_prepare_filters`, `get_multi_post` |
 
 - **`Operation`**: every hook method takes one as its first argument. It carries `session`, `context`, `repo` and `state` — a scratch dict scoped to a single service call.
+- **Context contract**: `BaseContextKwargs` carries `extra="forbid"`, inherited by every subclass — passing a context key the model does not declare raises a validation error instead of being silently dropped. A hook that reads context keys declares them in `required_context_keys` (a `frozenset[str]` on `BaseHook`); the executor raises `TypeError` on the first operation if the service's `context_model` does not declare them (as `Required` or `NotRequired` — that choice decides whether callers may omit the key).
 - **Precautions**: Per-operation state belongs on `op.state`, **never** on the hook instance. Hooks are shared across items and across calls, so `self._something = ...` leaks between them.
 - **Bulk methods** (`*_multi`): overriding one replaces only *that hook's* per-item behaviour with a single bulk query (e.g. one parent lookup instead of N). It does not affect the other hooks — the executor asks each hook separately, and a hook that has not overridden the bulk method still gets its single-item hook applied to every item.
 
@@ -118,5 +131,6 @@ FastAPI dependencies used for filtering and ordering dynamically via HTTP Query 
 Centralized application exceptions to ensure consistent error handling.
 
 ### `basic.py`, `db.py`
-- **Classes**: `AppException`, `NotFoundException`, `BadRequestException`, `ForbiddenException`, `ConflictException`.
-- **Usage**: Throw these directly in Services or Repositories. FastAPI exception handlers catch these and translate them to proper JSON HTTP responses.
+- **Classes**: `CustomException` (base), `NotFoundException`, `BadRequestException`, `ForbiddenException`, `ConflictException`.
+- **Usage**: Throw these directly in Services or Repositories. FastAPI exception handlers catch these and translate them to proper JSON HTTP responses. The exception classes themselves are FastAPI-free (`http.HTTPStatus`); only `handler.py` touches FastAPI.
+- **Precautions**: There is **no** blanket `ValueError` handler — a stray `ValueError` is treated as a programming error and surfaces as a 500. A client-caused error must raise a `CustomException` subclass (e.g. `BadRequestException`) at its source.

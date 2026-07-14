@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -29,7 +29,7 @@ class DetailDeleteResponseHook[ModelType: Any, TContextKwargs: BaseContextKwargs
         return op.state.setdefault(self._STATE_KEY, {})
 
     @asynccontextmanager
-    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncIterator[None]:
+    async def delete_context(self, op: Operation[TContextKwargs], pk: PrimaryKeyType) -> AsyncGenerator[None]:
         obj = await op.repo.get_by_pk(op.session, pk=pk)
         if obj is not None:
             self._texts(op)[str(pk)] = self.represent(obj)
@@ -55,7 +55,7 @@ class DetailDeleteResponseHook[ModelType: Any, TContextKwargs: BaseContextKwargs
     @asynccontextmanager
     async def delete_context_multi(
         self, op: Operation[TContextKwargs], pks: Sequence[PrimaryKeyType]
-    ) -> AsyncIterator[None]:
+    ) -> AsyncGenerator[None]:
         yield
 
     async def delete_post_multi(

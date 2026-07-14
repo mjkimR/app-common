@@ -223,6 +223,7 @@ Hooks with no dependencies can just as well be declared as a class attribute (`h
 -   **A hook never calls `super()` and never calls the next hook.** The executor owns the chain, so a hook implements only its own behaviour and cannot break the chain for the hooks after it. Adding, reordering, or removing a hook cannot silently disable another one.
 -   **Every hook method takes an `Operation` first**: `op.session`, `op.context`, `op.repo`, and `op.state` — a scratch dict scoped to a single service call.
 -   **Carry per-call state on `op.state`, never on the hook instance.** Hooks are shared across items and across calls, so a value stashed on `self` in a context hook leaks into the next item and the next request. Put it on `op.state` (keyed by pk when the operation is bulk) and read it back in the matching `*_post` hook.
+-   **Context keys are a checked contract.** `BaseContextKwargs` forbids undeclared keys (`extra="forbid"`, inherited by every subclass), so passing a key the `context_model` does not declare raises instead of being silently dropped. A hook that reads context keys declares them via `required_context_keys = frozenset({...})`; the executor raises `TypeError` on the first operation when the service's `context_model` is missing one — declare the key on the model as `Required` (callers must pass it) or `NotRequired` (the hook tolerates absence).
 
 ### Hook protocols
 

@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from pydantic import BaseModel
@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import UnaryExpression
 from sqlalchemy.sql.selectable import Select
 
+from app_layer_base.base.exceptions.basic import BadRequestException
 from app_layer_base.base.repos.query_options import ListQueryOptions, WhereClause
 from app_layer_base.base.schemas.paginated import PaginatedList
 from app_layer_base.core.log import logger
@@ -31,9 +32,17 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
     BATCH_SIZE = 1000
 
     model: type[ModelType]
-    resource_name: str
 
     default_order_by_col: str | None = "created_at"
+
+    soft_delete_enabled: bool = False
+    """Opt-in soft delete. When True, ``delete_by_pk`` / ``delete_by_pk_multi``
+    stamp ``is_deleted_column`` (and ``deleted_at_column``) instead of deleting,
+    and every read excludes soft-deleted rows unless ``include_deleted=True``
+    (``ListQueryOptions.include_deleted`` for lists). See also ``restore_by_pk``
+    and ``purge_soft_deleted``. App-level unique checks then treat deleted rows
+    as absent -- DB-level unique constraints need a partial index
+    (``WHERE NOT is_deleted``) to match."""
     is_deleted_column: str | None = "is_deleted"
     deleted_at_column: str | None = "deleted_at"
 
@@ -43,6 +52,19 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
             raise ValueError("Model inspection failed, resulting in None.")
         self._primary_keys: Sequence[Column] = inspector.mapper.primary_key
         self._model_columns: set[str] = {col.key for col in inspector.mapper.columns}
+
+        if self.soft_delete_enabled:
+            if not self.is_deleted_column or not hasattr(self.model, self.is_deleted_column):
+                raise ValueError(
+                    f"soft_delete_enabled requires the column '{self.is_deleted_column}' "
+                    f"in model {self.model.__name__} (e.g. via SoftDeleteMixin)."
+                )
+            if self.deleted_at_column and not hasattr(self.model, self.deleted_at_column):
+                raise ValueError(
+                    f"Soft delete is configured to use '{self.deleted_at_column}', "
+                    f"but it's missing in model {self.model.__name__}. "
+                    "Set deleted_at_column = None to skip the timestamp."
+                )
 
     @classmethod
     def model_name(cls):
@@ -97,8 +119,39 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
 
         return [pk_col == value for pk_col, value in zip(self._primary_keys, pk_values, strict=False)]
 
-    def _select(self, where: WhereClause = (), order_by: SeqOrOneOrNone[UnaryExpression] = ()) -> Select:
+    # ============================================================
+    # Soft delete helpers
+    # ============================================================
+
+    def _assert_soft_delete_readable(self, include_deleted: bool) -> None:
+        """``include_deleted=True`` on a repo without soft delete is a programming error."""
+        if include_deleted and not self.soft_delete_enabled:
+            raise ValueError(f"include_deleted=True requires soft_delete_enabled on {self.__class__.__name__}.")
+
+    def _active_rows_filter(self, include_deleted: bool = False) -> list[Any]:
+        """WHERE conditions hiding soft-deleted rows; empty when not applicable."""
+        if not self.soft_delete_enabled or include_deleted:
+            return []
+        return [getattr(self.model, cast(str, self.is_deleted_column)).is_(False)]
+
+    def _soft_delete_values(self) -> dict[str, Any]:
+        values: dict[str, Any] = {cast(str, self.is_deleted_column): True}
+        if self.deleted_at_column:
+            values[self.deleted_at_column] = datetime.now(UTC)
+        return values
+
+    # ============================================================
+
+    def _select(
+        self,
+        where: WhereClause = (),
+        order_by: SeqOrOneOrNone[UnaryExpression] = (),
+        include_deleted: bool = False,
+    ) -> Select:
         stmt = select(self.model)
+        active = self._active_rows_filter(include_deleted)
+        if active:
+            stmt = stmt.where(*active)
         if where is not None:
             where = to_sequence(where)
             stmt = stmt.where(*where)
@@ -124,14 +177,22 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         session: AsyncSession,
         where: WhereClause = (),
         order_by: SeqOrOneOrNone[UnaryExpression] = (),
+        include_deleted: bool = False,
     ) -> ModelType | None:
-        stmt = self._select(where, order_by)
+        self._assert_soft_delete_readable(include_deleted)
+        stmt = self._select(where, order_by, include_deleted=include_deleted)
         stmt = stmt.limit(1)
 
         db_row = await session.execute(stmt)
         return db_row.scalar_one_or_none()
 
-    async def get_by_pk(self, session: AsyncSession, pk: PrimaryKeyType) -> ModelType | None:
+    async def get_by_pk(
+        self,
+        session: AsyncSession,
+        pk: PrimaryKeyType,
+        include_deleted: bool = False,
+    ) -> ModelType | None:
+        self._assert_soft_delete_readable(include_deleted)
         if not self._primary_keys:
             raise ValueError("No primary key defined for this model.")
 
@@ -147,15 +208,30 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         else:
             ident = dict(zip([pk_col.key for pk_col in self._primary_keys], pk_values, strict=False))
 
-        return await session.get(self.model, ident)
+        obj = await session.get(self.model, ident)
+        # session.get() hits the identity map, so the soft-delete filter cannot live
+        # in the query; screen the row after the fact instead.
+        if (
+            obj is not None
+            and self.soft_delete_enabled
+            and not include_deleted
+            and getattr(obj, cast(str, self.is_deleted_column))
+        ):
+            return None
+        return obj
 
     async def exists(
         self,
         session: AsyncSession,
         where: WhereClause = (),
+        include_deleted: bool = False,
     ) -> bool:
+        self._assert_soft_delete_readable(include_deleted)
         stmt = select(literal(1))  # select 1
         stmt = stmt.select_from(self.model)
+        active = self._active_rows_filter(include_deleted)
+        if active:
+            stmt = stmt.where(*active)
         if where is not None:
             where = to_sequence(where)
             stmt = stmt.where(*where)
@@ -221,14 +297,16 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         where = query_options.where
         order_by = query_options.order_by
         select_options = query_options.select_options
+        include_deleted = query_options.include_deleted
 
+        self._assert_soft_delete_readable(include_deleted)
         if limit is not None and limit < 0:
             raise ValueError("Limit must be non-negative.")
         if offset < 0:
             raise ValueError("Offset must be non-negative.")
 
         # Query
-        stmt = self._select(where=where, order_by=order_by)
+        stmt = self._select(where=where, order_by=order_by, include_deleted=include_deleted)
         stmt = stmt.offset(offset)
         if limit is not None:
             stmt = stmt.limit(limit)
@@ -246,6 +324,9 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         else:
             # Fallback: Execute COUNT(*) query for middle pages, or out-of-bounds requests
             count_stmt = select(func.count()).select_from(self.model)
+            active = self._active_rows_filter(include_deleted)
+            if active:
+                count_stmt = count_stmt.where(*active)
             if where is not None:
                 where = to_sequence(where)
                 count_stmt = count_stmt.where(*where)
@@ -264,8 +345,10 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         session: AsyncSession,
         where: WhereClause = (),
         order_by: SeqOrOneOrNone[UnaryExpression] = (),
+        include_deleted: bool = False,
     ) -> Sequence[ModelType]:
-        stmt = self._select(where=where, order_by=order_by)
+        self._assert_soft_delete_readable(include_deleted)
+        stmt = self._select(where=where, order_by=order_by, include_deleted=include_deleted)
         result = await session.execute(stmt)
         return result.scalars().all()
 
@@ -288,7 +371,7 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         update_data.update(update_fields)  # Include additional update fields
 
         if not update_data and partial:
-            raise ValueError("Update data cannot be empty.")
+            raise BadRequestException(message="Update data cannot be empty.")
 
         for field, value in update_data.items():
             setattr(db_obj, field, value)
@@ -304,44 +387,26 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         self,
         session: AsyncSession,
         pk: PrimaryKeyType,
-        soft_delete: bool = False,
     ) -> bool:
         filters = self._get_primary_key_filters(pk)
-        if soft_delete:
-            if not self.is_deleted_column:
-                raise ValueError("is_deleted_column is not configured for soft delete.")
-            has_is_deleted = hasattr(self.model, self.is_deleted_column)
-
-            if not has_is_deleted:
-                raise ValueError(
-                    f"Soft delete requires the column '{self.is_deleted_column}' in model {self.model.__name__}."
-                )
-
-            if self.deleted_at_column and not hasattr(self.model, self.deleted_at_column):
-                raise ValueError(
-                    f"Soft delete is configured to use '{self.deleted_at_column}', but it's missing in model {self.model.__name__}."
-                )
-
-            update_values: dict[str, Any] = {self.is_deleted_column: True}
-            if self.deleted_at_column and hasattr(self.model, self.deleted_at_column):
-                update_values[self.deleted_at_column] = datetime.now(UTC)
-
-            stmt = update(self.model).filter(*filters).values(**update_values)
+        if self.soft_delete_enabled:
+            # The active-rows filter makes a re-delete a no-op (rowcount 0), so
+            # soft delete is idempotent and reports only newly deleted rows.
+            stmt = update(self.model).filter(*filters, *self._active_rows_filter()).values(**self._soft_delete_values())
         else:
             stmt = delete(self.model).filter(*filters)
 
         result = await session.execute(stmt)
         cursor_result = cast(CursorResult, result)
-        deleted_or_updated = int(cursor_result.rowcount) > 0
-        if deleted_or_updated:
+        deleted = int(cursor_result.rowcount) > 0
+        if deleted:
             await session.flush()
-        return deleted_or_updated
+        return deleted
 
     async def delete_by_pk_multi(
         self,
         session: AsyncSession,
         pks: Sequence[PrimaryKeyType],
-        soft_delete: bool = False,
     ) -> int:
         if not pks:
             return 0
@@ -359,24 +424,12 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
                 val_list = [self.normalize_pk(pk) for pk in chunk]
                 where_clause = tuple_(*pk_cols).in_(val_list)
 
-            if soft_delete:
-                if not self.is_deleted_column:
-                    raise ValueError("is_deleted_column is not configured for soft delete.")
-                has_is_deleted = hasattr(self.model, self.is_deleted_column)
-                if not has_is_deleted:
-                    raise ValueError(
-                        f"Soft delete requires the column '{self.is_deleted_column}' in model {self.model.__name__}."
-                    )
-                if self.deleted_at_column and not hasattr(self.model, self.deleted_at_column):
-                    raise ValueError(
-                        f"Soft delete is configured to use '{self.deleted_at_column}', but it's missing in model {self.model.__name__}."
-                    )
-
-                update_values: dict[str, Any] = {self.is_deleted_column: True}
-                if self.deleted_at_column and hasattr(self.model, self.deleted_at_column):
-                    update_values[self.deleted_at_column] = datetime.now(UTC)
-
-                stmt = update(self.model).where(where_clause).values(**update_values)
+            if self.soft_delete_enabled:
+                stmt = (
+                    update(self.model)
+                    .where(where_clause, *self._active_rows_filter())
+                    .values(**self._soft_delete_values())
+                )
             else:
                 stmt = delete(self.model).where(where_clause)
 
@@ -388,3 +441,78 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
             await session.flush()
 
         return total_affected_rows
+
+    async def restore_by_pk(self, session: AsyncSession, pk: PrimaryKeyType) -> ModelType | None:
+        """
+        Clear the soft-delete flags on a row.
+
+        Returns the row (restored, or untouched if it was never deleted), or
+        None when no row with that pk exists at all.
+        """
+        if not self.soft_delete_enabled:
+            raise ValueError(f"restore_by_pk requires soft_delete_enabled on {self.__class__.__name__}.")
+
+        obj = await self.get_by_pk(session, pk, include_deleted=True)
+        if obj is None:
+            return None
+
+        if getattr(obj, cast(str, self.is_deleted_column)):
+            setattr(obj, cast(str, self.is_deleted_column), False)
+            if self.deleted_at_column:
+                setattr(obj, self.deleted_at_column, None)
+            session.add(obj)
+            await session.flush()
+            await session.refresh(obj)
+        return obj
+
+    async def purge_soft_deleted(
+        self,
+        session: AsyncSession,
+        older_than: timedelta | None = None,
+        limit: int | None = None,
+    ) -> int:
+        """
+        Hard-delete soft-deleted rows; returns how many were purged.
+
+        ``older_than`` keeps rows whose ``deleted_at`` is more recent than the
+        cutoff (a retention window). ``limit`` caps how many rows one call
+        purges, so a large backlog can be drained in short transactions --
+        the batching loop belongs to the caller, one transaction per call:
+
+            while True:
+                async with AsyncTransaction() as session:
+                    purged = await repo.purge_soft_deleted(session, older_than=..., limit=1000)
+                if purged < 1000:
+                    break
+
+        This is a one-shot operation on purpose: WHEN to run it (a scheduler
+        job, a cron, pg_cron) and how hard to push (batch size, pacing) are the
+        app's policy, not the library's.
+        """
+        if not self.soft_delete_enabled:
+            raise ValueError(f"purge_soft_deleted requires soft_delete_enabled on {self.__class__.__name__}.")
+
+        conditions: list[Any] = [getattr(self.model, cast(str, self.is_deleted_column)).is_(True)]
+        if older_than is not None:
+            if not self.deleted_at_column:
+                raise ValueError("purge_soft_deleted(older_than=...) requires deleted_at_column to be configured.")
+            cutoff = datetime.now(UTC) - older_than
+            conditions.append(getattr(self.model, self.deleted_at_column) <= cutoff)
+
+        if limit is None:
+            stmt = delete(self.model).where(*conditions)
+        else:
+            if limit <= 0:
+                raise ValueError("purge_soft_deleted(limit=...) must be positive.")
+            pk_cols = self.primary_keys
+            pk_subquery = select(*pk_cols).where(*conditions).limit(limit)
+            if len(pk_cols) == 1:
+                stmt = delete(self.model).where(pk_cols[0].in_(pk_subquery))
+            else:
+                stmt = delete(self.model).where(tuple_(*pk_cols).in_(pk_subquery))
+
+        result = await session.execute(stmt)
+        purged = int(cast(CursorResult, result).rowcount or 0)
+        if purged > 0:
+            await session.flush()
+        return purged

@@ -83,9 +83,10 @@ class MockRepository(BaseRepository[MockModel, MockCreateSchema, MockUpdateSchem
 class MockSoftDeleteRepository(
     BaseRepository[MockSoftDeleteModel, MockCreateSchema, MockUpdateSchema, MockUpdateSchema]
 ):
-    """Mock repository with soft delete model."""
+    """Mock repository with soft delete enabled."""
 
     model = MockSoftDeleteModel
+    soft_delete_enabled = True
 
 
 class MockChildRepository(BaseRepository[MockChildModel, MockCreateSchema, MockUpdateSchema, MockUpdateSchema]):
