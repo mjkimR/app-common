@@ -1,28 +1,28 @@
-from fastapi import status
+from http import HTTPStatus
 
 from app_layer_base.base.exceptions.base import CustomException
 
 
 class BadRequestException(CustomException):
-    status_code = status.HTTP_400_BAD_REQUEST
+    status_code = HTTPStatus.BAD_REQUEST
     title = "Bad Request"
     message = "Bad Request"
 
 
 class ForbiddenException(CustomException):
-    status_code = status.HTTP_403_FORBIDDEN
+    status_code = HTTPStatus.FORBIDDEN
     title = "Forbidden"
     message = "Forbidden"
 
 
 class NotFoundException(CustomException):
-    status_code = status.HTTP_404_NOT_FOUND
+    status_code = HTTPStatus.NOT_FOUND
     title = "Resource Not Found"
     message = "Not Found"
     trace = False
 
 
 class ConflictException(CustomException):
-    status_code = status.HTTP_409_CONFLICT
+    status_code = HTTPStatus.CONFLICT
     title = "Conflict"
     message = "Conflict"

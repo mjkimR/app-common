@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
+from http import HTTPStatus
 
-from fastapi import status
 from sqlalchemy.exc import (
     DataError,
     DBAPIError,
@@ -13,25 +13,25 @@ from app_layer_base.base.exceptions.base import CustomException
 
 
 class IntegrityException(CustomException):
-    status_code = status.HTTP_409_CONFLICT
+    status_code = HTTPStatus.CONFLICT
     title = "Data integrity violation"
     message = "Data integrity violation (e.g., Duplicate key or Foreign Key violation)"
 
 
 class NoResultFoundException(CustomException):
-    status_code = status.HTTP_404_NOT_FOUND
+    status_code = HTTPStatus.NOT_FOUND
     title = "Resource not found"
     message = "The requested resource was not found."
 
 
 class InvalidDataException(CustomException):
-    status_code = status.HTTP_400_BAD_REQUEST
+    status_code = HTTPStatus.BAD_REQUEST
     title = "Invalid data"
     message = "The provided data is invalid."
 
 
 class DatabaseException(CustomException):
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    status_code = HTTPStatus.INTERNAL_SERVER_ERROR
     title = "Database error"
     message = "An unexpected database error occurred."
 

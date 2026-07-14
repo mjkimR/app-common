@@ -103,25 +103,6 @@ def set_exception_handler(app: FastAPI):
             },
         )
 
-    @app.exception_handler(ValueError)
-    async def value_error_handler(request: Request, exc: ValueError):
-        tb_log = get_exception_traceback_str(exc)
-        logger.error(f"ValueError: {exc}\n{tb_log}")
-        status_code = HTTPStatus.BAD_REQUEST
-        title = status_code.phrase
-        detail = "Invalid input provided."
-        return JSONResponse(
-            status_code=status_code,
-            content={
-                "type": "about:blank",
-                "title": title,
-                "status": status_code,
-                "detail": detail,
-                "instance": str(request.url.path),
-                "request_id": _get_request_id(request),
-            },
-        )
-
     @app.exception_handler(SQLAlchemyError)
     async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
         try:

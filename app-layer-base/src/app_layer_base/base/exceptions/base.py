@@ -1,8 +1,8 @@
-from fastapi import status
+from http import HTTPStatus
 
 
 class CustomException(Exception):
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR
     title = "Internal Server Error"
     message = "Internal Server Error"
     log_message = None

@@ -11,8 +11,8 @@ class PaginationParams:
 
 
 def pagination_params(
-    offset: int = Query(default=0, description="offset for pagination"),
-    limit: int = Query(default=100, le=200, description="limit for pagination"),
+    offset: int = Query(default=0, ge=0, description="offset for pagination"),
+    limit: int = Query(default=100, ge=0, le=200, description="limit for pagination"),
 ) -> PaginationParams:
     return PaginationParams(offset=offset, limit=limit)
 

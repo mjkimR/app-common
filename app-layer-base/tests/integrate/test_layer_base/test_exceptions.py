@@ -35,6 +35,11 @@ async def trigger_general_exception():
     raise Exception("This is a general unhandled exception")
 
 
+@router.get("/value-error")
+async def trigger_value_error():
+    raise ValueError("This is a programming error, not client input")
+
+
 app.include_router(router)
 
 
@@ -72,3 +77,11 @@ async def test_general_exception_handler(client):
     data = response.json()
     assert data["title"] == "Internal Server Error"
     assert data["detail"] == "An unexpected internal server error occurred."
+
+
+async def test_value_error_is_a_server_error(client):
+    """No blanket ValueError->400: a stray ValueError is a bug and must be a 500."""
+    response = client.get("/value-error")
+    assert response.status_code == 500
+    data = response.json()
+    assert data["title"] == "Internal Server Error"
