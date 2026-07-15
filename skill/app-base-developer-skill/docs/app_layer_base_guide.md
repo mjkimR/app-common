@@ -265,7 +265,7 @@ Overriding a bulk method affects **only the hook that overrides it**. The execut
                     "Name must be unique within the parent.",
                 )
     ```
--   **`DomainEventHook`**: Publishes domain events (e.g. `Book.created`) after CUD operations. Implement the abstract `publish_event(topic, payload)` to wire it to your transport of choice — it is transport-agnostic and has no message-broker dependency. Override `payload(op, event_type, pk, obj=None)` to put more than the resource id in the event body.
+-   **`DomainEventHook`**: Publishes domain events (e.g. `Book.created`) after CUD operations. Implement the abstract `publish_event(topic, payload)` to wire it to your transport of choice — it is transport-agnostic and has no message-broker dependency. Override `payload(op, event_type, pk, obj=None)` to put more than the resource id in the event body. **Publishing is deferred until the transaction commits** (via `op.register_after_commit`): the payload is captured while the row is in hand, but `publish_event` fires only once the write is durable, so a rolled-back write never emits an event. This is **at-most-once, best-effort** — a failed publish is logged and lost. When the event must not be lost, use `OutboxHook` (writes it in the same transaction) instead.
 -   **`DetailDeleteResponseHook`**: Puts a human-readable representation of the deleted row on `DeleteResponse.representation`. Implement `represent(obj) -> str`; the row is read before the delete and the text is stashed on `op.state`, keyed by pk. It sits `delete_multi` out entirely -- `MultipleDeleteResponse` has nowhere to put a per-item representation, so reading every row would be N queries for output nobody can see.
 
 `app-prebuilt-outbox` ships one more: **`OutboxHook(outbox_repo, event_types)`**, which writes an outbox row in the same transaction as the change. Implement `payload(op, obj, identity)`. See its [README](../../../app-prebuilt-outbox/README.md).
@@ -282,7 +282,9 @@ Litmus test: if the rule must hold no matter which code path touches the resourc
 
 ### 2. Never call a use case from a use case
 
-Each `execute()` opens its own `AsyncTransaction`. Nesting one inside another does not create a nested transaction — it creates a **second, independent session on a separate connection**: the inner one commits even if the outer rolls back, cannot see the outer session's uncommitted changes, and can deadlock against the outer session's row locks. There is no supported way to pass a session between use cases; do not add one ad hoc.
+Each `execute()` opens its own `AsyncTransaction` by default. Nesting one inside another *without sharing the session* does not create a nested transaction — it creates a **second, independent session on a separate connection**: the inner one commits even if the outer rolls back, cannot see the outer session's uncommitted changes, and can deadlock against the outer session's row locks. So compose at the service layer (rule 3), not by calling one use case from another.
+
+There is a deliberate **escape hatch** for the rare case where reusing a use case as-is beats refactoring it right now: `execute(..., session=existing)` makes it *join* your transaction instead of opening its own (internally `AsyncTransaction(session=existing)` becomes a pass-through — the caller owns the commit, rollback, close, and after-commit dispatch). Treat it as a bridge, not a pattern: prefer service-layer composition, and reach for `session=` only when the dependency-tangling risk is low or the refactor is imminent. A `DomainEventHook` inside a joined use case registers its publish on *your* session, so it fires only when *you* commit — if your outer boundary is not an `AsyncTransaction`, you are responsible for dispatching it (`run_after_commit(session)`).
 
 ### 3. To compose, open one transaction and call several services
 
