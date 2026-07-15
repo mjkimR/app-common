@@ -63,13 +63,31 @@ class Operation[TContextKwargs: BaseContextKwargs]:
 
     ``state`` is scratch space scoped to a single service call. A hook that needs
     to carry a value from its context hook to its post hook must put it here --
-    storing it on the hook instance leaks across calls and across items.
+    storing it on the hook instance leaks across calls and across items. For state
+    that must outlive the service call and reach the transaction's commit, use
+    ``register_after_commit`` instead (it is keyed on the session, not on ``state``).
     """
 
     session: AsyncSession
     context: TContextKwargs
     repo: BaseRepository
     state: dict[str, Any] = field(default_factory=dict)
+
+    def register_after_commit(self, callback) -> None:
+        """Queue a coroutine to run after this operation's transaction commits.
+
+        The seam for at-most-once side effects triggered by a write -- publishing a
+        domain event, invalidating a cache, sending a notification. Registering
+        here (rather than awaiting the effect inline in a ``*_post`` hook) keeps it
+        off the rolled-back path: it fires only if the transaction actually commits.
+        Capture plain data in ``callback``, not ORM objects. For at-least-once
+        delivery use an outbox instead. See
+        ``app_layer_base.core.database.transaction.register_after_commit``.
+        """
+        # Local import: keep hook imports free of the database engine module.
+        from app_layer_base.core.database.transaction import register_after_commit
+
+        register_after_commit(self.session, callback)
 
 
 # ============================================================

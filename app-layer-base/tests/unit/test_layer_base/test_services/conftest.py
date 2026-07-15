@@ -80,6 +80,8 @@ def mock_async_session():
     session.flush = AsyncMock()
     session.refresh = AsyncMock()
     session.add = MagicMock()
+    # A real dict so register_after_commit can queue on session.info like a live session.
+    session.info = {}
     return session
 
 

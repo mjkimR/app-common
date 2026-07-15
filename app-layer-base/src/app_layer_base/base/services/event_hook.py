@@ -22,6 +22,14 @@ class DomainEventHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
     """
     Publishes a domain event after each CUD operation, e.g. 'Book.created'.
 
+    Publishing is deferred to *after the transaction commits* via
+    ``op.register_after_commit``: the payload is captured while the row is in hand,
+    but ``publish_event`` only fires once the write is durable. A hook that
+    published inline would emit even when the surrounding transaction later rolls
+    back (a dual write). The trade-off is honest at-most-once delivery -- if a
+    publish fails the event is logged and lost. When the event must not be lost,
+    use ``OutboxHook`` (writes the event in the same transaction) instead.
+
     Bulk operations publish one aggregate event ('Book.created_multi') instead of
     one per item -- that override replaces only this hook's per-item publishing.
     Other hooks still run per item.
@@ -77,16 +85,21 @@ class DomainEventHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
     # Hooks
     # ============================================================
 
+    def _defer_publish(self, op: Operation[TContextKwargs], topic: str, payload: dict[str, Any]) -> None:
+        """Publish ``topic`` after the transaction commits (see the class docstring)."""
+        op.register_after_commit(lambda: self.publish_event(topic, payload))
+
     async def create_post(self, op: Operation[TContextKwargs], obj: ModelType) -> ModelType:
         pk = self._get_pk_from_obj(op, obj)
-        await self.publish_event(f"{op.repo.model_name()}.created", self.payload(op, "created", pk, obj))
+        self._defer_publish(op, f"{op.repo.model_name()}.created", self.payload(op, "created", pk, obj))
         return obj
 
     async def create_post_multi(self, op: Operation[TContextKwargs], objs: Sequence[ModelType]) -> Sequence[ModelType]:
         """One aggregate event instead of one per item."""
         if objs:
             pks = [self._get_pk_from_obj(op, obj) for obj in objs]
-            await self.publish_event(
+            self._defer_publish(
+                op,
                 f"{op.repo.model_name()}.created_multi",
                 self._bulk_payload(op, "created_multi", pks),
             )
@@ -99,14 +112,14 @@ class DomainEventHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
             return None
 
         pk = self._get_pk_from_obj(op, obj)
-        await self.publish_event(f"{op.repo.model_name()}.updated", self.payload(op, "updated", pk, obj))
+        self._defer_publish(op, f"{op.repo.model_name()}.updated", self.payload(op, "updated", pk, obj))
         return obj
 
     async def delete_post(
         self, op: Operation[TContextKwargs], pk: PrimaryKeyType, result: DeleteResponse
     ) -> DeleteResponse:
         if result.success:
-            await self.publish_event(f"{op.repo.model_name()}.deleted", self.payload(op, "deleted", pk))
+            self._defer_publish(op, f"{op.repo.model_name()}.deleted", self.payload(op, "deleted", pk))
         return result
 
     async def delete_post_multi(
@@ -117,7 +130,8 @@ class DomainEventHook[ModelType: Any, TContextKwargs: BaseContextKwargs](
     ) -> MultipleDeleteResponse:
         """One aggregate event instead of one per item."""
         if result.deleted_count > 0:
-            await self.publish_event(
+            self._defer_publish(
+                op,
                 f"{op.repo.model_name()}.deleted_multi",
                 self._bulk_payload(op, "deleted_multi", pks),
             )

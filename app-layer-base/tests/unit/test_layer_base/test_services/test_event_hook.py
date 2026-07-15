@@ -9,6 +9,7 @@ from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDele
 from app_layer_base.base.services.base import BaseContextKwargs, BaseCreateServiceMixin
 from app_layer_base.base.services.event_hook import DomainEventHook
 from app_layer_base.base.services.hooks import Operation
+from app_layer_base.core.database.transaction import run_after_commit
 from test_layer_base.mock_models import MockCreateSchema, MockModel, MockRepository
 
 # =============================================================================
@@ -84,6 +85,41 @@ def _row(repo, pk, **attrs) -> MagicMock:
     return obj
 
 
+async def _publish(op: Operation, coro):
+    """Await a `*_post` hook, then dispatch the after-commit publish it queued.
+
+    DomainEventHook defers publishing until the transaction commits, so a test
+    that wants to observe the event has to drain the after-commit queue itself --
+    exactly what an owning AsyncTransaction does after a successful commit.
+    """
+    result = await coro
+    await run_after_commit(op.session)
+    return result
+
+
+# =============================================================================
+# Deferred-until-commit contract
+# =============================================================================
+
+
+class TestDomainEventDefersUntilCommit:
+    async def test_create_post_publishes_nothing_before_commit(self, hook, base_op):
+        """The payload is captured now, but publish waits for the commit drain."""
+        await hook.create_post(base_op, _row(base_op.repo, uuid.uuid4()))
+
+        assert hook.published == [], "event was published before the transaction committed"
+
+        await run_after_commit(base_op.session)
+        assert hook.topics == ["MockModel.created"]
+
+    async def test_a_second_drain_does_not_republish(self, hook, base_op):
+        """run_after_commit clears the queue, so re-draining is a no-op."""
+        await _publish(base_op, hook.create_post(base_op, _row(base_op.repo, uuid.uuid4())))
+
+        await run_after_commit(base_op.session)
+        assert len(hook.published) == 1
+
+
 # =============================================================================
 # create
 # =============================================================================
@@ -93,7 +129,7 @@ class TestDomainEventCreate:
     async def test_create_post_publishes_created(self, hook, base_op):
         obj_id = uuid.uuid4()
 
-        returned = await hook.create_post(base_op, _row(base_op.repo, obj_id))
+        returned = await _publish(base_op, hook.create_post(base_op, _row(base_op.repo, obj_id)))
 
         assert len(hook.published) == 1
         topic, payload = hook.published[0]
@@ -106,7 +142,7 @@ class TestDomainEventCreate:
     async def test_create_post_multi_publishes_one_aggregate_event(self, hook, base_op):
         objs = [_row(base_op.repo, uuid.uuid4()) for _ in range(3)]
 
-        await hook.create_post_multi(base_op, objs)
+        await _publish(base_op, hook.create_post_multi(base_op, objs))
 
         assert hook.topics == ["MockModel.created_multi"]
         _, payload = hook.published[0]
@@ -114,14 +150,14 @@ class TestDomainEventCreate:
         assert len(payload["resource_ids"]) == 3
 
     async def test_create_post_multi_publishes_nothing_for_an_empty_list(self, hook, base_op):
-        await hook.create_post_multi(base_op, [])
+        await _publish(base_op, hook.create_post_multi(base_op, []))
 
         assert hook.published == []
 
     async def test_payload_override_is_used(self, base_op):
         enriched = EnrichedEventHook()
 
-        await enriched.create_post(base_op, _row(base_op.repo, uuid.uuid4(), name="Widget"))
+        await _publish(base_op, enriched.create_post(base_op, _row(base_op.repo, uuid.uuid4(), name="Widget")))
 
         _, payload = enriched.published[0]
         assert payload["name"] == "Widget"
@@ -136,7 +172,7 @@ class TestDomainEventUpdate:
     async def test_update_post_publishes_updated(self, hook, base_op):
         obj_id = uuid.uuid4()
 
-        await hook.update_post(base_op, _row(base_op.repo, obj_id))
+        await _publish(base_op, hook.update_post(base_op, _row(base_op.repo, obj_id)))
 
         assert len(hook.published) == 1
         topic, payload = hook.published[0]
@@ -146,7 +182,7 @@ class TestDomainEventUpdate:
 
     async def test_update_post_of_a_missing_row_publishes_nothing(self, hook, base_op):
         """No row was updated, so there is nothing to announce."""
-        result = await hook.update_post(base_op, None)
+        result = await _publish(base_op, hook.update_post(base_op, None))
 
         assert result is None
         assert hook.published == []
@@ -159,7 +195,7 @@ class TestDomainEventUpdate:
 
 class TestDomainEventDelete:
     async def test_delete_post_publishes_deleted_on_success(self, hook, base_op, sample_uuid):
-        result = await hook.delete_post(base_op, sample_uuid, DeleteResponse(success=True))
+        result = await _publish(base_op, hook.delete_post(base_op, sample_uuid, DeleteResponse(success=True)))
 
         assert len(hook.published) == 1
         topic, payload = hook.published[0]
@@ -169,14 +205,14 @@ class TestDomainEventDelete:
         assert result.success is True
 
     async def test_delete_post_publishes_nothing_on_failure(self, hook, base_op, sample_uuid):
-        await hook.delete_post(base_op, sample_uuid, DeleteResponse(success=False))
+        await _publish(base_op, hook.delete_post(base_op, sample_uuid, DeleteResponse(success=False)))
 
         assert hook.published == []
 
     async def test_delete_post_multi_publishes_one_aggregate_event(self, hook, base_op):
         pks = [uuid.uuid4(), uuid.uuid4()]
 
-        await hook.delete_post_multi(base_op, pks, MultipleDeleteResponse(deleted_count=2))
+        await _publish(base_op, hook.delete_post_multi(base_op, pks, MultipleDeleteResponse(deleted_count=2)))
 
         assert hook.topics == ["MockModel.deleted_multi"]
         _, payload = hook.published[0]
@@ -184,7 +220,7 @@ class TestDomainEventDelete:
         assert payload["resource_ids"] == [str(pk) for pk in pks]
 
     async def test_delete_post_multi_publishes_nothing_when_nothing_was_deleted(self, hook, base_op):
-        await hook.delete_post_multi(base_op, [], MultipleDeleteResponse(deleted_count=0))
+        await _publish(base_op, hook.delete_post_multi(base_op, [], MultipleDeleteResponse(deleted_count=0)))
 
         assert hook.published == []
 
@@ -198,7 +234,7 @@ class TestDomainEventCompositePk:
     async def test_created_event_joins_the_key_parts_with_a_comma(self, hook, composite_op):
         tenant = uuid.uuid4()
 
-        await hook.create_post(composite_op, _row(composite_op.repo, (tenant, "A")))
+        await _publish(composite_op, hook.create_post(composite_op, _row(composite_op.repo, (tenant, "A"))))
 
         _, payload = hook.published[0]
         assert payload["resource_id"] == f"{tenant},A"
@@ -208,7 +244,7 @@ class TestDomainEventCompositePk:
         tenant = uuid.uuid4()
         pks = [(tenant, "A"), (tenant, "B")]
 
-        await hook.delete_post_multi(composite_op, pks, MultipleDeleteResponse(deleted_count=2))
+        await _publish(composite_op, hook.delete_post_multi(composite_op, pks, MultipleDeleteResponse(deleted_count=2)))
 
         _, payload = hook.published[0]
         assert payload["resource_ids"] == [f"{tenant},A", f"{tenant},B"]
@@ -227,7 +263,9 @@ class TestDomainEventThroughService:
         mock_repo.create = AsyncMock(return_value=_row(mock_repo, obj_id))
 
         await service.create(mock_async_session, MockCreateSchema(name="x"))
+        assert hook.published == [], "service.create must not publish before its transaction commits"
 
+        await run_after_commit(mock_async_session)
         assert hook.topics == ["MockModel.created"]
         assert hook.published[0][1]["resource_id"] == str(obj_id)
 
@@ -238,5 +276,6 @@ class TestDomainEventThroughService:
         mock_repo.create_multi = AsyncMock(return_value=objs)
 
         await service.create_multi(mock_async_session, [MockCreateSchema(name="a"), MockCreateSchema(name="b")])
+        await run_after_commit(mock_async_session)
 
         assert hook.topics == ["MockModel.created_multi"]

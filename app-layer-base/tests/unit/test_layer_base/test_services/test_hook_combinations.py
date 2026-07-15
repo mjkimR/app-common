@@ -46,6 +46,7 @@ from app_layer_base.base.services.nested_resource_hook import (
     NestedResourceHook,
 )
 from app_layer_base.base.services.unique_constraints_hook import UniqueConstraintHook
+from app_layer_base.core.database.transaction import run_after_commit
 from test_layer_base.mock_models import MockModel, MockRepository
 
 PARENT_ID = uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
@@ -188,7 +189,10 @@ class DeleteSvc(BaseDeleteServiceMixin):
 
 @pytest.fixture
 def session():
-    return AsyncMock()
+    session = AsyncMock()
+    # A real dict so register_after_commit (DomainEventHook) can queue on session.info.
+    session.info = {}
+    return session
 
 
 @pytest.fixture
@@ -495,6 +499,7 @@ async def test_domain_event_bulk_event_does_not_suppress_per_item_hooks(session,
     svc = CreateSvc(create_repo, (ProbeHook(rec), event_hook))
 
     await svc.create_multi(session, [MagicMock(), MagicMock(), MagicMock()], context=None)
+    await run_after_commit(session)  # DomainEventHook publishes after commit
 
     assert rec.count("create_post") == len(objs), "per-item create_post was suppressed"
     assert event_hook.published == ["MockModel.created_multi"], (

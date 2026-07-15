@@ -25,6 +25,7 @@ from app_layer_base.base.services.base import (
 )
 from app_layer_base.base.services.event_hook import DomainEventHook
 from app_layer_base.base.services.hooks import BaseContextKwargs, Operation
+from app_layer_base.core.database.transaction import run_after_commit
 from app_prebuilt_outbox.hooks import OutboxHook
 from pydantic import BaseModel
 
@@ -141,7 +142,10 @@ def hook(outbox_repo):
 
 @pytest.fixture
 def session():
-    return AsyncMock()
+    session = AsyncMock()
+    # A real dict so DomainEventHook's register_after_commit can queue on session.info.
+    session.info = {}
+    return session
 
 
 @pytest.fixture
@@ -344,6 +348,7 @@ class TestOutboxHookOnAService:
         service = ItemService(repo, hooks)
 
         await service.create_multi(session, [ItemCreate(name=o.name) for o in objs])
+        await run_after_commit(session)  # DomainEventHook publishes after commit
 
         rows = _rows(outbox_repo)
         assert len(rows) == len(objs), (
