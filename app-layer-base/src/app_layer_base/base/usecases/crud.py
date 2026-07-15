@@ -1,7 +1,8 @@
 """
 Transaction-wrapping CRUD use cases.
 
-Each ``execute()`` owns exactly one ``AsyncTransaction``. Two rules follow:
+Each ``execute()`` owns exactly one ``AsyncTransaction`` by default. Two rules
+follow:
 
 - Never call a use case from inside a use case: the inner ``execute()`` opens a
   second, independent session, which commits separately from -- and can deadlock
@@ -10,6 +11,14 @@ Each ``execute()`` owns exactly one ``AsyncTransaction``. Two rules follow:
 - ``_execute`` / ``_post_execute`` overrides are orchestration seams for one
   scenario, not a home for business rules. An invariant that must hold on every
   write path belongs in a service hook, where every caller gets it.
+
+Escape hatch: ``execute(..., session=existing)`` makes the use case JOIN an
+outer transaction instead of owning one, so it can be reused inside another
+without the split-session hazard above. It is deliberately not the default:
+prefer service-layer composition, and reach for ``session=`` only when reusing a
+use case as-is beats refactoring it right now (and the caller owns the commit and
+any after-commit dispatch). Note that read use cases with read hooks and write
+use cases still run their hooks either way; only the transaction boundary moves.
 """
 
 from abc import ABC, abstractmethod
@@ -47,8 +56,14 @@ class BaseGetUseCase[
     ) -> ModelType | None:
         return await self.service.get(session, obj_pk, context=context)
 
-    async def execute(self, obj_pk: PrimaryKeyType, context: TContextKwargs | None = None) -> ModelType | None:
-        async with AsyncTransaction() as session:
+    async def execute(
+        self,
+        obj_pk: PrimaryKeyType,
+        context: TContextKwargs | None = None,
+        *,
+        session: AsyncSession | None = None,
+    ) -> ModelType | None:
+        async with AsyncTransaction(session=session) as session:
             return await self._execute(session, obj_pk, context=context)
 
 
@@ -76,9 +91,11 @@ class BaseGetMultiUseCase[
         self,
         query_options: ListQueryOptions | None = None,
         context: TContextKwargs | None = None,
+        *,
+        session: AsyncSession | None = None,
     ) -> PaginatedList[ModelType]:
         query_options = query_options or ListQueryOptions()
-        async with AsyncTransaction() as session:
+        async with AsyncTransaction(session=session) as session:
             return await self._execute(
                 session,
                 query_options=query_options,
@@ -121,8 +138,14 @@ class BaseCreateUseCase[
     ) -> ModelType:
         return obj
 
-    async def execute(self, obj_data: CreateSchemaType, context: TContextKwargs | None = None) -> ModelType:
-        async with AsyncTransaction() as session, self._context_execute(session, obj_data, context):
+    async def execute(
+        self,
+        obj_data: CreateSchemaType,
+        context: TContextKwargs | None = None,
+        *,
+        session: AsyncSession | None = None,
+    ) -> ModelType:
+        async with AsyncTransaction(session=session) as session, self._context_execute(session, obj_data, context):
             obj = await self._execute(session, obj_data, context=context)
             obj = await self._post_execute(session, obj, obj_data, context)
             return obj
@@ -171,8 +194,10 @@ class BaseUpdateUseCase[
         obj_pk: PrimaryKeyType,
         obj_data: PutSchemaType | PatchSchemaType,
         context: TContextKwargs | None = None,
+        *,
+        session: AsyncSession | None = None,
     ) -> ModelType | None:
-        async with AsyncTransaction() as session, self._context_execute(session, obj_data, context):
+        async with AsyncTransaction(session=session) as session, self._context_execute(session, obj_data, context):
             obj = await self._execute(session, obj_pk, obj_data, context=context)
             obj = await self._post_execute(session, obj, obj_data, context)
             return obj
@@ -199,8 +224,10 @@ class BasePatchUseCase[
         obj_pk: PrimaryKeyType,
         obj_data: PatchSchemaType,
         context: TContextKwargs | None = None,
+        *,
+        session: AsyncSession | None = None,
     ) -> ModelType | None:
-        return await super().execute(obj_pk, obj_data, context=context)
+        return await super().execute(obj_pk, obj_data, context=context, session=session)
 
 
 class BasePutUseCase[
@@ -224,8 +251,10 @@ class BasePutUseCase[
         obj_pk: PrimaryKeyType,
         obj_data: PutSchemaType,
         context: TContextKwargs | None = None,
+        *,
+        session: AsyncSession | None = None,
     ) -> ModelType | None:
-        return await super().execute(obj_pk, obj_data, context=context)
+        return await super().execute(obj_pk, obj_data, context=context, session=session)
 
 
 class BaseDeleteUseCase[
@@ -261,7 +290,13 @@ class BaseDeleteUseCase[
     ) -> DeleteResponse:
         return obj
 
-    async def execute(self, obj_pk: PrimaryKeyType, context: TContextKwargs | None = None):
-        async with AsyncTransaction() as session, self._context_execute(session, obj_pk, context):
+    async def execute(
+        self,
+        obj_pk: PrimaryKeyType,
+        context: TContextKwargs | None = None,
+        *,
+        session: AsyncSession | None = None,
+    ):
+        async with AsyncTransaction(session=session) as session, self._context_execute(session, obj_pk, context):
             obj = await self._execute(session, obj_pk, context=context)
             return await self._post_execute(session, obj, context)
