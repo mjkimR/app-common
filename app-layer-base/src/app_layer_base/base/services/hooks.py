@@ -20,7 +20,7 @@ every item.
 from collections.abc import AsyncGenerator, Sequence
 from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 from pydantic import BaseModel, ConfigDict, with_config
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +28,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app_layer_base.base.repos.base import BaseRepository, PrimaryKeyType
 from app_layer_base.base.schemas.delete_resp import DeleteResponse, MultipleDeleteResponse
 from app_layer_base.base.schemas.paginated import PaginatedList
+
+if TYPE_CHECKING:
+    from app_layer_base.core.database.transaction import AfterCommitCallback
 
 
 @with_config(ConfigDict(extra="forbid"))
@@ -73,7 +76,7 @@ class Operation[TContextKwargs: BaseContextKwargs]:
     repo: BaseRepository
     state: dict[str, Any] = field(default_factory=dict)
 
-    def register_after_commit(self, callback) -> None:
+    def register_after_commit(self, callback: "AfterCommitCallback") -> None:
         """Queue a coroutine to run after this operation's transaction commits.
 
         The seam for at-most-once side effects triggered by a write -- publishing a
