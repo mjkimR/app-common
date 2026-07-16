@@ -21,21 +21,21 @@ class TestBuildPrompt:
 
 
 class TestBuildReviewPrompt:
-    def test_uses_head_diff_by_default(self, mocker):
+    def test_uses_staged_diff_by_default(self, mocker):
         diff_mock = mocker.patch("app_helper.git.get_diff", return_value="REVIEW DIFF")
 
         result = build_review_prompt(language="English")
 
         assert "REVIEW DIFF" in result
         assert "English" in result
-        diff_mock.assert_called_once_with(git.HEAD)
+        diff_mock.assert_called_once_with(git.STAGED)
 
-    def test_staged_only_uses_cached_diff(self, mocker):
+    def test_head_only_uses_head_diff(self, mocker):
         diff_mock = mocker.patch("app_helper.git.get_diff", return_value="D")
 
-        build_review_prompt(staged_only=True)
+        build_review_prompt(head_only=True)
 
-        diff_mock.assert_called_once_with(git.STAGED)
+        diff_mock.assert_called_once_with(git.HEAD)
 
     def test_last_commit_uses_revision_range(self, mocker):
         diff_mock = mocker.patch("app_helper.git.get_diff", return_value="D")
@@ -44,11 +44,11 @@ class TestBuildReviewPrompt:
 
         diff_mock.assert_called_once_with(git.LAST_COMMIT)
 
-    def test_staged_and_last_together_raise(self, mocker):
+    def test_head_and_last_together_raise(self, mocker):
         mocker.patch("app_helper.git.get_diff", return_value="D")
 
         with pytest.raises(ValueError, match="mutually exclusive"):
-            build_review_prompt(staged_only=True, last_commit=True)
+            build_review_prompt(head_only=True, last_commit=True)
 
     def test_empty_raises_with_target_hint(self, mocker):
         mocker.patch("app_helper.git.get_diff", side_effect=ValueError("No changes found."))

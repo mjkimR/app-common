@@ -36,23 +36,22 @@ def commit(language: str):
     help="Language for the code review (e.g. English, Korean, Japanese).",
 )
 @click.option(
-    "--staged",
-    "-s",
+    "--head/--no-head",
     is_flag=True,
     default=False,
-    help="Use only staged changes (--cached). Defaults to HEAD diff.",
+    help="Use HEAD diff (staged + unstaged changes). Defaults to staged diff.",
 )
 @click.option(
-    "--last",
+    "--last/--no-last",
     is_flag=True,
     default=False,
     help="Review the last commit (HEAD~1..HEAD).",
 )
 @handle_cli_errors
-def review(language: str, staged: bool, last: bool):
+def review(language: str, head: bool, last: bool):
     """Generate a code review prompt from git changes and copy to clipboard."""
-    prompt_text = build_review_prompt(language=language, staged_only=staged, last_commit=last)
+    prompt_text = build_review_prompt(language=language, head_only=head, last_commit=last)
     copy_text(prompt_text)
 
-    target = "last commit" if last else "staged" if staged else "HEAD"
+    target = "last commit" if last else "HEAD" if head else "staged"
     click.echo(f"✅ Code review prompt copied to clipboard! (language: {language}, target: {target})")

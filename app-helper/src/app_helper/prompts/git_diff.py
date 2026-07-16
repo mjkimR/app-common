@@ -11,16 +11,16 @@ def build_prompt(language: str = "English") -> str:
     return COMMIT_MESSAGE_PROMPT_TEMPLATE.format(language=language, diff=diff)
 
 
-def build_review_prompt(language: str = "English", staged_only: bool = False, last_commit: bool = False) -> str:
-    if staged_only and last_commit:
-        raise ValueError("--staged and --last are mutually exclusive.")
+def build_review_prompt(language: str = "English", head_only: bool = False, last_commit: bool = False) -> str:
+    if head_only and last_commit:
+        raise ValueError("--head and --last are mutually exclusive.")
 
     if last_commit:
         revision, hint = git.LAST_COMMIT, "last commit"
-    elif staged_only:
-        revision, hint = git.STAGED, "staged changes"
-    else:
+    elif head_only:
         revision, hint = git.HEAD, "changes (HEAD)"
+    else:
+        revision, hint = git.STAGED, "staged changes"
 
     try:
         diff = git.get_diff(revision)

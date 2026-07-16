@@ -32,15 +32,15 @@ def test_commit_error_becomes_click_exception(mocker):
     assert "No staged changes found." in result.output
 
 
-def test_review_passes_staged_flag_and_language(mocker):
+def test_review_passes_head_flag_and_language(mocker):
     build = mocker.patch("app_helper.prompts.build_review_prompt", return_value="R")
     mocker.patch("app_helper.prompts.copy_text")
 
-    result = CliRunner().invoke(cli, ["prompt", "review", "--staged", "-l", "English"])
+    result = CliRunner().invoke(cli, ["prompt", "review", "--head", "-l", "English"])
 
     assert result.exit_code == 0
-    build.assert_called_once_with(language="English", staged_only=True, last_commit=False)
-    assert "target: staged" in result.output
+    build.assert_called_once_with(language="English", head_only=True, last_commit=False)
+    assert "target: HEAD" in result.output
 
 
 def test_review_last_commit(mocker):
@@ -50,16 +50,16 @@ def test_review_last_commit(mocker):
     result = CliRunner().invoke(cli, ["prompt", "review", "--last"])
 
     assert result.exit_code == 0
-    build.assert_called_once_with(language="English", staged_only=False, last_commit=True)
+    build.assert_called_once_with(language="English", head_only=False, last_commit=True)
     assert "target: last commit" in result.output
 
 
-def test_review_defaults_to_head_and_english(mocker):
+def test_review_defaults_to_staged_and_english(mocker):
     build = mocker.patch("app_helper.prompts.build_review_prompt", return_value="R")
     mocker.patch("app_helper.prompts.copy_text")
 
     result = CliRunner().invoke(cli, ["prompt", "review"])
 
     assert result.exit_code == 0
-    build.assert_called_once_with(language="English", staged_only=False, last_commit=False)
-    assert "target: HEAD" in result.output
+    build.assert_called_once_with(language="English", head_only=False, last_commit=False)
+    assert "target: staged" in result.output
