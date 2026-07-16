@@ -45,6 +45,16 @@ Use the provided scripts to install it automatically:
 
 CI runs all three test legs on every push, so anything deselected locally is still verified before merge. A test that needs a real backend must be marked `docker` (or gated behind `--db-type postgres`) — never left to silently skip.
 
+### Releases
+
+Packages are consumed as git dependencies (`git+...@<ref>#subdirectory=<package>`), never published to PyPI. A release is a repo-level tag:
+
+1. Bump `version` in every package's `pyproject.toml` to match the tag (one repo version for all 9 packages — they ship together).
+2. Tag the commit and push it: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. CI runs lint / type-check / all three test legs on the tag; only if they pass does the `release` job create a GitHub Release with generated notes.
+
+Consumers should pin a tag (`rev = "vX.Y.Z"`) instead of `rev = "main"`, which floats and can break silently.
+
 ---
 
 ## Repository Map & Architecture
