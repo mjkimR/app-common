@@ -5,9 +5,14 @@ description: FastAPI 4-layer architecture (Router, UseCase, Service Hooks, Repo)
 
 # app-backend-core
 
-This skill guides development of FastAPI applications built on `app-layer-base`, `app-tools`, and `app-error`.
+FastAPI layered architecture framework based on `app-layer-base`, `app-tools`, and `app-error`.
 
-> For package installation commands and database configuration, see [setup.md](./setup.md).
+> **References**:
+> - Package Installation & Database Configuration: [setup.md](./setup.md)
+> - Service Hooks (Custom Business Logic & Scopes): [hooks.md](./hooks.md)
+> - Structured Errors & Agent Advisory: [errors.md](./errors.md)
+
+---
 
 ## Quick Scaffolding
 
@@ -68,7 +73,7 @@ class Book(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
 - `UUIDMixin`: Generates UUIDv7 primary key `id`.
 - `TimestampMixin`: Adds `created_at` and `updated_at` (UTC).
 - `SoftDeleteMixin`: Adds `is_deleted` and `deleted_at`.
-  *Important*: Rows are only filtered if the repository opts in:
+  *Note*: Rows are filtered only when the repository opts in:
   ```python
   class BookRepository(BaseRepository[Book, BookCreate, BookUpdate]):
       soft_delete_enabled = True
@@ -79,53 +84,11 @@ class Book(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
 ## 3. Service Hooks (`app_layer_base.base.services.hooks`)
 
 Business logic is encapsulated in isolated, composable **Service Hooks**.
-A service defines an ordered tuple: `hooks = (HookA(), HookB())`.
+A service declares an ordered tuple: `hooks = (HookA(), HookB())`.
 
-### Hook Execution Flow
-Hooks use an async context manager pattern:
-1. `__aenter__` executes in forward order (HookA enter -> HookB enter).
-2. Repository CRUD operation executes.
-3. `__aexit__` executes in reverse order (HookB exit -> HookA exit).
-
-Hooks **never** call `super()` and **never** call each other.
-
-### Hook Protocols
-- `CreateHook[Model, CreateSchema]`
-- `UpdateHook[Model, UpdateSchema]`
-- `DeleteHook[Model]`
-- `GetHook[Model]`
-- `GetMultiHook[Model]`
-
-### Example: Uniqueness & Audit Hook
-
-```python
-from contextlib import asynccontextmanager
-from typing import AsyncIterator
-from sqlalchemy.ext.asyncio import AsyncSession
-from app_layer_base.base.services.base import BaseService
-from app_layer_base.base.services.hooks import CreateHook
-from app_error import AppError, Actor, Retry
-
-class UniqueIsbnHook(CreateHook[Book, BookCreate]):
-    async def before_create(self, session: AsyncSession, data: BookCreate) -> None:
-        exists = await session.scalar(...)
-        if exists:
-            raise AppError(
-                f"ISBN {data.isbn} already registered",
-                code="ISBN_ALREADY_EXISTS",
-                actor=Actor.USER,
-                retry=Retry.SAFE,
-                fix="Please check the ISBN and try again with an unregistered number."
-            )
-
-    @asynccontextmanager
-    async def create_scope(self, session: AsyncSession, data: BookCreate) -> AsyncIterator[None]:
-        await self.before_create(session, data)
-        yield
-
-class BookService(BaseService[Book, BookCreate, BookUpdate]):
-    hooks = (UniqueIsbnHook(),)
-```
+- Hooks execute via async context managers: Forward enter $\rightarrow$ Repo CRUD $\rightarrow$ Reverse exit.
+- Hooks **never** call `super()` and **never** call each other.
+- For complete hook protocols (`CreateHook`, `UpdateHook`, etc.) and implementation examples, see **[hooks.md](./hooks.md)**.
 
 ---
 
@@ -180,32 +143,7 @@ BookUseCaseDep = Annotated[BookUseCase, Depends(get_book_usecase)]
 
 ---
 
-## 6. Structured Errors & Agent Advisory (`app-error`)
+## 6. Structured Error Handling (`app-error`)
 
-Raise structured `AppError` exceptions rather than generic `ValueError` or raw `HTTPException`.
-This provides clear guidance for both humans and AI agents.
-
-```python
-from app_error import AppError, Actor, Retry, ActionMode
-
-class ResourceNotFoundError(AppError):
-    code = "RESOURCE_NOT_FOUND"
-    actor = Actor.USER
-    retry = Retry.UNSAFE
-
-raise ResourceNotFoundError(
-    "Book with id 42 does not exist",
-    code="BOOK_NOT_FOUND",
-    actor=Actor.USER,
-    retry=Retry.UNSAFE,
-    fix="Verify the book ID from the listing endpoint.",
-    what_to_report="The requested book ID does not exist in the database.",
-)
-```
-
-### Advisory Fields
-- `actor`: `Actor.USER` (user must fix input), `Actor.AGENT` (agent can auto-correct), `Actor.DEV` (needs code fix).
-- `retry`: `Retry.SAFE` (idempotent retry), `Retry.UNSAFE` (do not blindly retry).
-- `fix`: Clear, actionable string instruction for how to resolve the issue.
-- `what_to_report`: Summarized explanation suitable for user-facing responses.
-- `render_mcp()` / `lines()`: Renderers for tool response contexts or CLI output.
+Raise structured `AppError` subclasses with `Actor` and `Retry` advisories rather than generic `ValueError` or raw `HTTPException`.
+For advisory fields (`Actor`, `Retry`, `ActionMode`), remediation properties (`fix`, `what_to_report`), and MCP/CLI renderers, see **[errors.md](./errors.md)**.
