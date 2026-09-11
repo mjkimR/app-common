@@ -5,7 +5,7 @@ A lightweight adapter that manages a single, shared `httpx` client (async and sy
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-http-client"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-http-client"
 ```
 
 ## Configuration
@@ -51,5 +51,5 @@ Getters lazily initialize the client on first use, so `get_http_client()` also w
 
 ## See also
 
-- [Adapter Module Reference](../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
-- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.
+- [Adapter Module Reference](../../../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
+- [Architecture & Service Hooks Guide](../../../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.

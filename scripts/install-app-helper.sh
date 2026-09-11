@@ -7,4 +7,4 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "Installing app-helper globally in editable mode..."
-uv tool install --editable "$PROJECT_ROOT/app-helper" --force
+uv tool install --editable "$PROJECT_ROOT/tools/app-helper" --force

@@ -8,23 +8,24 @@ A personal monorepo containing highly modularized packages and developer CLI too
 
 This repository is built as a `uv workspace` divided into focused, standalone packages. You can import only what you need, avoiding heavy third-party dependency bloat.
 
-### 1. [app-layer-base](./app-layer-base/README.md)
+### 1. [app-layer-base](./packages/base/app-layer-base/README.md)
 The foundational domain layer.
 - **Features**: Generic CRUD repository base class, transaction-aware usecases, mixin-based service hooks, database traceback filters, loguru configuration, time/type helper utilities, and base application settings.
 
 ### 2. Standalone Adapters
 Each adapter isolates a specific technology stack and can be imported independently:
-- **[app-file-storage](./app-file-storage/README.md)**: Support for Local and AWS S3 object storage clients.
-- **[app-vector-store](./app-vector-store/README.md)**: Support for Qdrant vector databases, seamlessly integrated with `app-ai-catalog`.
-- **[app-http-client](./app-http-client/README.md)**: Lightweight asynchronous HTTP client wrapper based on `httpx`.
+- **[app-file-storage](./packages/adapters/app-file-storage/README.md)**: Support for Local and AWS S3 object storage clients.
+- **[app-vector-store](./packages/adapters/app-vector-store/README.md)**: Support for Qdrant vector databases, seamlessly integrated with `app-ai-catalog`.
+- **[app-http-client](./packages/adapters/app-http-client/README.md)**: Lightweight asynchronous HTTP client wrapper based on `httpx`.
 
 ### 3. Standalone AI & Prebuilt Services
-- **[app-ai-catalog](./app-ai-catalog/README.md)**: AI embedding/LLM factory clients leveraging LiteLLM and LangChain.
-- **[app-prebuilt-user](./app-prebuilt-user/README.md)**: Fully scaffolding-ready user authentication, JWT login flow, and user profile management.
-- **[app-prebuilt-outbox](./app-prebuilt-outbox/README.md)**: A production-ready Transactional Outbox pattern engine for guaranteed message delivery.
+- **[app-ai-catalog](./packages/adapters/app-ai-catalog/README.md)**: AI embedding/LLM factory clients leveraging LiteLLM and LangChain.
+- **[app-prebuilt-user](./packages/prebuilt/app-prebuilt-user/README.md)**: Fully scaffolding-ready user authentication, JWT login flow, and user profile management.
+- **[app-prebuilt-outbox](./packages/prebuilt/app-prebuilt-outbox/README.md)**: A production-ready Transactional Outbox pattern engine for guaranteed message delivery.
 
 ### 4. Developer Productivity
-- **[app-tools](./app-tools/README.md)**: Developer CLI tool to automatically generate layered CRUD code (Models, Schemas, Repos, Services, Routers) matching this workspace's specifications.
+- **[app-tools](./tools/app-tools/README.md)**: Developer CLI tool to automatically generate layered CRUD code (Models, Schemas, Repos, Services, Routers) matching this workspace's specifications.
+- **[app-helper](./tools/app-helper/README.md)**: Standalone developer CLI for git-diff prompt building and clipboard helpers.
 
 ---
 
@@ -52,13 +53,13 @@ You can easily install any standalone package directly from this repository usin
 
 ```bash
 # Add only the layer base
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-layer-base"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-layer-base"
 
 # Add only the File Storage adapter
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-file-storage"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-file-storage"
 
 # Add the developer CLI tool
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-tools" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app-tools" --dev
 ```
 
 ---

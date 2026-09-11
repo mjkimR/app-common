@@ -7,7 +7,7 @@ Personal app development helper tools and utilities.
 To add this tool to your project, install it via `uv` from the GitHub repository:
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-tools" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app-tools" --dev
 ```
 
 ## Usage
@@ -46,4 +46,4 @@ app-tools create-code feature --name Article
 
 For a complete list of commands, usage examples, and details on how code generation works, please refer to the developer guide:
 
-- **[app-tools Developer Guide](../skill/app-base-developer-skill/docs/app_tools_guide.md)**
+- **[app-tools Developer Guide](../../skill/app-base-developer-skill/docs/app_tools_guide.md)**

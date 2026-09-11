@@ -5,7 +5,7 @@ The foundational domain layer for FastAPI backends in this workspace. It provide
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-layer-base"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-layer-base"
 ```
 
 ## What it provides
@@ -27,7 +27,7 @@ engine accessors the app code calls, table cleanup between tests, and a way to
 reconstruct `Annotated[T, Depends()]` trees without an app or a request.
 
 ```bash
-uv add --dev "app-layer-base[testing] @ git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-layer-base"
+uv add --dev "app-layer-base[testing] @ git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-layer-base"
 ```
 
 The fixtures are a pytest plugin. Enable them from the **top-level `conftest.py`** of a
@@ -73,13 +73,13 @@ building a service or usecase straight from its dependency tree, `clean_db_after
 
 ## Architecture
 
-Projects follow a decoupled flow: **API (Router) → UseCase → Service → Repository**. Business logic goes in service hooks rather than in routers. New feature modules can be scaffolded with [`app-tools`](../app-tools/README.md).
+Projects follow a decoupled flow: **API (Router) → UseCase → Service → Repository**. Business logic goes in service hooks rather than in routers. New feature modules can be scaffolded with [`app-tools`](../../../tools/app-tools/README.md).
 
 See the developer guides for the full picture:
 
-- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_layer_base_guide.md)
-- [Base Module Reference](../skill/app-base-developer-skill/docs/reference_base.md)
-- [Core, Config & Utils Reference](../skill/app-base-developer-skill/docs/reference_core_config.md)
+- [Architecture & Service Hooks Guide](../../../skill/app-base-developer-skill/docs/app_layer_base_guide.md)
+- [Base Module Reference](../../../skill/app-base-developer-skill/docs/reference_base.md)
+- [Core, Config & Utils Reference](../../../skill/app-base-developer-skill/docs/reference_core_config.md)
 
 ## Public API
 

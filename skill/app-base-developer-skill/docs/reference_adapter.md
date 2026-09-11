@@ -22,9 +22,9 @@ Configuration is per-package Pydantic `BaseSettings`; there is no central aggreg
 
 | Package | Namespace | Backends | Canonical reference |
 |---|---|---|---|
-| `app-file-storage` | `app_file_storage` | AWS S3 / MinIO (`aiobotocore`), Local FS | [README](../../../app-file-storage/README.md) |
-| `app-vector-store` | `app_vector_store` | Qdrant (`qdrant-client`, `langchain-qdrant`) | [README](../../../app-vector-store/README.md) |
-| `app-http-client` | `app_http_client` | Shared `httpx.AsyncClient` pool | [README](../../../app-http-client/README.md) |
+| `app-file-storage` | `app_file_storage` | AWS S3 / MinIO (`aiobotocore`), Local FS | [README](../../../packages/adapters/app-file-storage/README.md) |
+| `app-vector-store` | `app_vector_store` | Qdrant (`qdrant-client`, `langchain-qdrant`) | [README](../../../packages/adapters/app-vector-store/README.md) |
+| `app-http-client` | `app_http_client` | Shared `httpx.AsyncClient` pool | [README](../../../packages/adapters/app-http-client/README.md) |
 
 Quick entry points:
 

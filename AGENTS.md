@@ -47,7 +47,7 @@ CI runs all three test legs on every push, so anything deselected locally is sti
 
 ### Releases
 
-Packages are consumed as git dependencies (`git+...@<ref>#subdirectory=<package>`), never published to PyPI. A release is a repo-level tag:
+Packages are consumed as git dependencies (`git+...@<ref>#subdirectory=<path-to-package>`), never published to PyPI. A release is a repo-level tag:
 
 1. Bump `version` in every package's `pyproject.toml` to match the tag (one repo version for all 9 packages — they ship together).
 2. Tag the commit and push it: `git tag vX.Y.Z && git push origin vX.Y.Z`.
@@ -61,25 +61,29 @@ Consumers should pin a tag (`rev = "vX.Y.Z"`) instead of `rev = "main"`, which f
 
 ### 1. Workspace Structure
 
-The repository is fully modularized into discrete workspace packages:
+The repository is structured into organized category directories under `packages/` and `tools/`:
 
-- **`app-layer-base/`**: The core foundation layer (FastAPI, SQLAlchemy, Pydantic).
-    - `base/`: Domain scaffolding including CRUD patterns, Repositories, UseCases, and Service Hooks.
-    - `core/`: Database engines, transaction management, logging middleware, and traceback filtering.
-    - `utils/`: Common time and type hint utilities.
-    - `config_util.py` & `config.py`: Environment settings loaders and general app settings.
-- **`app-file-storage/`**: Standalone adapter for local and AWS S3 storage client operations.
-- **`app-vector-store/`**: Standalone adapter for Qdrant vector database storage and search.
-- **`app-http-client/`**: Standalone light-weight HTTP client adapter based on `httpx`.
-- **`app-ai-catalog/`**: AI model factories, LangChain AI clients, and LiteLLM adapters.
-- **`app-prebuilt-user/`**: Prebuilt authentication, signup, and user management controllers, services, and models.
-- **`app-prebuilt-outbox/`**: Prebuilt Transactional Outbox pattern engine for reliable event messaging.
-- **`app-tools/`**: CLI tool for scaffolding new modular features.
-    - Usage: `uv run app-tools create-code feature --name <Name>`
-    - `create_code/templates/feature/`: the generated feature skeleton, one `*.tmpl` per emitted file.
-- **`app-helper/`**: Standalone developer CLI for git-diff prompt building and clipboard helpers.
-    - Usage: `app-helper prompt commit|review`, `app-helper copy-diff`
-    - Ported from the maintainer's `~/.zshrc` functions (`gic`, `gir`, `copydiff`), which remain the upstream originals.
+- **`packages/base/`**:
+    - **`app-layer-base/`**: The core foundation layer (FastAPI, SQLAlchemy, Pydantic).
+        - `base/`: Domain scaffolding including CRUD patterns, Repositories, UseCases, and Service Hooks.
+        - `core/`: Database engines, transaction management, logging middleware, and traceback filtering.
+        - `utils/`: Common time and type hint utilities.
+        - `config_util.py` & `config.py`: Environment settings loaders and general app settings.
+- **`packages/adapters/`**:
+    - **`app-file-storage/`**: Standalone adapter for local and AWS S3 storage client operations.
+    - **`app-vector-store/`**: Standalone adapter for Qdrant vector database storage and search.
+    - **`app-http-client/`**: Standalone light-weight HTTP client adapter based on `httpx`.
+    - **`app-ai-catalog/`**: AI model factories, LangChain AI clients, and LiteLLM adapters.
+- **`packages/prebuilt/`**:
+    - **`app-prebuilt-user/`**: Prebuilt authentication, signup, and user management controllers, services, and models.
+    - **`app-prebuilt-outbox/`**: Prebuilt Transactional Outbox pattern engine for reliable event messaging.
+- **`tools/`**:
+    - **`app-tools/`**: CLI tool for scaffolding new modular features.
+        - Usage: `uv run app-tools create-code feature --name <Name>`
+        - `create_code/templates/feature/`: the generated feature skeleton, one `*.tmpl` per emitted file.
+    - **`app-helper/`**: Standalone developer CLI for git-diff prompt building and clipboard helpers.
+        - Usage: `app-helper prompt commit|review`, `app-helper copy-diff`
+        - Ported from the maintainer's `~/.zshrc` functions (`gic`, `gir`, `copydiff`), which remain the upstream originals.
 
 Every package keeps its source in `src/<package_name>/` and its tests in `tests/unit/` (plus `tests/integrate/` where present). Tests never live under `src/`. Each package owns its own pytest config (`[tool.pytest.ini_options]`), so its rootdir is the package directory — there is deliberately no workspace-wide `pythonpath`.
 

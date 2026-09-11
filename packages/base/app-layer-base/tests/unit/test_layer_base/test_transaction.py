@@ -145,7 +145,7 @@ async def test_default_session_maker_is_used_when_none_passed(monkeypatch):
     session = _fake_session()
     from app_layer_base.core.database import engine as engine_mod
 
-    monkeypatch.setattr(engine_mod, "get_session_maker", lambda: (lambda: session))
+    monkeypatch.setattr(engine_mod, "get_session_maker", lambda: lambda: session)
 
     async with AsyncTransaction() as s:
         assert s is session

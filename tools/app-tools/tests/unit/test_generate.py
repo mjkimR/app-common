@@ -6,8 +6,8 @@ from pathlib import Path
 
 from app_tools.create_code.create_feature import create_feature
 
-# app-common workspace root: .../app-common/app-tools/tests/unit/test_generate.py
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# app-common workspace root: .../app-common/tools/app-tools/tests/unit/test_generate.py
+REPO_ROOT = Path(__file__).resolve().parents[4]
 
 EXPECTED_FILES = [
     "__init__.py",
@@ -62,7 +62,7 @@ def test_generated_feature_typechecks_with_pyright(tmp_path):
 
     config = {
         "typeCheckingMode": "basic",
-        "extraPaths": [str(REPO_ROOT / "app-layer-base" / "src"), "."],
+        "extraPaths": [str(REPO_ROOT / "packages" / "base" / "app-layer-base" / "src"), "."],
         "venvPath": str(REPO_ROOT),
         "venv": ".venv",
         "include": ["genpkg"],

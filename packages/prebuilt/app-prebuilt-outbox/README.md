@@ -1,11 +1,11 @@
 # app-prebuilt-outbox
 
-A Transactional Outbox implementation for [`app-layer-base`](../app-layer-base/README.md): domain events are persisted in the **same database transaction** as your business writes, then a background relay publishes them to whatever transport you inject. This guarantees an event is never lost or published without its write committing.
+A Transactional Outbox implementation for [`app-layer-base`](../../base/app-layer-base/README.md): domain events are persisted in the **same database transaction** as your business writes, then a background relay publishes them to whatever transport you inject. This guarantees an event is never lost or published without its write committing.
 
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-prebuilt-outbox"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-outbox"
 ```
 
 Depends on `app-layer-base`, `sqlalchemy` and `apscheduler`. It is **transport-agnostic** — it does not depend on any message-broker package.
@@ -40,9 +40,11 @@ BOOK_EVENTS: OutboxHookEventTypeDict = {
     "DELETE": "BOOK_DELETED",
 }
 
+
 class BookOutboxHook(OutboxHook[Book, BaseContextKwargs]):
     def payload(self, op, obj, identity):
         return {"title": obj.title}
+
 
 class BookService(BaseCreateServiceMixin[...], BaseDeleteServiceMixin[...]):
     def __init__(

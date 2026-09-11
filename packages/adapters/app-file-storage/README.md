@@ -5,7 +5,7 @@ A standalone object-storage adapter exposing one async interface (`FileStorageCl
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-file-storage"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-file-storage"
 ```
 
 ## Configuration
@@ -83,5 +83,5 @@ Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on t
 
 ## See also
 
-- [Adapter Module Reference](../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
-- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.
+- [Adapter Module Reference](../../../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
+- [Architecture & Service Hooks Guide](../../../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.

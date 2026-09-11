@@ -7,13 +7,13 @@ General-purpose developer helper tools and utilities. This package is completely
 To add this helper to your project, install it via `uv` from the GitHub repository:
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-helper" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app-helper" --dev
 ```
 
 Or install it globally / as a tool:
 
 ```bash
-uv tool install -e ./app-helper
+uv tool install -e ./tools/app-helper
 ```
 
 ## Usage

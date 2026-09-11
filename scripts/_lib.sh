@@ -22,15 +22,15 @@ resolve_module() {
 
 resolve_module_path() {
     case "$1" in
-        app-prebuilt-user) echo "app-prebuilt-user" ;;
-        app-prebuilt-outbox) echo "app-prebuilt-outbox" ;;
-        app-tools) echo "app-tools" ;;
-        app-helper) echo "app-helper" ;;
-        app-layer-base) echo "app-layer-base" ;;
-        app-file-storage) echo "app-file-storage" ;;
-        app-vector-store) echo "app-vector-store" ;;
-        app-http-client) echo "app-http-client" ;;
-        app-ai-catalog) echo "app-ai-catalog" ;;
+        app-prebuilt-user) echo "packages/prebuilt/app-prebuilt-user" ;;
+        app-prebuilt-outbox) echo "packages/prebuilt/app-prebuilt-outbox" ;;
+        app-tools) echo "tools/app-tools" ;;
+        app-helper) echo "tools/app-helper" ;;
+        app-layer-base) echo "packages/base/app-layer-base" ;;
+        app-file-storage) echo "packages/adapters/app-file-storage" ;;
+        app-vector-store) echo "packages/adapters/app-vector-store" ;;
+        app-http-client) echo "packages/adapters/app-http-client" ;;
+        app-ai-catalog) echo "packages/adapters/app-ai-catalog" ;;
         *) echo "$1" ;;
     esac
 }

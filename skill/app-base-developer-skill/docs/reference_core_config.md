@@ -60,7 +60,7 @@ Provides factory patterns for instantiating LangChain LLM and Embedding models b
   response = await llm.ainvoke("Hello!")
   ```
 - **Precautions**: Relies on LangChain integrations. Ensure optional dependencies (`[ai]`) are installed (`langchain-openai`, `langchain-google-genai`). Missing dependencies will raise an `ImportError`.
-- **Canonical reference**: [`app-ai-catalog/README.md`](../../../app-ai-catalog/README.md) — install, env vars, and full public API.
+- **Canonical reference**: [`app-ai-catalog/README.md`](../../../packages/adapters/app-ai-catalog/README.md) — install, env vars, and full public API.
 
 ---
 

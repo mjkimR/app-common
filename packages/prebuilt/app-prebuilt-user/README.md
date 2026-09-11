@@ -1,11 +1,11 @@
 # app-prebuilt-user
 
-A drop-in user-management and JWT authentication feature built on [`app-layer-base`](../app-layer-base/README.md). Provides the `User` model, layered service/usecase stack, auth dependencies, and ready-to-mount routers for signup, login and admin management.
+A drop-in user-management and JWT authentication feature built on [`app-layer-base`](../../base/app-layer-base/README.md). Provides the `User` model, layered service/usecase stack, auth dependencies, and ready-to-mount routers for signup, login and admin management.
 
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-prebuilt-user"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-user"
 ```
 
 > The host application provides `fastapi`; the login route uses OAuth2 form login, so also install `python-multipart` in the host app.

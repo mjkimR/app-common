@@ -5,7 +5,7 @@ A standalone adapter that builds LangChain `VectorStore` instances for a configu
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=app-vector-store"
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-vector-store"
 ```
 
 > Requires `app-ai-catalog` to be configured (a `catalog.yml` with the embedding model), since the vector store looks up the embedding client and its dimension from the AI catalog.
@@ -46,5 +46,5 @@ The collection is created automatically if it does not exist, using the embeddin
 
 ## See also
 
-- [Adapter Module Reference](../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
-- [Architecture & Service Hooks Guide](../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.
+- [Adapter Module Reference](../../../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
+- [Architecture & Service Hooks Guide](../../../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.

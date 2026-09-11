@@ -1,27 +1,17 @@
 [tool.uv.workspace]
 members = [
-    "app-prebuilt-user",
-    "app-prebuilt-outbox",
-    "app-tools",
-    "app-helper",
-    "app-layer-base",
-    "app-file-storage",
-    "app-vector-store",
-    "app-http-client",
-    "app-ai-catalog",
+    "packages/base/*",
+    "packages/adapters/*",
+    "packages/prebuilt/*",
+    "tools/*",
 ]
 
 [tool.rye.workspace]
 members = [
-    "app-prebuilt-user",
-    "app-prebuilt-outbox",
-    "app-tools",
-    "app-helper",
-    "app-layer-base",
-    "app-file-storage",
-    "app-vector-store",
-    "app-http-client",
-    "app-ai-catalog",
+    "packages/base/*",
+    "packages/adapters/*",
+    "packages/prebuilt/*",
+    "tools/*",
 ]
 
 [tool.ruff]
@@ -47,15 +37,15 @@ venv = ".venv"
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
 extraPaths = [
-    "./app-prebuilt-user/src",
-    "./app-prebuilt-outbox/src",
-    "./app-tools/src",
-    "./app-helper/src",
-    "./app-layer-base/src",
-    "./app-file-storage/src",
-    "./app-vector-store/src",
-    "./app-http-client/src",
-    "./app-ai-catalog/src",
+    "./packages/prebuilt/app-prebuilt-user/src",
+    "./packages/prebuilt/app-prebuilt-outbox/src",
+    "./tools/app-tools/src",
+    "./tools/app-helper/src",
+    "./packages/base/app-layer-base/src",
+    "./packages/adapters/app-file-storage/src",
+    "./packages/adapters/app-vector-store/src",
+    "./packages/adapters/app-http-client/src",
+    "./packages/adapters/app-ai-catalog/src",
 ]
 
 [dependency-groups]
