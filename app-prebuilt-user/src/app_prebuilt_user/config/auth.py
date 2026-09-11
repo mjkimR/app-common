@@ -1,6 +1,5 @@
 import functools
 
-from app_layer_base.config_util import get_env_file_path
 from pydantic import EmailStr, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,7 +28,6 @@ class AuthSettings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_file=get_env_file_path(),
         extra="ignore",
     )
 

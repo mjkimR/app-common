@@ -1,4 +1,3 @@
-import os
 import sys
 from contextvars import ContextVar
 
@@ -48,10 +47,9 @@ def setup_logger():
 
     has_file_logging = bool(settings.LOG_PATH and settings.LOG_PATH.strip())
     common_file_config = {}
-    if has_file_logging:
-        log_file_path = os.path.join(settings.LOG_PATH)
+    if settings.LOG_PATH and settings.LOG_PATH.strip():
         common_file_config = {
-            "sink": log_file_path,
+            "sink": settings.LOG_PATH,
             "level": settings.LOG_LEVEL,
             "rotation": "1 day",
             "retention": "30 days",

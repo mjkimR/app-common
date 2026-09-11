@@ -1,9 +1,13 @@
 import functools
+import warnings
 
-from pydantic import Field
+from loguru import logger
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app_layer_base.config_util import get_env_file_path, get_project_root
+from app_layer_base.config_util import get_project_root
+
+__all__ = ["AppSettings", "get_app_settings", "get_project_root"]
 
 
 class AppSettings(BaseSettings):
@@ -13,8 +17,8 @@ class AppSettings(BaseSettings):
     )
 
     DATABASE_URL: str = Field(
-        default_factory=lambda: f"sqlite+aiosqlite:///{get_project_root()}/.test.db",
-        description="SQLAlchemy async database connection URL (defaults to SQLite)",
+        default="sqlite+aiosqlite:///:memory:",
+        description="SQLAlchemy async database connection URL (defaults to in-memory SQLite)",
     )
 
     LOG_PATH: str | None = Field(
@@ -42,9 +46,19 @@ class AppSettings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_file=get_env_file_path(),
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def _check_in_memory_db(self) -> "AppSettings":
+        if ":memory:" in self.DATABASE_URL:
+            msg = (
+                "DATABASE_URL is set to an in-memory SQLite database (':memory:'). "
+                "Data will be transient and lost once the application process terminates."
+            )
+            warnings.warn(msg, UserWarning, stacklevel=2)
+            logger.warning(msg)
+        return self
 
     @property
     def is_production(self) -> bool:

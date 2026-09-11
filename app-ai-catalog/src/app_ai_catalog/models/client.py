@@ -2,7 +2,7 @@ import os
 from threading import RLock
 from typing import Any
 
-from app_layer_base.config import get_project_root
+from app_layer_base.config_util import get_project_root
 from app_layer_base.core.log import logger
 from langchain_core.embeddings import Embeddings
 
