@@ -1,11 +1,13 @@
 ---
 name: app-backend-core
-description: Core guide for developing FastAPI applications using app-layer-base, app-tools CLI, and app-error. Covers the 4-layer architecture (Router -> UseCase -> Service -> Repository -> Model/Schema), service hooks for business logic, code generation, transaction management, and structured error advisories. Read before creating or modifying backend features.
+description: FastAPI 4-layer architecture (Router, UseCase, Service Hooks, Repo), code scaffolding with app-tools, and structured error handling with app-error.
 ---
 
 # app-backend-core
 
 This skill guides development of FastAPI applications built on `app-layer-base`, `app-tools`, and `app-error`.
+
+> For package installation commands and database configuration, see [setup.md](./setup.md).
 
 ## Quick Scaffolding
 

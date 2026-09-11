@@ -68,12 +68,21 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app
 Modular, agent-neutral skills are available under [`agents/`](./agents/README.md) to assist developers and AI assistants:
 
 - **[`app-backend-core`](./agents/skills/app-backend-core/SKILL.md)**: Layered architecture (Router → UseCase → Service → Repository → Model/Schema), Service Hooks, feature scaffolding with `app-tools`, and structured error advisories (`app-error`).
-- **[`app-adapters`](./agents/skills/app-adapters/SKILL.md)**: Storage (S3/Local), vector store (Qdrant), shared HTTP client, and AI catalog integration with lifespan composition.
-- **[`app-prebuilt-services`](./agents/skills/app-prebuilt-services/SKILL.md)**: Drop-in user authentication/JWT and Transactional Outbox pattern engine.
-- **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Workspace package boundaries, multi-tier testing (SQLite, PostgreSQL, Docker), and contributor conventions.
+- **[`app-file-storage`](./agents/skills/app-file-storage/SKILL.md)**: AWS S3, MinIO, and Local filesystem object storage.
+- **[`app-vector-store`](./agents/skills/app-vector-store/SKILL.md)**: Qdrant vector database integration.
+- **[`app-http-client`](./agents/skills/app-http-client/SKILL.md)**: Shared connection-pooled httpx client.
+- **[`app-ai-catalog`](./agents/skills/app-ai-catalog/SKILL.md)**: LiteLLM model routing and LangChain embedding integration.
+- **[`app-prebuilt-user`](./agents/skills/app-prebuilt-user/SKILL.md)**: User auth, JWT login flow, and admin CRUD.
+- **[`app-prebuilt-outbox`](./agents/skills/app-prebuilt-outbox/SKILL.md)**: Transactional Outbox pattern engine for guaranteed domain event delivery.
+- **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Monorepo package boundaries, multi-tier testing (SQLite, PostgreSQL, Docker), and contributor conventions.
 
-To link skills into your environment:
+To link skills:
 ```bash
-just link-skills --dev   # or ./agents/link-skills.sh --dev
+# In downstream apps (auto-detects installed app-* packages):
+./agents/link-skills.sh --auto
+
+# In app-common (links all skills + contributor dev-skills):
+just link-skills --dev
 ```
+
 

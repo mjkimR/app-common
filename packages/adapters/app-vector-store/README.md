@@ -46,6 +46,6 @@ The collection is created automatically if it does not exist, using the embeddin
 
 ## See also
 
-- [App Adapters Skill](../../../agents/skills/app-adapters/SKILL.md) — shared adapter conventions and lifespan wiring.
+- [App Vector Store Skill](../../../agents/skills/app-vector-store/SKILL.md) — Qdrant vector store integration and embeddings.
 - [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how adapters fit into the layered app.
 

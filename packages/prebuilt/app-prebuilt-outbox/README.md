@@ -65,3 +65,9 @@ class BookService(BaseCreateServiceMixin[...], BaseDeleteServiceMixin[...]):
 - `make_faststream_publisher(broker)` — ready-made publisher over a FastStream-style broker
 
 > The relay is intentionally simple (fixed intervals, no backoff); harden it before high-volume production use.
+
+## See also
+
+- [App Prebuilt Outbox Skill](../../../agents/skills/app-prebuilt-outbox/SKILL.md) — Transactional Outbox pattern engine and event relay.
+- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — Service Hooks and transaction management.
+

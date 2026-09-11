@@ -1,58 +1,60 @@
 # agents/
 
-Agent-neutral assets for `app-common`. The source files live in `skills/` (for downstream applications building with `app-common`) and `dev-skills/` (for developers contributing to `app-common` itself). Agent-specific directories (such as `.agents/skills/`, `.claude/skills/`, `.codex/skills/`) are relative symlinks created by `link-skills.sh`.
+Agent-neutral assets for `app-common`. The source files live in `skills/` (atomic skills for downstream applications building with `app-common`) and `dev-skills/` (for developers contributing to `app-common` itself). Agent-specific directories (such as `.agents/skills/`, `.claude/skills/`, `.codex/skills/`) are symlinks created by `link-skills.sh`.
 
 ## Structure
 
 ```
 agents/
 ├── README.md                  # This file
-├── link-skills.sh             # Symlink manager for local/global agent environments
-├── skills/                    # Consumer skills (for developers building apps with app-common)
-│   ├── app-backend-core/      # app-layer-base + app-tools + app-error
-│   ├── app-adapters/          # app-file-storage + app-vector-store + app-http-client + app-ai-catalog
-│   └── app-prebuilt-services/ # app-prebuilt-user + app-prebuilt-outbox
+├── link-skills.sh             # Symlink manager supporting auto-detection and selective linking
+├── skills/                    # Atomic consumer skills (1:1 with packages for lean context)
+│   ├── app-backend-core/      # app-layer-base + app-tools + app-error (FastAPI foundation)
+│   ├── app-file-storage/      # AWS S3 / MinIO / Local FS object storage
+│   ├── app-vector-store/      # Qdrant vector database + LangChain embeddings
+│   ├── app-http-client/       # Pooled singleton httpx client (async & sync)
+│   ├── app-ai-catalog/        # LiteLLM YAML catalog & model routing
+│   ├── app-prebuilt-user/     # User authentication, JWT, OAuth2 form login
+│   └── app-prebuilt-outbox/   # Transactional Outbox pattern & event relay
 └── dev-skills/                # Contributor skills (for modifying app-common repo itself)
     └── app-common-contributor/# Package isolation, multi-db test harness, release rules
 ```
 
 ## Quick Start
 
+### In Downstream Projects (Consumer Apps)
+Use `--auto` to automatically inspect `pyproject.toml` and link **only** the skills corresponding to installed `app-*` packages:
+
 ```bash
-# Link skills for this repository (Antigravity .agents/skills, includes contributor dev-skills)
-./agents/link-skills.sh --dev
+# Auto-detect installed app-* packages and link to Antigravity (.agents/skills)
+<path-to-app-common>/agents/link-skills.sh --auto
 
-# Link for Claude Code (.claude/skills)
-./agents/link-skills.sh claude
+# Auto-detect for Claude Code (.claude/skills)
+<path-to-app-common>/agents/link-skills.sh --auto claude
 
-# Link for Claude Code with dev skills
-./agents/link-skills.sh --dev claude
-
-# Link for Codex (.codex/skills)
-./agents/link-skills.sh codex
-
-# Link to a custom or global directory
-./agents/link-skills.sh --dev ~/.gemini/config/skills
+# Selectively link specific skills
+<path-to-app-common>/agents/link-skills.sh app-backend-core app-file-storage
 ```
 
-Or via `just`:
-
+### In `app-common` (Monorepo Development)
 ```bash
+# Link all skills including contributor dev-skills
 just link-skills --dev
+
+# Or directly:
+./agents/link-skills.sh --dev
 ```
 
 ## Skill Categories
 
-1. **Consumer Skills (`skills/`)**:
-   Designed for agents and engineers building applications using `app-common` packages. They are portable and can be linked into any downstream project.
-   - **`app-backend-core`**: Core layered architecture (Router → UseCase → Service → Repository → Model/Schema), service hooks, `app-tools create-code feature` scaffolding, and structured error handling (`app-error`).
-   - **`app-adapters`**: Standalone adapter integration (S3/Local storage, Qdrant vector store, HTTP client pool, LiteLLM/LangChain catalog), lifespan composition, and decentralized settings.
-   - **`app-prebuilt-services`**: Ready-to-mount prebuilt components: user management/JWT auth (`app-prebuilt-user`) and Transactional Outbox pattern (`app-prebuilt-outbox`).
+1. **Foundational Core (`app-backend-core`)**:
+   Core 4-layer architecture (`Router → UseCase → Service → Repository → Model/Schema`), service hooks, `app-tools create-code feature` scaffolding, and `app-error` structured advisories.
 
-2. **Contributor Dev-Skills (`dev-skills/`)**:
+2. **Atomic Adapters (`app-file-storage`, `app-vector-store`, `app-http-client`, `app-ai-catalog`)**:
+   Individual skills matching their respective packages. Projects only load the adapter skills they actually use.
+
+3. **Prebuilt Domains (`app-prebuilt-user`, `app-prebuilt-outbox`)**:
+   Ready-to-mount business components: user auth & JWT (`app-prebuilt-user`) and guaranteed event delivery (`app-prebuilt-outbox`).
+
+4. **Contributor Dev-Skill (`app-common-contributor`)**:
    Only linked when `--dev` is specified. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.
-
-## Rules
-- New skills should be placed in `agents/skills/<name>/SKILL.md` or `agents/dev-skills/<name>/SKILL.md`.
-- Always re-run `./agents/link-skills.sh` after adding or renaming skills.
-- Dangling symlinks pointing into `agents/` are pruned automatically.

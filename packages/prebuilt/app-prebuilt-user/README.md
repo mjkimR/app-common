@@ -57,3 +57,9 @@ async def admin_only():
 - `v1_users_router` (from `app_prebuilt_user.api`) — the composed router
 - `get_current_user`, `get_current_superuser`, `on_superuser` (from `app_prebuilt_user.deps`)
 - `User`, `UserService`, `UserRepository`, and the schema/usecase classes from their submodules
+
+## See also
+
+- [App Prebuilt User Skill](../../../agents/skills/app-prebuilt-user/SKILL.md) — user auth, JWT login flow, and admin CRUD.
+- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — layered architecture and dependencies.
+

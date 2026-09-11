@@ -119,9 +119,16 @@ That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `ses
 | Situation | Skill | Scope |
 |---|---|---|
 | Developing FastAPI CRUD features, services, hooks, models, error advisories | `app-backend-core` | `app-layer-base`, `app-tools`, `app-error` |
-| Integrating file storage, vector databases, HTTP clients, or AI models | `app-adapters` | `app-file-storage`, `app-vector-store`, `app-http-client`, `app-ai-catalog` |
-| Integrating user auth/JWT or Transactional Outbox pattern | `app-prebuilt-services` | `app-prebuilt-user`, `app-prebuilt-outbox` |
+| Integrating S3 / MinIO / Local object storage | `app-file-storage` | `app-file-storage` |
+| Integrating Qdrant vector database | `app-vector-store` | `app-vector-store` |
+| Using pooled HTTP client | `app-http-client` | `app-http-client` |
+| Configuring LiteLLM AI catalog & model routing | `app-ai-catalog` | `app-ai-catalog` |
+| Mounting user auth, JWT login, and admin endpoints | `app-prebuilt-user` | `app-prebuilt-user` |
+| Integrating Transactional Outbox pattern & event relay | `app-prebuilt-outbox` | `app-prebuilt-outbox` |
 | Contributing to `app-common` (multi-db testing, package isolation, release tags) | `app-common-contributor` | Internal dev (`packages/*`, `tools/*`) |
 
-Skills are agent-neutral assets under `agents/`. Link them into your agent environment using `just link-skills --dev` (or `./agents/link-skills.sh --dev`). Without `--dev`, only consumer skills are linked.
+Skills are agent-neutral assets under `agents/`.
+- In `app-common`: link with `just link-skills --dev` (or `./agents/link-skills.sh --dev`).
+- In downstream consumer projects: link with `./agents/link-skills.sh --auto` to link **only** installed package skills.
+
 

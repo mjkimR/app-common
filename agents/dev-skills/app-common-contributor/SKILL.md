@@ -1,6 +1,6 @@
 ---
 name: app-common-contributor
-description: Guide for developing and contributing to the app-common repository itself. Covers workspace package isolation, multi-tier testing strategy (SQLite vs Postgres test-pg vs Docker MinIO test-docker), shared testing plugins, pyright strictness, and package release rules. Read before making changes to packages or tools in app-common.
+description: Guide for developing app-common itself. Covers multi-db testing (SQLite, Postgres, Docker), package isolation, and release tagging.
 ---
 
 # app-common-contributor

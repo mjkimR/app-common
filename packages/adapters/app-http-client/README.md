@@ -51,6 +51,6 @@ Getters lazily initialize the client on first use, so `get_http_client()` also w
 
 ## See also
 
-- [App Adapters Skill](../../../agents/skills/app-adapters/SKILL.md) — shared adapter conventions and lifespan wiring.
+- [App HTTP Client Skill](../../../agents/skills/app-http-client/SKILL.md) — pooled httpx client usage and lifespan.
 - [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how adapters fit into the layered app.
 
