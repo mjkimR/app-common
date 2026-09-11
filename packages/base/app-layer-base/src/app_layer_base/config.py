@@ -45,6 +45,11 @@ class AppSettings(BaseSettings):
         default=False, description="Allow cookies and credentials to be included in CORS requests"
     )
 
+    ERROR_ADVISORY_MODE: str = Field(
+        default="auto",
+        description="Controls exposure of agent advisory details in error responses. 'auto' (advisory shown if APP_ENV != 'production'), 'always', 'never', or 'mcp'.",
+    )
+
     model_config = SettingsConfigDict(
         extra="ignore",
     )

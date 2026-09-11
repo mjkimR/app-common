@@ -98,7 +98,7 @@ run_pytest() {
 }
 
 status=0
-for m in app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
+for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-helper app-layer-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
     if should_run "$MODULE" "$m"; then
         echo "Testing $m..."
         if [ "${#PATHS[@]}" -eq 0 ]; then

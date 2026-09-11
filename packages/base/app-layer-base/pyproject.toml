@@ -5,6 +5,7 @@ description = "Core layer base containing models, repos, services, usecases and 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "app-error",
     "fastapi>=0.115.12",
     "pydantic[email]>=2.11.1",
     "pydantic-settings>=2.8.1",
@@ -46,4 +47,7 @@ asyncio_default_fixture_loop_scope = "function"
 # deliberately absent: making it importable is what let one package's tests/ shadow
 # another's across the workspace.
 pythonpath = ["tests/unit", "src"]
+
+[tool.uv.sources]
+app-error = { workspace = true }
 

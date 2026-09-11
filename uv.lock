@@ -10,6 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "app-ai-catalog",
+    "app-error",
     "app-file-storage",
     "app-helper",
     "app-http-client",
@@ -247,6 +248,25 @@ requires-dist = [
 ]
 
 [[package]]
+name = "app-error"
+version = "0.1.0"
+source = { editable = "packages/base/app-error" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-asyncio", specifier = ">=0.26.0" },
+]
+
+[[package]]
 name = "app-file-storage"
 version = "0.1.0"
 source = { editable = "packages/adapters/app-file-storage" }
@@ -342,6 +362,7 @@ name = "app-layer-base"
 version = "0.1.0"
 source = { editable = "packages/base/app-layer-base" }
 dependencies = [
+    { name = "app-error" },
     { name = "dotenv" },
     { name = "fastapi" },
     { name = "greenlet" },
@@ -369,6 +390,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", marker = "extra == 'testing'", specifier = ">=0.21.0" },
+    { name = "app-error", editable = "packages/base/app-error" },
     { name = "asyncpg", marker = "extra == 'testing'", specifier = ">=0.30.0" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },

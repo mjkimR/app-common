@@ -41,6 +41,7 @@ extraPaths = [
     "./packages/prebuilt/app-prebuilt-outbox/src",
     "./tools/app-tools/src",
     "./tools/app-helper/src",
+    "./packages/base/app-error/src",
     "./packages/base/app-layer-base/src",
     "./packages/adapters/app-file-storage/src",
     "./packages/adapters/app-vector-store/src",
