@@ -75,11 +75,9 @@ building a service or usecase straight from its dependency tree, `clean_db_after
 
 Projects follow a decoupled flow: **API (Router) → UseCase → Service → Repository**. Business logic goes in service hooks rather than in routers. New feature modules can be scaffolded with [`app-tools`](../../../tools/app-tools/README.md).
 
-See the developer guides for the full picture:
+See the developer guide for the full picture:
 
-- [Architecture & Service Hooks Guide](../../../skill/app-base-developer-skill/docs/app_layer_base_guide.md)
-- [Base Module Reference](../../../skill/app-base-developer-skill/docs/reference_base.md)
-- [Core, Config & Utils Reference](../../../skill/app-base-developer-skill/docs/reference_core_config.md)
+- [App Backend Core Developer Skill](../../../agents/skills/app-backend-core/SKILL.md) — layered architecture, service hooks, and code scaffolding.
 
 ## Public API
 

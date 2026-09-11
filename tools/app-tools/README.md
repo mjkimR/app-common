@@ -46,4 +46,4 @@ app-tools create-code feature --name Article
 
 For a complete list of commands, usage examples, and details on how code generation works, please refer to the developer guide:
 
-- **[app-tools Developer Guide](../../skill/app-base-developer-skill/docs/app_tools_guide.md)**
+- **[App Backend Core Developer Skill](../../agents/skills/app-backend-core/SKILL.md)**

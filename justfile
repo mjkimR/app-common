@@ -119,3 +119,8 @@ test-docker +paths="":
 test-cov module="all":
     @COVERAGE=1 DOCKER=1 bash ./scripts/run-tests.sh sqlite {{ module }}
 
+# Link agent skills (pass --dev to include repo development skills)
+link-skills +args="":
+    @bash ./agents/link-skills.sh {{ args }}
+
+

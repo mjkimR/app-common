@@ -71,5 +71,6 @@ For LangChain integrations, `client.get_embedding("text-embedding-3-small")` ret
 
 ## See also
 
-- [Core, Config, AI & Utils Reference](../../../skill/app-base-developer-skill/docs/reference_core_config.md) — AI factory usage in context.
-- [Architecture & Service Hooks Guide](../../../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how this package fits the layered app.
+- [App Adapters Skill](../../../agents/skills/app-adapters/SKILL.md) — AI catalog configuration and LiteLLM model routing.
+- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how AI clients fit into the layered app.
+

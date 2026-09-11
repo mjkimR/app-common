@@ -63,10 +63,17 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app
 
 ---
 
-## Documentation & Developer Skills
+## Developer Skills & Agent Assets
 
-Comprehensive architectural paradigms, API mappings, and development workflows are fully documented:
+Modular, agent-neutral skills are available under [`agents/`](./agents/README.md) to assist developers and AI assistants:
 
-- **[Architecture & Service Hooks Guide](./.agents/skills/app-base-developer-skill/docs/app_layer_base_guide.md)**: Understand the core design principles and how to customize business flows via mixin hooks.
-- **[CLI Code Generation Guide](./.agents/skills/app-base-developer-skill/docs/app_tools_guide.md)**: Scaffolding a feature in seconds.
-- **[Adapter Modules Mapping](./.agents/skills/app-base-developer-skill/docs/reference_adapter.md)**: Details on storage, db, broker, and http client adapter configurations.
+- **[`app-backend-core`](./agents/skills/app-backend-core/SKILL.md)**: Layered architecture (Router → UseCase → Service → Repository → Model/Schema), Service Hooks, feature scaffolding with `app-tools`, and structured error advisories (`app-error`).
+- **[`app-adapters`](./agents/skills/app-adapters/SKILL.md)**: Storage (S3/Local), vector store (Qdrant), shared HTTP client, and AI catalog integration with lifespan composition.
+- **[`app-prebuilt-services`](./agents/skills/app-prebuilt-services/SKILL.md)**: Drop-in user authentication/JWT and Transactional Outbox pattern engine.
+- **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Workspace package boundaries, multi-tier testing (SQLite, PostgreSQL, Docker), and contributor conventions.
+
+To link skills into your environment:
+```bash
+just link-skills --dev   # or ./agents/link-skills.sh --dev
+```
+

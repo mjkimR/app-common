@@ -83,5 +83,6 @@ Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on t
 
 ## See also
 
-- [Adapter Module Reference](../../../skill/app-base-developer-skill/docs/reference_adapter.md) — shared adapter conventions and index.
-- [Architecture & Service Hooks Guide](../../../skill/app-base-developer-skill/docs/app_layer_base_guide.md) — how adapters fit the layered app.
+- [App Adapters Skill](../../../agents/skills/app-adapters/SKILL.md) — shared adapter conventions and lifespan wiring.
+- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how adapters fit into the layered app.
+

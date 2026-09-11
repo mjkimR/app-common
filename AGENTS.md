@@ -114,7 +114,14 @@ That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `ses
 
 ---
 
-## Further Reading
+## Skills
 
-- Detailed guides are available in `.agents/skills/app-base-developer-skill/docs/`.
-- Key reference: `app_layer_base_guide.md` for architecture and hooks.
+| Situation | Skill | Scope |
+|---|---|---|
+| Developing FastAPI CRUD features, services, hooks, models, error advisories | `app-backend-core` | `app-layer-base`, `app-tools`, `app-error` |
+| Integrating file storage, vector databases, HTTP clients, or AI models | `app-adapters` | `app-file-storage`, `app-vector-store`, `app-http-client`, `app-ai-catalog` |
+| Integrating user auth/JWT or Transactional Outbox pattern | `app-prebuilt-services` | `app-prebuilt-user`, `app-prebuilt-outbox` |
+| Contributing to `app-common` (multi-db testing, package isolation, release tags) | `app-common-contributor` | Internal dev (`packages/*`, `tools/*`) |
+
+Skills are agent-neutral assets under `agents/`. Link them into your agent environment using `just link-skills --dev` (or `./agents/link-skills.sh --dev`). Without `--dev`, only consumer skills are linked.
+
