@@ -85,4 +85,9 @@ To link skills:
 just link-skills --dev
 ```
 
+### AI Agent Onboarding
+To bootstrap a new FastAPI project from scratch with an AI agent, give the agent this GitHub link:
+> `https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md`
+
+
 

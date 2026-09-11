@@ -20,6 +20,14 @@ agents/
     └── app-common-contributor/# Package isolation, multi-db test harness, release rules
 ```
 
+## Remote AI Onboarding (No Installation Needed)
+
+To bootstrap a new FastAPI project from scratch using an AI coding assistant (Antigravity, Claude Code, Cursor, Codex), simply prompt your agent with the GitHub link to the onboarding guide:
+
+> *"Please onboard app-common into this project using this guide: https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md"*
+
+The agent will read the guide directly from GitHub, interview you about required technologies (database, storage, auth, outbox), install only the necessary packages, and download the matching agent skills into your workspace.
+
 ## Quick Start
 
 ### In Downstream Projects (Consumer Apps)
