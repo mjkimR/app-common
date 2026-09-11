@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import click
+from app_error import AppError
 
 from app_tools.create_code.create_feature import create_feature
 
@@ -20,4 +21,7 @@ def create_code():
 def feature(name: str, plural: str | None, prefix: str | None):
     """Create a new feature module"""
     base_dir = Path.cwd()
-    create_feature(name=name, plural=plural, base_dir=base_dir, feature_prefix=prefix)
+    try:
+        create_feature(name=name, plural=plural, base_dir=base_dir, feature_prefix=prefix)
+    except AppError as e:
+        raise click.ClickException("\n".join(e.lines())) from e

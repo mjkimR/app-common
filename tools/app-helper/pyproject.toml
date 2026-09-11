@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "General-purpose developer helper tools and utilities"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["click>=8.3.1"]
+dependencies = [
+    "app-error",
+    "click>=8.3.1",
+]
+
+[tool.uv.sources]
+app-error = { workspace = true }
 
 [project.scripts]
 app-helper = "app_helper.cli:cli"

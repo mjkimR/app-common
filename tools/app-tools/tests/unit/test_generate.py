@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 from app_tools.create_code.create_feature import create_feature
 
 # app-common workspace root: .../app-common/tools/app-tools/tests/unit/test_generate.py
@@ -78,3 +79,16 @@ def test_generated_feature_typechecks_with_pyright(tmp_path):
 
     assert result.returncode == 0, f"pyright reported issues on generated code:\n{result.stdout}\n{result.stderr}"
     assert feature_dir.exists()
+
+
+def test_feature_already_exists_raises_app_error(tmp_path):
+    from app_tools.create_code.create_feature import FeatureAlreadyExistsError
+
+    _generate(tmp_path, name="Widget", prefix="genpkg")
+    with pytest.raises(FeatureAlreadyExistsError) as exc_info:
+        create_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="genpkg")
+
+    err = exc_info.value
+    assert err.code == "FEATURE_ALREADY_EXISTS"
+    assert "rm -rf" in (err.fix or "")
+    assert "[ERROR]  (FEATURE_ALREADY_EXISTS)" in "\n".join(err.lines())

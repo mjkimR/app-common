@@ -67,3 +67,13 @@ class TestStageAll:
 
         with pytest.raises(RuntimeError, match="git add failed"):
             git.stage_all()
+
+    def test_app_error_advisory_metadata(self, mocker):
+        mocker.patch("subprocess.run", return_value=_completed(returncode=128, stderr="fatal:"))
+        with pytest.raises(git.NotAGitRepoError) as exc_info:
+            git.ensure_repo()
+
+        err = exc_info.value
+        assert err.code == "NOT_A_GIT_REPO"
+        assert err.fix == "git init"
+        assert "[ERROR]  (NOT_A_GIT_REPO) Not a git repository." in "\n".join(err.lines())

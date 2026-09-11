@@ -306,6 +306,7 @@ name = "app-helper"
 version = "0.1.0"
 source = { editable = "tools/app-helper" }
 dependencies = [
+    { name = "app-error" },
     { name = "click" },
 ]
 
@@ -318,7 +319,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "click", specifier = ">=8.3.1" }]
+requires-dist = [
+    { name = "app-error", editable = "packages/base/app-error" },
+    { name = "click", specifier = ">=8.3.1" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -486,6 +490,7 @@ name = "app-tools"
 version = "0.1.0"
 source = { editable = "tools/app-tools" }
 dependencies = [
+    { name = "app-error" },
     { name = "click" },
     { name = "questionary" },
 ]
@@ -501,6 +506,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "app-error", editable = "packages/base/app-error" },
     { name = "click", specifier = ">=8.3.1" },
     { name = "questionary", specifier = ">=2.1.1" },
 ]

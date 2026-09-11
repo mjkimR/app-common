@@ -128,10 +128,17 @@ def get_env_spec(type: str):
         from app_prebuilt_user.config.auth import AuthSettings
         from app_vector_store.config import VectorDBSettings
     except ImportError as e:
-        raise click.ClickException(
-            "Error: Could not import configuration modules. Please ensure 'app-prebuilt-user' and related packages are installed "
-            "in your Python environment."
-        ) from e
+        from app_error import Actor, AppError, Retry
+
+        err = AppError(
+            "Could not import configuration modules. Please ensure packages are installed.",
+            code="PACKAGE_NOT_INSTALLED",
+            actor=Actor.TOOL,
+            retry=Retry.AFTER_FIX,
+            fix="uv sync --all-extras",
+            what_to_report="Missing packages for get-env-spec.",
+        )
+        raise click.ClickException("\n".join(err.lines())) from e
 
     settings_map = {
         "auth": (AuthSettings, None),

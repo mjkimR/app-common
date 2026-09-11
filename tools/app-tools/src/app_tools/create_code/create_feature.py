@@ -2,7 +2,23 @@ import re
 from pathlib import Path
 from string import Template
 
+from app_error import Actor, AppError, Retry
+
 FEATURE_TEMPLATES_DIR = Path(__file__).parent / "templates" / "feature"
+
+
+class FeatureAlreadyExistsError(AppError):
+    code = "FEATURE_ALREADY_EXISTS"
+    actor = Actor.USER
+    retry = Retry.AFTER_FIX
+
+    def __init__(self, plural_name: str, feature_dir: Path) -> None:
+        super().__init__(
+            f"Feature '{plural_name}' already exists at {feature_dir}.",
+            target_files=[str(feature_dir)],
+            fix=f"rm -rf {feature_dir}",
+            what_to_report=f"Feature '{plural_name}' already exists.",
+        )
 
 
 def pluralize(name: str) -> str:
@@ -106,8 +122,7 @@ def create_feature(
     feature_dir = base_dir / f"{prefix}/{plural_name}"
 
     if feature_dir.exists():
-        print(f"Error: Feature '{plural_name}' already exists at {feature_dir}.")
-        return
+        raise FeatureAlreadyExistsError(plural_name, feature_dir)
 
     print(f"Creating feature '{class_name}' in '{feature_dir}'...")
 
