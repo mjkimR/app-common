@@ -12,7 +12,6 @@ members = [
     "app-ai-catalog",
     "app-error",
     "app-file-storage",
-    "app-helper",
     "app-http-client",
     "app-layer-base",
     "app-prebuilt-outbox",
@@ -299,37 +298,6 @@ requires-dist = [
 dev = [
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "testcontainers", specifier = ">=4.8.0" },
-]
-
-[[package]]
-name = "app-helper"
-version = "0.1.0"
-source = { editable = "tools/app-helper" }
-dependencies = [
-    { name = "app-error" },
-    { name = "click" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-mock" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "app-error", editable = "packages/base/app-error" },
-    { name = "click", specifier = ">=8.3.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-asyncio", specifier = ">=0.26.0" },
-    { name = "pytest-mock", specifier = ">=3.15.0" },
-    { name = "ruff", specifier = ">=0.14.14" },
 ]
 
 [[package]]

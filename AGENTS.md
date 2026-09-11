@@ -82,9 +82,6 @@ The repository is structured into organized category directories under `packages
     - **`app-tools/`**: CLI tool for scaffolding new modular features.
         - Usage: `uv run app-tools create-code feature --name <Name>`
         - `create_code/templates/feature/`: the generated feature skeleton, one `*.tmpl` per emitted file.
-    - **`app-helper/`**: Standalone developer CLI for git-diff prompt building and clipboard helpers.
-        - Usage: `app-helper prompt commit|review`, `app-helper copy-diff`
-        - Ported from the maintainer's `~/.zshrc` functions (`gic`, `gir`, `copydiff`), which remain the upstream originals.
 
 Every package keeps its source in `src/<package_name>/` and its tests in `tests/unit/` (plus `tests/integrate/` where present). Tests never live under `src/`. Each package owns its own pytest config (`[tool.pytest.ini_options]`), so its rootdir is the package directory — there is deliberately no workspace-wide `pythonpath`.
 
@@ -119,5 +116,5 @@ That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `ses
 
 ## Further Reading
 
-- Detailed guides are available in `skill/app-base-developer-skill/docs/`.
+- Detailed guides are available in `.agents/skills/app-base-developer-skill/docs/`.
 - Key reference: `app_layer_base_guide.md` for architecture and hooks.

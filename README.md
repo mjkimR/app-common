@@ -25,7 +25,6 @@ Each adapter isolates a specific technology stack and can be imported independen
 
 ### 4. Developer Productivity
 - **[app-tools](./tools/app-tools/README.md)**: Developer CLI tool to automatically generate layered CRUD code (Models, Schemas, Repos, Services, Routers) matching this workspace's specifications.
-- **[app-helper](./tools/app-helper/README.md)**: Standalone developer CLI for git-diff prompt building and clipboard helpers.
 
 ---
 
@@ -68,6 +67,6 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app
 
 Comprehensive architectural paradigms, API mappings, and development workflows are fully documented:
 
-- **[Architecture & Service Hooks Guide](./skill/app-base-developer-skill/docs/app_layer_base_guide.md)**: Understand the core design principles and how to customize business flows via mixin hooks.
-- **[CLI Code Generation Guide](./skill/app-base-developer-skill/docs/app_tools_guide.md)**: Scaffolding a feature in seconds.
-- **[Adapter Modules Mapping](./skill/app-base-developer-skill/docs/reference_adapter.md)**: Details on storage, db, broker, and http client adapter configurations.
+- **[Architecture & Service Hooks Guide](./.agents/skills/app-base-developer-skill/docs/app_layer_base_guide.md)**: Understand the core design principles and how to customize business flows via mixin hooks.
+- **[CLI Code Generation Guide](./.agents/skills/app-base-developer-skill/docs/app_tools_guide.md)**: Scaffolding a feature in seconds.
+- **[Adapter Modules Mapping](./.agents/skills/app-base-developer-skill/docs/reference_adapter.md)**: Details on storage, db, broker, and http client adapter configurations.
