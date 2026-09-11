@@ -42,18 +42,22 @@ def setup_logger():
 
     # Log settings (App settings)
     settings = get_app_settings()
-    log_file_path = os.path.join(settings.LOG_PATH)
-    common_file_config = {
-        "sink": log_file_path,
-        "level": settings.LOG_LEVEL,
-        "rotation": "1 day",
-        "retention": "30 days",
-        "compression": "zip",
-        "diagnose": False,
-    }
 
     # Apply the patch globally to the core logger object
     logger.configure(patcher=global_patcher)
+
+    has_file_logging = bool(settings.LOG_PATH and settings.LOG_PATH.strip())
+    common_file_config = {}
+    if has_file_logging:
+        log_file_path = os.path.join(settings.LOG_PATH)
+        common_file_config = {
+            "sink": log_file_path,
+            "level": settings.LOG_LEVEL,
+            "rotation": "1 day",
+            "retention": "30 days",
+            "compression": "zip",
+            "diagnose": False,
+        }
 
     if settings.LOG_JSON_FORMAT:
         # 1. Console (JSON)
@@ -65,11 +69,12 @@ def setup_logger():
             diagnose=False,
         )
         # 2. File (JSON)
-        logger.add(
-            **common_file_config,
-            serialize=True,
-            backtrace=True,
-        )
+        if has_file_logging:
+            logger.add(
+                **common_file_config,
+                serialize=True,
+                backtrace=True,
+            )
     else:
         # 1. Console (Text + Color)
         logger.add(
@@ -87,17 +92,18 @@ def setup_logger():
             diagnose=True,
         )
         # 2. File (Text)
-        logger.add(
-            **common_file_config,
-            format=(
-                "[{extra[request_id]}] "
-                "{time:YYYY-MM-DD HH:mm:ss} | "
-                "{level: <8} | "
-                "{extra[custom_prefix]}{message}{extra[custom_suffix]} "
-                "({name}:{line})"
-            ),
-            backtrace=True,
-        )
+        if has_file_logging:
+            logger.add(
+                **common_file_config,
+                format=(
+                    "[{extra[request_id]}] "
+                    "{time:YYYY-MM-DD HH:mm:ss} | "
+                    "{level: <8} | "
+                    "{extra[custom_prefix]}{message}{extra[custom_suffix]} "
+                    "({name}:{line})"
+                ),
+                backtrace=True,
+            )
     return logger
 
 

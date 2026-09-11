@@ -25,10 +25,11 @@ def test_format_record_sets_na_when_request_id_empty():
     assert record["extra"]["request_id"] == "N/A".ljust(8)
 
 
-def test_setup_logger_smoke(monkeypatch):
-    # setup_logger should configure handlers without raising.
+def test_setup_logger_with_log_path(monkeypatch, tmp_path):
+    log_file = tmp_path / "test.log"
+
     class DummySettings:
-        LOG_PATH = "/tmp/app.log"
+        LOG_PATH = str(log_file)
         LOG_LEVEL = "INFO"
         LOG_JSON_FORMAT = False
 
@@ -36,3 +37,31 @@ def test_setup_logger_smoke(monkeypatch):
 
     configured = log.setup_logger()
     assert configured is log.logger
+    # Both console and file handlers registered
+    assert len(configured._core.handlers) == 2
+
+
+def test_setup_logger_without_log_path(monkeypatch):
+    class DummySettingsNone:
+        LOG_PATH = None
+        LOG_LEVEL = "INFO"
+        LOG_JSON_FORMAT = False
+
+    monkeypatch.setattr(log, "get_app_settings", lambda: DummySettingsNone())
+
+    configured = log.setup_logger()
+    assert configured is log.logger
+    # Only console handler registered
+    assert len(configured._core.handlers) == 1
+
+    class DummySettingsEmpty:
+        LOG_PATH = ""
+        LOG_LEVEL = "INFO"
+        LOG_JSON_FORMAT = True
+
+    monkeypatch.setattr(log, "get_app_settings", lambda: DummySettingsEmpty())
+
+    configured = log.setup_logger()
+    assert configured is log.logger
+    # Only console handler registered
+    assert len(configured._core.handlers) == 1

@@ -66,7 +66,7 @@ building a service or usecase straight from its dependency tree, `clean_db_after
 | `APP_ENV` | `local` | Environment name (drives environment-aware behavior) |
 | `DATABASE_URL` | — | SQLAlchemy async database URL |
 | `LOG_LEVEL` | `INFO` | Log level |
-| `LOG_PATH` | — | Log output path |
+| `LOG_PATH` | `None` | Log output path (file logging disabled if not set) |
 | `LOG_JSON_FORMAT` | `false` | Emit structured JSON logs |
 | `CORS_ALLOWED_ORIGINS` | `[]` | Allowed CORS origins |
 | `CORS_ALLOW_ORIGIN_REGEX` | `None` | Regex of allowed CORS origins |

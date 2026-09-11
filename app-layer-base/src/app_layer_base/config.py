@@ -1,5 +1,4 @@
 import functools
-import os.path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,9 +17,9 @@ class AppSettings(BaseSettings):
         description="SQLAlchemy async database connection URL (defaults to SQLite)",
     )
 
-    LOG_PATH: str = Field(
-        default_factory=lambda: os.path.join(get_project_root(), "logs/app.log"),
-        description="Absolute path to the log file",
+    LOG_PATH: str | None = Field(
+        default=None,
+        description="Absolute path to the log file. If None or empty, file logging is disabled.",
     )
     LOG_JSON_FORMAT: bool = Field(
         default=False, description="Emit logs in JSON format when True (useful for log aggregators)"
