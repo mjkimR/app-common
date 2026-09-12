@@ -123,4 +123,16 @@ test-cov module="all":
 link-skills +args="":
     @bash ./agents/link-skills.sh {{ args }}
 
+# Initialize UI package dependencies
+init-ui:
+    npm install --prefix packages/ui/app-ui-base
+
+# Type check UI package
+check-ui:
+    npm run check --prefix packages/ui/app-ui-base
+
+# Build UI package into dist/
+build-ui:
+    npm run build --prefix packages/ui/app-ui-base
+
 

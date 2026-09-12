@@ -37,6 +37,10 @@ Use the provided scripts to install it automatically:
 - **Lint & format one module**: `just lint <module-name>` (e.g., `just lint app-file-storage`)
 - **Type check all modules**: `just check`
 - **Type check one module**: `just check <module-name>`
+- **UI Package Commands**:
+  - `just init-ui` — install Svelte UI library dependencies
+  - `just check-ui` — type check UI library with `svelte-check`
+  - `just build-ui` — build Svelte library to `dist/` with `@sveltejs/package`
 - **Run tests**: `just test` — every module on SQLite, no Docker needed. Container-backed tests are deselected, so this is the fast one you run constantly.
 - **Run tests on PostgreSQL**: `just test-pg` — **needs Docker**. `SELECT ... FOR UPDATE SKIP LOCKED` is a no-op on SQLite, so this is the only run that verifies the outbox's row locking.
 - **Run container-backed tests**: `just test-docker` — **needs Docker**. Adds the tests marked `docker`, e.g. the S3 storage contract against a real MinIO (mocked aiobotocore hid three real bugs; see `app-file-storage/tests/integrate/`).
@@ -80,6 +84,12 @@ The repository is structured into organized category directories under `packages
 - **`packages/prebuilt/`**:
     - **`app-prebuilt-user/`**: Prebuilt authentication, signup, and user management controllers, services, and models.
     - **`app-prebuilt-outbox/`**: Prebuilt Transactional Outbox pattern engine for reliable event messaging.
+- **`packages/ui/`**:
+    - **`app-ui-base/`**: Svelte 5 foundational UI library (`@app-common/ui-base`).
+        - `components/`: Accessible, responsive components (`AppShell`, `PageHeader`, `EmptyState`, `StatusBadge`, `LoadingSpinner`, `ThemeToggle`).
+        - `stores/`: Reactive Svelte 5 stores (`sessionStore`, `themeStore`).
+        - `ui/`: Core atomic primitives (`Button`, `Card`, `Input`).
+        - `styles/`: Semantic Tailwind design tokens (`tokens.css`) and class merging utility (`cn`).
 - **`tools/`**:
     - **`app-tools/`**: CLI tool for scaffolding new modular features.
         - Usage: `uv run app-tools create-code feature --name <Name>`

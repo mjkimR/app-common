@@ -1,0 +1,42 @@
+{
+  "name": "@app-common/ui-base",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Agent-First Svelte 5 foundational UI components, layout shell, and reactive state stores",
+  "scripts": {
+    "build": "svelte-package",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "prepack": "npm run build"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./styles": "./dist/styles/tokens.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "lucide-svelte": "^0.474.0",
+    "svelte": "^5.0.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.0.1",
+    "tailwind-variants": "^0.3.1"
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "^2.16.0",
+    "@sveltejs/package": "^2.3.10",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "lucide-svelte": "^0.474.0",
+    "svelte": "^5.19.0",
+    "svelte-check": "^4.1.4",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}
