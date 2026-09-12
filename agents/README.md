@@ -10,14 +10,17 @@ agents/
 ├── link-skills.sh             # Symlink manager supporting auto-detection and selective linking
 ├── skills/                    # Atomic consumer skills (1:1 with packages for lean context)
 │   ├── app-backend-core/      # app-layer-base + app-tools + app-error (FastAPI foundation)
+│   ├── app-testing/           # app-testing-base (FastAPI test foundation & assertions)
 │   ├── app-file-storage/      # AWS S3 / MinIO / Local FS object storage
 │   ├── app-vector-store/      # Qdrant vector database + LangChain embeddings
 │   ├── app-http-client/       # Pooled singleton httpx client (async & sync)
 │   ├── app-ai-catalog/        # LiteLLM YAML catalog & model routing
 │   ├── app-prebuilt-user/     # User authentication, JWT, OAuth2 form login
-│   └── app-prebuilt-outbox/   # Transactional Outbox pattern & event relay
+│   ├── app-prebuilt-outbox/   # Transactional Outbox pattern & event relay
+│   └── app-svelte-ui/         # Svelte 5 Runes, SvelteKit, Tailwind, openapi-fetch
 └── dev-skills/                # Contributor skills (for modifying app-common repo itself)
     └── app-common-contributor/# Package isolation, multi-db test harness, release rules
+
 ```
 
 ## Remote AI Onboarding (No Installation Needed)
@@ -58,11 +61,17 @@ just link-skills --dev
 1. **Foundational Core (`app-backend-core`)**:
    Core 4-layer architecture (`Router → UseCase → Service → Repository → Model/Schema`), service hooks, `app-tools create-code feature` scaffolding, and `app-error` structured advisories.
 
-2. **Atomic Adapters (`app-file-storage`, `app-vector-store`, `app-http-client`, `app-ai-catalog`)**:
+2. **Testing Foundation (`app-testing`)**:
+   Pytest base classes (`UnitTest`, `IntegrationTest`, `E2ETest`), DI resolution (`resolve_dependency`), deterministic test seeders, and response assertions.
+
+3. **Atomic Adapters (`app-file-storage`, `app-vector-store`, `app-http-client`, `app-ai-catalog`)**:
    Individual skills matching their respective packages. Projects only load the adapter skills they actually use.
 
-3. **Prebuilt Domains (`app-prebuilt-user`, `app-prebuilt-outbox`)**:
+4. **Prebuilt Domains (`app-prebuilt-user`, `app-prebuilt-outbox`)**:
    Ready-to-mount business components: user auth & JWT (`app-prebuilt-user`) and guaranteed event delivery (`app-prebuilt-outbox`).
 
-4. **Contributor Dev-Skill (`app-common-contributor`)**:
+5. **Frontend UI (`app-svelte-ui`)**:
+   Agent-First Svelte 5 Runes, SvelteKit layout and AppShell, shadcn atomic primitives, Tailwind tokens, and type-safe `openapi-fetch` client bindings.
+
+6. **Contributor Dev-Skill (`app-common-contributor`)**:
    Only linked when `--dev` is specified. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.

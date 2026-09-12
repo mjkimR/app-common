@@ -107,6 +107,8 @@ def test_creates_web_feature_expected_files(tmp_path):
     state_content = (feature_dir / "widget.svelte.ts").read_text()
     assert "export class WidgetState" in state_content
     assert "$state<WidgetItem[]>" in state_content
+    assert "components['schemas']['WidgetRead']" in state_content
+    assert "Array.isArray(data) ? data : ((data as any)?.items ?? [])" in state_content
     assert "/api/v1/widgets" in state_content
 
     index_content = (feature_dir / "index.ts").read_text()

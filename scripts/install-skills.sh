@@ -96,6 +96,12 @@ else
             grep -q "app-ai-catalog" "$manifest" 2>/dev/null && skills_to_install+=(app-ai-catalog)
             grep -q "app-prebuilt-user" "$manifest" 2>/dev/null && skills_to_install+=(app-prebuilt-user)
             grep -q "app-prebuilt-outbox" "$manifest" 2>/dev/null && skills_to_install+=(app-prebuilt-outbox)
+            grep -q "app-testing-base" "$manifest" 2>/dev/null && skills_to_install+=(app-testing)
+
+            # Detect frontend/Svelte UI project
+            if [ -f "package.json" ] || [ -d "web" ] || [ -f "web/package.json" ]; then
+                skills_to_install+=(app-svelte-ui)
+            fi
         fi
     fi
 

@@ -25,6 +25,9 @@ Before writing code or running commands, ask the developer:
    - User authentication & JWT login (`app-prebuilt-user`)?
    - Transactional Outbox pattern for domain events (`app-prebuilt-outbox`)?
    - Pooled HTTP client (`app-http-client`)?
+6. **Testing & Frontend**:
+   - Test foundation (`app-testing-base`) with Pytest base classes and DI resolver?
+   - Web frontend using Svelte 5 and `@app-common/ui-base`?
 
 ---
 
@@ -45,6 +48,9 @@ uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/
 
 # Code scaffolding CLI (dev dependency)
 uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app-tools" --dev
+
+# Test foundation & fixtures (dev dependency, recommended)
+uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-testing-base" --dev
 
 # Database driver
 # For PostgreSQL:
@@ -143,8 +149,11 @@ sleep 2
 curl http://localhost:8000/health
 kill $PID
 
-# Scaffold your first CRUD feature using app-tools
+# Scaffold your first backend CRUD feature using app-tools
 uv run app-tools create-code feature --name Item
+
+# Or scaffold a Svelte 5 web feature (if working on frontend)
+uv run app-tools create-code web-feature --name Item
 ```
 
 Onboarding is complete! The project is now configured with a lean codebase and tailored agent skills.

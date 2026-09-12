@@ -271,6 +271,16 @@ def link_cmd(target_path: str | None, dry_run: bool):
             target_installed = node_modules / pkg_name
             bak_path = node_modules / f"{pkg_name}.bak"
 
+            dist_dir = src_path / "dist"
+            if not dist_dir.is_dir() or not any(dist_dir.iterdir()):
+                click.echo(
+                    click.style(
+                        f"  warning: '{pkg_name}' has no build output at {dist_dir}.\n"
+                        f"           Run 'just build-ui' in app-common to generate artifacts.",
+                        fg="yellow",
+                    )
+                )
+
             if target_installed.is_symlink():
                 current_target = target_installed.resolve()
                 if current_target == src_path:

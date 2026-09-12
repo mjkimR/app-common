@@ -53,7 +53,7 @@ CI runs all three test legs on every push, so anything deselected locally is sti
 
 Packages are consumed as git dependencies (`git+...@<ref>#subdirectory=<path-to-package>`), never published to PyPI. A release is a repo-level tag:
 
-1. Bump `version` in every package's `pyproject.toml` to match the tag (one repo version for all 10 packages — they ship together).
+1. Bump `version` in every package's `pyproject.toml` (and `packages/ui/app-ui-base/package.json`) to match the tag (one repo version across all packages — they ship together).
 2. Tag the commit and push it: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 3. CI runs lint / type-check / all three test legs on the tag; only if they pass does the `release` job create a GitHub Release with generated notes.
 
@@ -92,9 +92,10 @@ The repository is structured into organized category directories under `packages
         - `styles/`: Semantic Tailwind design tokens (`tokens.css`) and class merging utility (`cn`).
 - **`tools/`**:
     - **`app-tools/`**: CLI tool for scaffolding new modular features and managing local dev symlinks.
-        - Usage (Feature Scaffolding): `uv run app-tools create-code feature --name <Name>`
+        - Usage (Backend Feature Scaffolding): `uv run app-tools create-code feature --name <Name>`
+        - Usage (Web Feature Scaffolding): `uv run app-tools create-code web-feature --name <Name>`
         - Usage (Local Dev Linking): `uv run app-tools dev link`, `dev unlink`, `dev status`
-        - `create_code/templates/feature/`: the generated feature skeleton, one `*.tmpl` per emitted file.
+        - `create_code/templates/`: generated feature skeletons for backend and Svelte 5 web features.
 
 Every package keeps its source in `src/<package_name>/` and its tests in `tests/unit/` (plus `tests/integrate/` where present). Tests never live under `src/`. Each package owns its own pytest config (`[tool.pytest.ini_options]`), so its rootdir is the package directory — there is deliberately no workspace-wide `pythonpath`.
 

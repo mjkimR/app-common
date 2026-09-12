@@ -191,3 +191,23 @@ def test_dev_link_app_common_not_found(tmp_path: Path, monkeypatch):
     result = runner.invoke(cli, ["dev", "link"])
     assert result.exit_code == 1
     assert "Could not locate app-common repository root" in result.output
+
+
+def test_dev_link_node_dist_warning(mock_app_common: Path, mock_consumer_project: Path, monkeypatch):
+    runner = CliRunner()
+    monkeypatch.chdir(mock_consumer_project)
+
+    # When dist/ does not exist
+    result = runner.invoke(cli, ["dev", "link"])
+    assert result.exit_code == 0
+    assert "has no build output" in result.output
+    assert "Run 'just build-ui' in app-common" in result.output
+
+    # When dist/ exists with content
+    dist_dir = mock_app_common / "packages" / "ui" / "app-ui-base" / "dist"
+    dist_dir.mkdir(parents=True, exist_ok=True)
+    (dist_dir / "index.js").write_text("export {};")
+
+    result = runner.invoke(cli, ["dev", "link"])
+    assert result.exit_code == 0
+    assert "has no build output" not in result.output

@@ -24,19 +24,29 @@ app-tools [COMMAND]
 
 Generate boilerplate code for new application features.
 
-**Command:**
+**1. Backend Feature (FastAPI Layered Architecture):**
 ```bash
-app-tools create-code feature --name <FeatureName> [--plural <plural_name>]
+app-tools create-code feature --name <FeatureName> [--plural <plural_name>] [--prefix <prefix>]
 ```
-
-**Options:**
 - `--name`: Name of the feature in CamelCase (e.g., `Article`, `User`).
 - `--plural`: (Optional) Plural name in snake_case (e.g., `articles`). If omitted, it will be auto-generated.
+- `--prefix`: (Optional) Directory prefix (defaults to `app/features`).
 
-**Example:**
-Start a new feature module for managing articles:
+*Example:*
 ```bash
 app-tools create-code feature --name Article
+```
+
+**2. Web Feature (Svelte 5 Runes & shadcn UI):**
+```bash
+app-tools create-code web-feature --name <FeatureName> [--plural <plural_name>] [--prefix <prefix>]
+```
+- Generates Svelte 5 state store (`*.svelte.ts`), main view (`*View.svelte`), dialog (`*Dialog.svelte`), and index exports.
+- `--prefix`: (Optional) Directory prefix (auto-detects `src/lib/features` or `web/src/lib/features`).
+
+*Example:*
+```bash
+app-tools create-code web-feature --name Project
 ```
 
 #### Local Development Linking (`dev`)
