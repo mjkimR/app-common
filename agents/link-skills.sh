@@ -127,6 +127,11 @@ elif $auto_detect; then
     grep -q "app-prebuilt-outbox" "$manifest" 2>/dev/null && skills_to_link+=(app-prebuilt-outbox)
     grep -q "app-testing-base" "$manifest" 2>/dev/null && skills_to_link+=(app-testing)
 
+    # Detect frontend/Svelte UI project
+    if [ -f "package.json" ] || [ -d "web" ] || [ -f "web/package.json" ]; then
+      skills_to_link+=(app-svelte-ui)
+    fi
+
     # If nothing matched in app-common root, default to all
     if [ ${#skills_to_link[@]} -eq 0 ] && [ "$PWD" = "$repo_root" ]; then
       for s in "$repo_root"/agents/skills/*/; do

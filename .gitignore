@@ -30,4 +30,3 @@ htmlcov/
 !.python-version
 !.github
 !.pre-commit-config.yaml
-!.agents

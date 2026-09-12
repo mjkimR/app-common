@@ -1,0 +1,78 @@
+<script lang="ts">
+  import type { ${class_name}CreateInput } from '../${singular_name}.svelte';
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+  } from '$$lib/components/ui/dialog';
+  import { Button } from '$$lib/components/ui/button';
+  import { Input } from '$$lib/components/ui/input';
+
+  interface Props {
+    open: boolean;
+    onSubmit: (body: ${class_name}CreateInput) => Promise<void>;
+  }
+
+  let { open = $$bindable(false), onSubmit }: Props = $$props();
+
+  let name = $$state('');
+  let description = $$state('');
+  let submitting = $$state(false);
+
+  async function handleSubmit(e: SubmitEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    submitting = true;
+    try {
+      await onSubmit({ name, description } as unknown as ${class_name}CreateInput);
+      name = '';
+      description = '';
+    } finally {
+      submitting = false;
+    }
+  }
+</script>
+
+<Dialog bind:open>
+  <DialogContent class="sm:max-w-[425px]">
+    <DialogHeader>
+      <DialogTitle>Create ${class_name}</DialogTitle>
+      <DialogDescription>
+        Enter details to create a new ${singular_name}.
+      </DialogDescription>
+    </DialogHeader>
+
+    <form onsubmit={handleSubmit} class="space-y-4 py-2">
+      <div class="space-y-2">
+        <label for="${singular_name}-name" class="text-sm font-medium text-foreground">Name</label>
+        <Input
+          id="${singular_name}-name"
+          placeholder="e.g. My ${class_name}"
+          bind:value={name}
+          required
+        />
+      </div>
+
+      <div class="space-y-2">
+        <label for="${singular_name}-desc" class="text-sm font-medium text-foreground">Description</label>
+        <Input
+          id="${singular_name}-desc"
+          placeholder="Optional description"
+          bind:value={description}
+        />
+      </div>
+
+      <DialogFooter class="pt-4">
+        <Button type="button" variant="outline" onclick={() => (open = false)}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting || !name.trim()}>
+          {submitting ? 'Creating...' : 'Create'}
+        </Button>
+      </DialogFooter>
+    </form>
+  </DialogContent>
+</Dialog>

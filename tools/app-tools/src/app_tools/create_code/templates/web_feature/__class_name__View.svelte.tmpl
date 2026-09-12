@@ -1,0 +1,88 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { ${class_name}State } from './${singular_name}.svelte';
+  import ${class_name}Dialog from './components/${class_name}Dialog.svelte';
+  import PageHeader from '$$lib/components/shared/PageHeader.svelte';
+  import EmptyState from '$$lib/components/shared/EmptyState.svelte';
+  import { Button } from '$$lib/components/ui/button';
+  import { Input } from '$$lib/components/ui/input';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+
+  const state = new ${class_name}State();
+  let dialogOpen = $$state(false);
+
+  onMount(() => {
+    state.load();
+  });
+</script>
+
+<div class="space-y-6">
+  <PageHeader title="${class_name}s" description="Manage ${plural_name} in your system">
+    {#snippet actions()}
+      <Button onclick={() => (dialogOpen = true)}>
+        <Plus class="mr-2 h-4 w-4" />
+        New ${class_name}
+      </Button>
+    {/snippet}
+  </PageHeader>
+
+  <div class="flex items-center gap-4">
+    <Input
+      placeholder="Filter ${plural_name}..."
+      bind:value={state.filterQuery}
+      class="max-w-sm"
+    />
+  </div>
+
+  {#if state.loading}
+    <div class="flex h-48 items-center justify-center text-muted-foreground">
+      <Loader2 class="h-6 w-6 animate-spin" />
+    </div>
+  {:else if state.filteredItems.length === 0}
+    <EmptyState
+      title="No ${plural_name} found"
+      description="Create your first ${singular_name} or change your search filter."
+    >
+      {#snippet action()}
+        <Button variant="outline" onclick={() => (dialogOpen = true)}>
+          <Plus class="mr-2 h-4 w-4" />
+          Create ${class_name}
+        </Button>
+      {/snippet}
+    </EmptyState>
+  {:else}
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {#each state.filteredItems as item (item.id)}
+        <div class="flex flex-col justify-between rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+          <div>
+            <h3 class="font-semibold text-foreground">{item.name || item.title || item.id}</h3>
+            {#if item.description}
+              <p class="mt-1 text-sm text-muted-foreground">{item.description}</p>
+            {/if}
+          </div>
+          <div class="mt-4 flex items-center justify-end border-t pt-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              class="text-destructive hover:bg-destructive/10"
+              onclick={() => state.delete(item.id)}
+            >
+              <Trash2 class="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>
+
+<${class_name}Dialog
+  bind:open={dialogOpen}
+  onSubmit={async (body) => {
+    const created = await state.create(body);
+    if (created) dialogOpen = false;
+  }}
+/>

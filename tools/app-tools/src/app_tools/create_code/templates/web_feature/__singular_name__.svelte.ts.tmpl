@@ -1,0 +1,72 @@
+import { apiClient } from '$$lib/api/client';
+import type { components } from '$$lib/api/schema';
+import { toast } from 'svelte-sonner';
+
+export type ${class_name}Item = components['schemas']['${class_name}Response'];
+export type ${class_name}CreateInput = components['schemas']['${class_name}Create'];
+
+export class ${class_name}State {
+  items = $$state<${class_name}Item[]>([]);
+  selectedId = $$state<string | null>(null);
+  loading = $$state(false);
+  filterQuery = $$state('');
+
+  selected = $$derived(this.items.find((item) => item.id === this.selectedId));
+
+  filteredItems = $$derived(
+    this.filterQuery.trim() === ''
+      ? this.items
+      : this.items.filter((item) =>
+          JSON.stringify(item).toLowerCase().includes(this.filterQuery.toLowerCase())
+        )
+  );
+
+  async load() {
+    this.loading = true;
+    try {
+      const { data, error } = await apiClient.GET('/api/v1/${plural_name}');
+      if (error) {
+        toast.error('Failed to load ${plural_name}');
+        return;
+      }
+      if (data) {
+        this.items = (data as unknown) as ${class_name}Item[];
+      }
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async create(body: ${class_name}CreateInput) {
+    const { data, error } = await apiClient.POST('/api/v1/${plural_name}', {
+      body: body as any,
+    });
+    if (error) {
+      toast.error('Failed to create ${singular_name}');
+      return null;
+    }
+    if (data) {
+      const newItem = data as unknown as ${class_name}Item;
+      this.items = [newItem, ...this.items];
+      toast.success('${class_name} created successfully');
+      return newItem;
+    }
+    return null;
+  }
+
+  async delete(id: string) {
+    const { error } = await apiClient.DELETE('/api/v1/${plural_name}/{id}', {
+      params: { path: { id } },
+    });
+    if (error) {
+      toast.error('Failed to delete ${singular_name}');
+      return false;
+    }
+    this.items = this.items.filter((item) => item.id !== id);
+    if (this.selectedId === id) {
+      this.selectedId = null;
+    }
+    toast.success('${class_name} deleted');
+    return true;
+  }
+}

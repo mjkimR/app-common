@@ -92,3 +92,34 @@ def test_feature_already_exists_raises_app_error(tmp_path):
     assert err.code == "FEATURE_ALREADY_EXISTS"
     assert "rm -rf" in (err.fix or "")
     assert "[ERROR]  (FEATURE_ALREADY_EXISTS)" in "\n".join(err.lines())
+
+
+def test_creates_web_feature_expected_files(tmp_path):
+    from app_tools.create_code.create_web_feature import create_web_feature
+
+    feature_dir = create_web_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="src/lib/features")
+    assert (feature_dir / "widget.svelte.ts").is_file()
+    assert (feature_dir / "WidgetView.svelte").is_file()
+    assert (feature_dir / "components" / "WidgetDialog.svelte").is_file()
+    assert (feature_dir / "index.ts").is_file()
+
+    # Verify content placeholders replaced properly
+    state_content = (feature_dir / "widget.svelte.ts").read_text()
+    assert "export class WidgetState" in state_content
+    assert "$state<WidgetItem[]>" in state_content
+    assert "/api/v1/widgets" in state_content
+
+    index_content = (feature_dir / "index.ts").read_text()
+    assert "export { default as WidgetView } from './WidgetView.svelte';" in index_content
+
+
+def test_web_feature_already_exists_raises_app_error(tmp_path):
+    from app_tools.create_code.create_web_feature import WebFeatureAlreadyExistsError, create_web_feature
+
+    create_web_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="src/lib/features")
+    with pytest.raises(WebFeatureAlreadyExistsError) as exc_info:
+        create_web_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="src/lib/features")
+
+    err = exc_info.value
+    assert err.code == "WEB_FEATURE_ALREADY_EXISTS"
+    assert "rm -rf" in (err.fix or "")

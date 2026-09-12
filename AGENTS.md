@@ -128,6 +128,7 @@ That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session
 | Configuring LiteLLM AI catalog & model routing | `app-ai-catalog` | `app-ai-catalog` |
 | Mounting user auth, JWT login, and admin endpoints | `app-prebuilt-user` | `app-prebuilt-user` |
 | Integrating Transactional Outbox pattern & event relay | `app-prebuilt-outbox` | `app-prebuilt-outbox` |
+| Developing Svelte 5 UI, shadcn components, and Type-Safe API binding | `app-svelte-ui` | Frontend (`web/`, Svelte 5, SvelteKit) |
 | Contributing to `app-common` (multi-db testing, package isolation, release tags) | `app-common-contributor` | Internal dev (`packages/*`, `tools/*`) |
 
 Skills are agent-neutral assets under `agents/`.
