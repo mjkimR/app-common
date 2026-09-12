@@ -7,6 +7,7 @@ from app_testing_base.assertions import (
     assert_paginated_response,
     assert_status_code,
 )
+from app_testing_base.cases import E2ETest, IntegrationTest, UnitTest
 from app_testing_base.client import AsyncClientWithJson
 from app_testing_base.db import clean_db_after_test, refresh_get
 from app_testing_base.di import DependencyResolutionError, MockRequest, resolve_dependency
@@ -25,7 +26,10 @@ from app_testing_base.utils import (
 __all__ = [
     "AsyncClientWithJson",
     "DependencyResolutionError",
+    "E2ETest",
+    "IntegrationTest",
     "MockRequest",
+    "UnitTest",
     "assert_error_response",
     "assert_json_contains",
     "assert_model_fields",

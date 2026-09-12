@@ -110,47 +110,46 @@ items = [await seed_item(session, name=f"item-{i}") for i in range(5)]
 
 ### Template 1: Integration Test (`tests/integrate/test_<op>_<entity>.py`)
 
+Inheriting from `IntegrationTest` automatically sets `@pytest.mark.integrate`, binds `self.session`, and provides `self.resolve(UseCase)` and `self.refresh(Model, id)`.
+
 ```python
-import pytest
-from app_testing_base import assert_model_fields, resolve_dependency
+from app_testing_base import IntegrationTest
 from app.features.items.models import Item
 from app.features.items.schemas import ItemCreate
 from app.features.items.usecases.create_item import CreateItemUseCase
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
-@pytest.mark.integrate
-class TestCreateItem:
-    async def test_create_item_success(self, session: AsyncSession):
-        # 1. Setup
-        use_case = resolve_dependency(CreateItemUseCase, state={"db": session})
+class TestCreateItem(IntegrationTest):
+    async def test_create_item_success(self):
+        # 1. Setup - self.resolve automatically binds the test session
+        use_case = self.resolve(CreateItemUseCase)
         payload = ItemCreate(name="New Item", category="electronics")
 
         # 2. Execute
         result = await use_case.execute(payload)
 
-        # 3. Verify
+        # 3. Verify - self.refresh reloads fresh state from DB
         assert result.name == "New Item"
-        saved = await session.get(Item, result.id)
+        saved = await self.refresh(Item, result.id)
         assert saved is not None
         assert saved.name == "New Item"
 ```
 
 ### Template 2: E2E API Test (`tests/e2e/test_<entity>_api.py`)
 
+Inheriting from `E2ETest` automatically sets `@pytest.mark.e2e` and `@pytest.mark.real_commit`, binds `self.client` and `self.session`, and provides `self.url(...)` and `self.refresh(...)`.
+
 ```python
-import pytest
 from app_testing_base import (
+    E2ETest,
     assert_json_contains,
     assert_paginated_response,
     assert_status_code,
     random_string,
-    refresh_get,
 )
 from app.features.items.models import Item
 from app.features.items.repos import ItemRepository
 from app.features.items.schemas import ItemCreate
-from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -159,26 +158,26 @@ async def seed_item(session: AsyncSession, **overrides) -> Item:
     return await ItemRepository().create(session, ItemCreate(**(defaults | overrides)))
 
 
-@pytest.mark.e2e
-@pytest.mark.real_commit
-class TestItemsAPI:
-    async def test_get_item_by_id(self, client: AsyncClient, session: AsyncSession):
-        item = await seed_item(session, name="Specific Item")
+class TestItemsAPI(E2ETest):
+    base_url = "/api/v1/items"
 
-        response = await client.get(f"/api/v1/items/{item.id}")
+    async def test_get_item_by_id(self):
+        item = await seed_item(self.session, name="Specific Item")
+
+        response = await self.client.get(self.url(f"/{item.id}"))
 
         assert_status_code(response, 200)
         assert_json_contains(response, {"id": str(item.id), "name": "Specific Item"})
 
-    async def test_create_item(self, client: AsyncClient, session: AsyncSession):
+    async def test_create_item(self):
         payload = {"name": "Created Item", "category": "books"}
 
-        response = await client.post("/api/v1/items", json=payload)
+        response = await self.client.post(self.url(), json=payload)
 
         assert_status_code(response, 201)
         item_id = response.json()["id"]
 
-        saved = await refresh_get(session, Item, item_id)
+        saved = await self.refresh(Item, item_id)
         assert saved is not None
         assert saved.name == "Created Item"
 ```
