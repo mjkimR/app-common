@@ -125,6 +125,7 @@ elif $auto_detect; then
     grep -q "app-ai-catalog" "$manifest" 2>/dev/null && skills_to_link+=(app-ai-catalog)
     grep -q "app-prebuilt-user" "$manifest" 2>/dev/null && skills_to_link+=(app-prebuilt-user)
     grep -q "app-prebuilt-outbox" "$manifest" 2>/dev/null && skills_to_link+=(app-prebuilt-outbox)
+    grep -q "app-testing-base" "$manifest" 2>/dev/null && skills_to_link+=(app-testing)
 
     # If nothing matched in app-common root, default to all
     if [ ${#skills_to_link[@]} -eq 0 ] && [ "$PWD" = "$repo_root" ]; then

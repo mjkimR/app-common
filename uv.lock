@@ -16,6 +16,7 @@ members = [
     "app-layer-base",
     "app-prebuilt-outbox",
     "app-prebuilt-user",
+    "app-testing-base",
     "app-tools",
     "app-vector-store",
 ]
@@ -451,6 +452,33 @@ dev = [
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "python-multipart", specifier = ">=0.0.7" },
     { name = "ruff", specifier = ">=0.14.14" },
+]
+
+[[package]]
+name = "app-testing-base"
+version = "0.1.0"
+source = { editable = "packages/base/app-testing-base" }
+dependencies = [
+    { name = "aiosqlite" },
+    { name = "app-layer-base" },
+    { name = "asyncpg" },
+    { name = "httpx" },
+    { name = "orjson" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "testcontainers" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.21.0" },
+    { name = "app-layer-base", editable = "packages/base/app-layer-base" },
+    { name = "asyncpg", specifier = ">=0.30.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "orjson", specifier = ">=3.10.16" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-asyncio", specifier = ">=0.26.0" },
+    { name = "testcontainers", extras = ["postgres"], specifier = ">=4.8.0" },
 ]
 
 [[package]]

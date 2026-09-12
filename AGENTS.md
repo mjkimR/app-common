@@ -70,6 +70,8 @@ The repository is structured into organized category directories under `packages
         - `core/`: Database engines, transaction management, logging middleware, and traceback filtering.
         - `utils/`: Common time and type hint utilities.
         - `config_util.py` & `config.py`: Environment settings loaders and general app settings.
+    - **`app-testing-base/`**: The testing foundation for FastAPI, SQLAlchemy, and Pytest.
+        - Pytest plugin (`app_testing_base.plugin`) providing `session`, `async_engine`, `client` (FastAPI test client), `resolve_dependency` (DI resolver), assertion helpers, and deterministic seeding primitives (`random_string`, `random_email`, `utc_now`).
 - **`packages/adapters/`**:
     - **`app-file-storage/`**: Standalone adapter for local and AWS S3 storage client operations.
     - **`app-vector-store/`**: Standalone adapter for Qdrant vector database storage and search.
@@ -85,14 +87,14 @@ The repository is structured into organized category directories under `packages
 
 Every package keeps its source in `src/<package_name>/` and its tests in `tests/unit/` (plus `tests/integrate/` where present). Tests never live under `src/`. Each package owns its own pytest config (`[tool.pytest.ini_options]`), so its rootdir is the package directory — there is deliberately no workspace-wide `pythonpath`.
 
-Shared test fixtures live in `app_layer_base.testing` and are loaded as a pytest plugin, never off `sys.path`:
+Shared test fixtures live in `app_testing_base` (and historically `app_layer_base.testing`) and are loaded as a pytest plugin, never off `sys.path`:
 
 ```python
 # <package>/tests/conftest.py  (must be the top-level conftest)
-pytest_plugins = ["app_layer_base.testing.db"]
+pytest_plugins = ["app_testing_base.plugin"]
 ```
 
-That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `session_maker` / `async_engine` / `is_postgres` fixtures. Never copy a `tests/fixtures/db.py` into a package; a `tests/` directory shared over `sys.path` collides on the name `tests` and silently shadows whichever copy loads first.
+That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session_maker` / `async_engine` / `is_postgres` fixtures, and the `client` fixture. Never copy a `tests/fixtures/db.py` into a package; a `tests/` directory shared over `sys.path` collides on the name `tests` and silently shadows whichever copy loads first.
 
 ### 2. Core Architecture
 
@@ -119,6 +121,7 @@ That plugin owns `--db-type`, the `real_commit` marker, and the `session` / `ses
 | Situation | Skill | Scope |
 |---|---|---|
 | Developing FastAPI CRUD features, services, hooks, models, error advisories | `app-backend-core` | `app-layer-base`, `app-tools`, `app-error` |
+| Writing and maintaining integration/E2E tests, deterministic seeders, DI resolving | `app-testing` | `app-testing-base` |
 | Integrating S3 / MinIO / Local object storage | `app-file-storage` | `app-file-storage` |
 | Integrating Qdrant vector database | `app-vector-store` | `app-vector-store` |
 | Using pooled HTTP client | `app-http-client` | `app-http-client` |

@@ -1,0 +1,194 @@
+---
+name: app-testing
+description: FastAPI test writing expert using app-testing-base (Integration with resolve_dependency, E2E with client, explicit deterministic seeders, and assertion helpers).
+---
+
+# app-testing
+
+Testing guidance and conventions for FastAPI + SQLAlchemy applications using `app-testing-base`.
+Optimized for AI Agents to produce deterministic, high-ROI tests without flaky failures.
+
+---
+
+## 1. Test Strategy & The Test Trophy
+
+| Scope | Directory | Target | When to Use | Key Tooling |
+|---|---|---|---|---|
+| **Integration** (Primary) | `tests/integrate/` | `UseCase`, `Service`, `Repository` | Core business logic, DB queries, service hooks. **Default choice for most tests.** | `resolve_dependency`, `session` |
+| **E2E** (Secondary) | `tests/e2e/` | API Routers, HTTP Endpoints | Verify routing, status codes, query/body serialization, authentication. | `client`, `session.expire_all()` |
+| **Unit** (Minimal) | `tests/unit/` | Pure functions, algorithms | Complex calculations or data parsers with no DB or HTTP dependency. | Standard pytest |
+
+---
+
+## 2. Test Data Seeding Rules (No Polyfactory)
+
+**Never use Polyfactory or random data generators for database entities.** Random strings cause flaky tests by violating field constraints (email regex, cron syntax, max length, unique keys).
+
+### Rule 1: Explicit Seeder Function (`_seed_<entity>`)
+When a test file needs one or more entities in the database, define a lightweight seeder function using the `defaults | overrides` pattern:
+
+```python
+from app_testing_base import random_string
+from app.features.items.schemas import ItemCreate
+from app.features.items.repos import ItemRepository
+from app.features.items.models import Item
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+def make_item_payload(**overrides) -> ItemCreate:
+    """Deterministic, valid default schema for testing."""
+    defaults = {
+        "name": f"item-{random_string(4)}",
+        "category": "general",
+        "is_active": True,
+    }
+    return ItemCreate(**(defaults | overrides))
+
+
+async def seed_item(session: AsyncSession, **overrides) -> Item:
+    """Create and persist an entity directly using its repository."""
+    payload = make_item_payload(**overrides)
+    repo = ItemRepository()
+    return await repo.create(session, payload)
+```
+
+### Rule 2: Inline Pydantic for Validation / Negative Tests
+When testing bad input or edge cases, create the schema or dictionary inline directly:
+
+```python
+payload = {"name": "", "category": "invalid"}  # Direct dict for testing 422
+response = await client.post("/api/v1/items", json=payload)
+assert_status_code(response, 422)
+```
+
+### Rule 3: Batch Seeding via List Comprehension
+When testing pagination or list endpoints:
+
+```python
+items = [await seed_item(session, name=f"item-{i}") for i in range(5)]
+```
+
+---
+
+## 3. Golden Rules for AI Agents
+
+1. **NO `@pytest.mark.asyncio` decorator**:
+   Async mode is configured globally (`asyncio_mode = "auto"` in `pyproject.toml`). Adding `@pytest.mark.asyncio` is redundant.
+2. **USE `resolve_dependency` for Integration tests**:
+   Never manually instantiate nested services or repositories.
+   ```python
+   use_case = resolve_dependency(CreateItemUseCase, state={"db": session})
+   ```
+3. **MARK E2E tests with `@pytest.mark.real_commit`**:
+   The HTTP client runs against an app that commits transactions.
+   ```python
+   @pytest.mark.e2e
+   @pytest.mark.real_commit
+   class TestItemAPI:
+       ...
+   ```
+4. **ALWAYS call `session.expire_all()` before querying DB after API calls**:
+   SQLAlchemy holds an in-memory Identity Map cache. After the API commits a change, `session.expire_all()` clears stale cached objects:
+   ```python
+   response = await client.delete(f"/api/v1/items/{item.id}")
+   assert_status_code(response, 200)
+
+   session.expire_all()  # Clear identity map cache!
+   db_item = await session.get(Item, item.id)
+   assert db_item is None
+   ```
+5. **PREFER `app_testing_base` assertion helpers**:
+   - `assert_status_code(response, 200)`
+   - `assert_json_contains(response, {"name": "target"})`
+   - `assert_paginated_response(response, min_items=3)`
+   - `assert_error_response(response, 404, error_type="NotFound")`
+
+---
+
+## 4. Canonical Test Templates
+
+### Template 1: Integration Test (`tests/integrate/test_<op>_<entity>.py`)
+
+```python
+import pytest
+from app_testing_base import assert_model_fields, resolve_dependency
+from app.features.items.models import Item
+from app.features.items.schemas import ItemCreate
+from app.features.items.usecases.create_item import CreateItemUseCase
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+@pytest.mark.integrate
+class TestCreateItem:
+    async def test_create_item_success(self, session: AsyncSession):
+        # 1. Setup
+        use_case = resolve_dependency(CreateItemUseCase, state={"db": session})
+        payload = ItemCreate(name="New Item", category="electronics")
+
+        # 2. Execute
+        result = await use_case.execute(payload)
+
+        # 3. Verify
+        assert result.name == "New Item"
+        saved = await session.get(Item, result.id)
+        assert saved is not None
+        assert saved.name == "New Item"
+```
+
+### Template 2: E2E API Test (`tests/e2e/test_<entity>_api.py`)
+
+```python
+import pytest
+from app_testing_base import (
+    assert_json_contains,
+    assert_paginated_response,
+    assert_status_code,
+    random_string,
+)
+from app.features.items.models import Item
+from app.features.items.repos import ItemRepository
+from app.features.items.schemas import ItemCreate
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+async def seed_item(session: AsyncSession, **overrides) -> Item:
+    defaults = {"name": f"item-{random_string(4)}", "category": "general"}
+    return await ItemRepository().create(session, ItemCreate(**(defaults | overrides)))
+
+
+@pytest.mark.e2e
+@pytest.mark.real_commit
+class TestItemsAPI:
+    async def test_get_item_by_id(self, client: AsyncClient, session: AsyncSession):
+        item = await seed_item(session, name="Specific Item")
+
+        response = await client.get(f"/api/v1/items/{item.id}")
+
+        assert_status_code(response, 200)
+        assert_json_contains(response, {"id": str(item.id), "name": "Specific Item"})
+
+    async def test_create_item(self, client: AsyncClient, session: AsyncSession):
+        payload = {"name": "Created Item", "category": "books"}
+
+        response = await client.post("/api/v1/items", json=payload)
+
+        assert_status_code(response, 201)
+        item_id = response.json()["id"]
+
+        session.expire_all()
+        saved = await session.get(Item, item_id)
+        assert saved is not None
+        assert saved.name == "Created Item"
+```
+
+---
+
+## 5. Self-Correction & Troubleshooting
+
+| Symptom | Cause | Solution |
+|---|---|---|
+| `AssertionError: Expected 200, got 422` | Request body failed Pydantic validation. | Check required fields, regex patterns, or enums in schemas. Pass explicit valid values. |
+| `IntegrityError: duplicate key value` | Collided unique field (email, slug, name). | Use `random_string(4)` or `random_email()` in `_seed_*` defaults. |
+| DB assertion failed after API call | Stale SQLAlchemy Identity Map cache. | Call `session.expire_all()` immediately before `session.get(...)`. |
+| `TypeError: missing required argument` in `resolve_dependency` | Class dependency lacks `Annotated[T, Depends()]`. | Add `Annotated[T, Depends()]` or pass explicit instance via `overrides={Type: mock}`. |
