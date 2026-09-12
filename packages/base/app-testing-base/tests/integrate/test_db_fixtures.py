@@ -34,3 +34,18 @@ class TestSessionFixture:
         queried = result.scalar_one_or_none()
 
         assert queried is None
+
+    async def test_refresh_get_fetches_fresh_state(self, session: AsyncSession):
+        from app_testing_base import refresh_get
+
+        item = SampleItem(name="initial")
+        session.add(item)
+        await session.commit()
+
+        # Update in-memory
+        item.name = "dirty_cached_name"
+
+        # refresh_get clears identity map and fetches actual DB state
+        fresh = await refresh_get(session, SampleItem, item.id)
+        assert fresh is not None
+        assert fresh.name == "initial"

@@ -55,3 +55,17 @@ def test_resolve_with_overrides():
 
     assert car.engine is custom_engine
     assert car.engine.mode == "eco"
+
+
+def test_resolve_missing_dependency_raises_clear_error():
+    import pytest
+    from app_testing_base.di import DependencyResolutionError
+
+    class UnannotatedService:
+        def __init__(self, raw_dependency: EngineService):
+            self.raw = raw_dependency
+
+    with pytest.raises(
+        DependencyResolutionError, match="Cannot resolve required parameter 'raw_dependency: EngineService'"
+    ):
+        resolve_dependency(UnannotatedService)

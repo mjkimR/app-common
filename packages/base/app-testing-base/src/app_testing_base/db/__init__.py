@@ -10,6 +10,7 @@ from app_testing_base.db.fixtures import (
     session_maker,
     setup_database,
 )
+from app_testing_base.db.helpers import refresh_get
 
 __all__ = [
     "async_engine",
@@ -19,6 +20,7 @@ __all__ = [
     "is_postgres",
     "pytest_addoption",
     "pytest_configure",
+    "refresh_get",
     "session_fixture",
     "session_maker",
     "setup_database",

@@ -87,14 +87,13 @@ items = [await seed_item(session, name=f"item-{i}") for i in range(5)]
    class TestItemAPI:
        ...
    ```
-4. **ALWAYS call `session.expire_all()` before querying DB after API calls**:
-   SQLAlchemy holds an in-memory Identity Map cache. After the API commits a change, `session.expire_all()` clears stale cached objects:
+4. **USE `refresh_get` before querying DB after API calls**:
+   SQLAlchemy holds an in-memory Identity Map cache. After an API commits changes or a worker updates a row, using `await refresh_get(session, Model, id)` automatically clears stale cache and fetches fresh data:
    ```python
    response = await client.delete(f"/api/v1/items/{item.id}")
    assert_status_code(response, 200)
 
-   session.expire_all()  # Clear identity map cache!
-   db_item = await session.get(Item, item.id)
+   db_item = await refresh_get(session, Item, item.id)
    assert db_item is None
    ```
 5. **PREFER `app_testing_base` assertion helpers**:
@@ -102,6 +101,8 @@ items = [await seed_item(session, name=f"item-{i}") for i in range(5)]
    - `assert_json_contains(response, {"name": "target"})`
    - `assert_paginated_response(response, min_items=3)`
    - `assert_error_response(response, 404, error_type="NotFound")`
+6. **USE `mocker` from `pytest-mock` for Unit test isolation**:
+   For external third-party services or network calls in unit tests, request the `mocker` fixture instead of manually managing `unittest.mock.patch`.
 
 ---
 
@@ -144,6 +145,7 @@ from app_testing_base import (
     assert_paginated_response,
     assert_status_code,
     random_string,
+    refresh_get,
 )
 from app.features.items.models import Item
 from app.features.items.repos import ItemRepository
@@ -176,8 +178,7 @@ class TestItemsAPI:
         assert_status_code(response, 201)
         item_id = response.json()["id"]
 
-        session.expire_all()
-        saved = await session.get(Item, item_id)
+        saved = await refresh_get(session, Item, item_id)
         assert saved is not None
         assert saved.name == "Created Item"
 ```
@@ -190,5 +191,6 @@ class TestItemsAPI:
 |---|---|---|
 | `AssertionError: Expected 200, got 422` | Request body failed Pydantic validation. | Check required fields, regex patterns, or enums in schemas. Pass explicit valid values. |
 | `IntegrityError: duplicate key value` | Collided unique field (email, slug, name). | Use `random_string(4)` or `random_email()` in `_seed_*` defaults. |
-| DB assertion failed after API call | Stale SQLAlchemy Identity Map cache. | Call `session.expire_all()` immediately before `session.get(...)`. |
-| `TypeError: missing required argument` in `resolve_dependency` | Class dependency lacks `Annotated[T, Depends()]`. | Add `Annotated[T, Depends()]` or pass explicit instance via `overrides={Type: mock}`. |
+| DB assertion failed after API call | Stale SQLAlchemy Identity Map cache. | Use `await refresh_get(session, Model, id)` or call `session.expire_all()` before `session.get(...)`. |
+| `DependencyResolutionError` | Parameter has no default and is not marked with Depends(). | Add `Annotated[T, Depends()]` in constructor or pass mock instance via `overrides={T: mock}`. |
+| `NotImplementedError: No FastAPI 'app' could be auto-discovered` | App fixture was not found in `app.main`. | Define `@pytest.fixture def app(): return create_app()` in your root `tests/conftest.py`. |

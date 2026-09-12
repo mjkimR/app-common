@@ -8,8 +8,8 @@ from app_testing_base.assertions import (
     assert_status_code,
 )
 from app_testing_base.client import AsyncClientWithJson
-from app_testing_base.db import clean_db_after_test
-from app_testing_base.di import MockRequest, resolve_dependency
+from app_testing_base.db import clean_db_after_test, refresh_get
+from app_testing_base.di import DependencyResolutionError, MockRequest, resolve_dependency
 from app_testing_base.utils import (
     days_ago,
     days_later,
@@ -24,6 +24,7 @@ from app_testing_base.utils import (
 
 __all__ = [
     "AsyncClientWithJson",
+    "DependencyResolutionError",
     "MockRequest",
     "assert_error_response",
     "assert_json_contains",
@@ -39,6 +40,7 @@ __all__ = [
     "random_int",
     "random_string",
     "random_uuid",
+    "refresh_get",
     "resolve_dependency",
     "utc_now",
 ]

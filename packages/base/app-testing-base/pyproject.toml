@@ -13,6 +13,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "testcontainers[postgres]>=4.8.0",
     "orjson>=3.10.16",
+    "pytest-mock>=3.14.0",
 ]
 
 [build-system]

@@ -17,6 +17,10 @@ class MockRequest:
         self.scope = {"type": "http"}
 
 
+class DependencyResolutionError(Exception):
+    """Raised when resolve_dependency cannot resolve a required dependency."""
+
+
 def resolve_dependency[T](
     target: Callable[..., T] | type[T],
     state: dict[str, Any] | None = None,
@@ -54,6 +58,8 @@ def resolve_dependency[T](
     for param_name, param in sig.parameters.items():
         if param_name == "self":
             continue
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
 
         # Detect Request object type hint
         if param.annotation is Request:
@@ -78,6 +84,14 @@ def resolve_dependency[T](
             kwargs[param_name] = resolve_dependency(dependency_target, state, overrides)
         elif param.default is not inspect.Parameter.empty:
             kwargs[param_name] = param.default
+        else:
+            target_name = getattr(target, "__name__", str(target))
+            ann_name = getattr(param.annotation, "__name__", str(param.annotation))
+            raise DependencyResolutionError(
+                f"Cannot resolve required parameter '{param_name}: {ann_name}' of '{target_name}'. "
+                f"It has no default value and is not annotated with Depends(). "
+                f"Did you forget `Annotated[{ann_name}, Depends()]` or passing an override?"
+            )
 
     # 4. Instantiate and return object
     if inspect.isclass(target):
