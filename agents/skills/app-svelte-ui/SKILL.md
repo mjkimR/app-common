@@ -192,3 +192,12 @@ This generates:
 - `src/lib/features/project/ProjectView.svelte`
 - `src/lib/features/project/components/ProjectDialog.svelte`
 - `src/lib/features/project/index.ts`
+
+---
+
+## Modifying UI Base Packages Locally (`app-tools dev`)
+
+When developing frontend features that require changes to `@app-common/ui-base`:
+1. Use `uv run app-tools dev link` to temporarily symlink `node_modules/@app-common/ui-base` to the local `app-common` repository without editing `package.json`.
+2. After finishing and pushing changes, **always run `uv run app-tools dev unlink`** to restore original packages.
+3. For core contribution details, see the [app-common-contributor guide](https://github.com/mjkimR/app-common/blob/main/agents/dev-skills/app-common-contributor/SKILL.md).

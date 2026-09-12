@@ -1,5 +1,6 @@
 import click
 
+from app_tools.commands.dev import dev
 from app_tools.commands.get_env_spec import get_env_spec
 from app_tools.create_code import create_code
 
@@ -12,6 +13,7 @@ def cli():
 
 cli.add_command(create_code)
 cli.add_command(get_env_spec)
+cli.add_command(dev)
 
 if __name__ == "__main__":
     cli()

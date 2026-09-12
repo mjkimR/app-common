@@ -83,3 +83,41 @@ When adding a new modular package:
 3. Register the module in `scripts/_lib.sh`:
    - Add to `AVAILABLE_MODULES`, `resolve_module`, `resolve_module_path`, and `validate_module`.
 4. Run `uv sync --package <package-name>` and verify with `just check <package-name>`.
+
+---
+
+## 5. Testing with Downstream Projects (`app-tools dev`)
+
+When verifying changes against a downstream consumer project before publishing a release, **never edit the consumer's `pyproject.toml` or `package.json` to point to local file paths** (this prevents dirty git diffs or accidental commits of local paths).
+
+Instead, run `app-tools dev` inside the consumer project to temporarily link its installed packages to this local `app-common` repository:
+
+### Workflow
+
+1. **Link local app-common**:
+   Run in the consumer project root:
+   ```bash
+   uv run app-tools dev link
+   ```
+   - Automatically searches for `app-common` across `-1 to +1 depth` (e.g. `../app-common`, sibling folders, child/parent folders).
+   - Backs up installed packages in `.venv/lib/python*/site-packages/` and `node_modules/` as `*.bak`.
+   - Creates symlinks to `app-common/.../src/*` and `app-common/packages/ui/*`.
+   - Preserves `.dist-info` metadata so `uv` does not re-sync or overwrite the environment.
+
+2. **Develop and Test**:
+   - Edit `app-common` source code directly.
+   - Run tests in the downstream consumer project to verify the changes.
+   - Switch to `app-common` and run `just lint`, `just check`, and `just test` to verify package health.
+
+3. **[CRITICAL] Always Unlink Before Finishing**:
+   Once changes are verified and pushed/released, **always unlink** to restore the consumer repository to its original installed state:
+   ```bash
+   uv run app-tools dev unlink
+   ```
+
+4. **Verify Clean State**:
+   Confirm that all packages have returned to `NORMAL`:
+   ```bash
+   uv run app-tools dev status
+   ```
+

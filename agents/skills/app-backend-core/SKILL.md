@@ -11,6 +11,7 @@ FastAPI layered architecture framework based on `app-layer-base`, `app-tools`, a
 > - Package Installation & Database Configuration: [setup.md](./setup.md)
 > - Service Hooks (Custom Business Logic & Scopes): [hooks.md](./hooks.md)
 > - Structured Errors & Agent Advisory: [errors.md](./errors.md)
+> - Modifying app-common Locally (`app-tools dev`): [local_dev.md](./local_dev.md)
 
 ---
 
@@ -147,3 +148,15 @@ BookUseCaseDep = Annotated[BookUseCase, Depends(get_book_usecase)]
 
 Raise structured `AppError` subclasses with `Actor` and `Retry` advisories rather than generic `ValueError` or raw `HTTPException`.
 For advisory fields (`Actor`, `Retry`, `ActionMode`), remediation properties (`fix`, `what_to_report`), and MCP/CLI renderers, see **[errors.md](./errors.md)**.
+
+---
+
+## 7. Modifying `app-common` Packages Locally (`app-tools dev`)
+
+To modify `app-common` packages while working in a consumer project without modifying `pyproject.toml` or `package.json`:
+1. Run `uv run app-tools dev link` to temporarily symlink local packages.
+2. Edit code in `app-common` and verify changes in the consumer project.
+3. **[CRITICAL] Always run `uv run app-tools dev unlink`** before finishing, and verify with `uv run app-tools dev status`.
+
+For detailed exploration options, backup mechanics, and contribution guidelines, see **[local_dev.md](./local_dev.md)**.
+

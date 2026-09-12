@@ -91,8 +91,9 @@ The repository is structured into organized category directories under `packages
         - `ui/`: Core atomic primitives (`Button`, `Card`, `Input`).
         - `styles/`: Semantic Tailwind design tokens (`tokens.css`) and class merging utility (`cn`).
 - **`tools/`**:
-    - **`app-tools/`**: CLI tool for scaffolding new modular features.
-        - Usage: `uv run app-tools create-code feature --name <Name>`
+    - **`app-tools/`**: CLI tool for scaffolding new modular features and managing local dev symlinks.
+        - Usage (Feature Scaffolding): `uv run app-tools create-code feature --name <Name>`
+        - Usage (Local Dev Linking): `uv run app-tools dev link`, `dev unlink`, `dev status`
         - `create_code/templates/feature/`: the generated feature skeleton, one `*.tmpl` per emitted file.
 
 Every package keeps its source in `src/<package_name>/` and its tests in `tests/unit/` (plus `tests/integrate/` where present). Tests never live under `src/`. Each package owns its own pytest config (`[tool.pytest.ini_options]`), so its rootdir is the package directory — there is deliberately no workspace-wide `pythonpath`.
@@ -123,6 +124,7 @@ That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session
 4. **No Emojis**: Do not use emojis in commit messages, code comments, or docs.
 5. **Security**: Never commit `.env` or log sensitive PII/secrets.
 6. **Git Commit**: Do not execute `git commit` commands or perform commits automatically unless explicitly requested by the user.
+7. **Local Package Linking (`app-tools dev`)**: When modifying `app-common` packages from a downstream consumer repository, use `uv run app-tools dev link` to temporarily symlink local packages. Never hardcode local paths into `pyproject.toml` or `package.json`. When finished, always run `uv run app-tools dev unlink` and verify clean state with `uv run app-tools dev status`.
 
 ---
 

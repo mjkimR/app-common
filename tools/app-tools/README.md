@@ -39,6 +39,25 @@ Start a new feature module for managing articles:
 app-tools create-code feature --name Article
 ```
 
+#### Local Development Linking (`dev`)
+
+Link installed `app-common` packages in downstream projects to a local clone of `app-common` without modifying `pyproject.toml` or `package.json`.
+
+- **Link packages**:
+  ```bash
+  app-tools dev link
+  # Or specify custom path
+  app-tools dev link --target-path ../app-common
+  ```
+- **Check status**:
+  ```bash
+  app-tools dev status
+  ```
+- **Unlink & restore original packages**:
+  ```bash
+  app-tools dev unlink
+  ```
+
 ---
 *More commands will be added as the project evolves.*
 
