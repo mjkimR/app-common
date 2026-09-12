@@ -133,7 +133,8 @@ That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session
 
 | Situation | Skill | Scope |
 |---|---|---|
-| Developing FastAPI CRUD features, services, hooks, models, error advisories | `app-backend-core` | `app-layer-base`, `app-tools`, `app-error` |
+| Developing FastAPI CRUD features, services, hooks, models, error advisories | `app-backend-core` | `app-layer-base`, `app-error` |
+| Modifying `app-common` packages locally via `app-tools dev` | `app-local-dev` | `tools/app-tools` |
 | Writing and maintaining integration/E2E tests, deterministic seeders, DI resolving | `app-testing` | `app-testing-base` |
 | Integrating S3 / MinIO / Local object storage | `app-file-storage` | `app-file-storage` |
 | Integrating Qdrant vector database | `app-vector-store` | `app-vector-store` |

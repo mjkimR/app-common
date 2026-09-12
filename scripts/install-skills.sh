@@ -89,7 +89,8 @@ else
         [ ! -f "$manifest" ] && [ -f "uv.lock" ] && manifest="uv.lock"
         if [ -f "$manifest" ]; then
             log_info "Auto-detecting installed dependencies from $manifest..."
-            grep -qE "app-layer-base|app-tools|app-error" "$manifest" 2>/dev/null && skills_to_install+=(app-backend-core)
+            grep -qE "app-layer-base|app-error" "$manifest" 2>/dev/null && skills_to_install+=(app-backend-core)
+            grep -q "app-tools" "$manifest" 2>/dev/null && skills_to_install+=(app-local-dev)
             grep -q "app-file-storage" "$manifest" 2>/dev/null && skills_to_install+=(app-file-storage)
             grep -q "app-vector-store" "$manifest" 2>/dev/null && skills_to_install+=(app-vector-store)
             grep -q "app-http-client" "$manifest" 2>/dev/null && skills_to_install+=(app-http-client)

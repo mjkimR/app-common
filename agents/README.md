@@ -9,7 +9,8 @@ agents/
 ├── README.md                  # This file
 ├── link-skills.sh             # Symlink manager supporting auto-detection and selective linking
 ├── skills/                    # Atomic consumer skills (1:1 with packages for lean context)
-│   ├── app-backend-core/      # app-layer-base + app-tools + app-error (FastAPI foundation)
+│   ├── app-backend-core/      # app-layer-base + app-error (FastAPI foundation)
+│   ├── app-local-dev/         # app-tools dev link/unlink/status (local package linking)
 │   ├── app-testing/           # app-testing-base (FastAPI test foundation & assertions)
 │   ├── app-file-storage/      # AWS S3 / MinIO / Local FS object storage
 │   ├── app-vector-store/      # Qdrant vector database + LangChain embeddings
@@ -73,5 +74,8 @@ just link-skills --dev
 5. **Frontend UI (`app-svelte-ui`)**:
    Agent-First Svelte 5 Runes, SvelteKit layout and AppShell, shadcn atomic primitives, Tailwind tokens, and type-safe `openapi-fetch` client bindings.
 
-6. **Contributor Dev-Skill (`app-common-contributor`)**:
+6. **Local Development Linking (`app-local-dev`)**:
+   Seamlessly link installed `app-common` packages in consumer repositories to a local clone of `app-common` using `app-tools dev` (`link`, `unlink`, `status`) without touching `pyproject.toml` or `package.json`.
+
+7. **Contributor Dev-Skill (`app-common-contributor`)**:
    Only linked when `--dev` is specified. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.

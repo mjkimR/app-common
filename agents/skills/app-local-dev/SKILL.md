@@ -1,6 +1,13 @@
-# Modifying `app-common` Packages Locally (`app-tools dev`)
+---
+name: app-local-dev
+description: Modifying app-common packages locally from consumer repositories using app-tools dev (link, unlink, status) without modifying pyproject.toml or package.json.
+---
 
-When developing in a downstream consumer project and needing to modify `app-common` packages (`app-layer-base`, `app-error`, adapters, etc.) simultaneously, follow this workflow.
+# app-local-dev
+
+Modifying `app-common` packages locally from downstream consumer repositories using `app-tools dev`.
+
+When developing in a downstream consumer project and needing to modify `app-common` packages (`app-layer-base`, `app-error`, adapters, UI, etc.) simultaneously, follow this workflow.
 
 > [!IMPORTANT]
 > **Never edit `pyproject.toml` or `package.json` to point to local file paths.**

@@ -73,6 +73,8 @@ Link installed `app-common` packages in downstream projects to a local clone of 
 
 ## Documentation
 
-For a complete list of commands, usage examples, and details on how code generation works, please refer to the developer guide:
+For a complete list of commands, usage examples, and details on how code generation and local linking work, please refer to the developer guides:
 
-- **[App Backend Core Developer Skill](../../agents/skills/app-backend-core/SKILL.md)**
+- **[Local Development Linking Skill (`app-local-dev`)](../../agents/skills/app-local-dev/SKILL.md)**: Details on local symlinking (`app-tools dev`), backup mechanics, and options.
+- **[App Backend Core Developer Skill (`app-backend-core`)](../../agents/skills/app-backend-core/SKILL.md)**: FastAPI feature code scaffolding (`app-tools create-code feature`).
+- **[App Svelte UI Developer Skill (`app-svelte-ui`)](../../agents/skills/app-svelte-ui/SKILL.md)**: Svelte 5 web feature scaffolding (`app-tools create-code web-feature`).
