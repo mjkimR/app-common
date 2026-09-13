@@ -11,6 +11,7 @@ agents/
 ├── skills/                    # Atomic consumer skills (1:1 with packages for lean context)
 │   ├── app-backend-core/      # app-layer-base + app-error (FastAPI foundation)
 │   ├── app-local-dev/         # app-tools dev link/unlink/status (local package linking)
+│   ├── app-package-update/    # app-tools update (released dependency upgrades)
 │   ├── app-testing/           # app-testing-base (FastAPI test foundation & assertions)
 │   ├── app-file-storage/      # AWS S3 / MinIO / Local FS object storage
 │   ├── app-vector-store/      # Qdrant vector database + LangChain embeddings
@@ -81,5 +82,8 @@ just link-skills --dev
 7. **Local Development Linking (`app-local-dev`)**:
    Seamlessly link installed `app-common` packages in consumer repositories to a local clone of `app-common` using `app-tools dev` (`link`, `unlink`, `status`) without touching `pyproject.toml` or `package.json`.
 
-8. **Contributor Dev-Skill (`app-common-contributor`)**:
+8. **Released Package Updates (`app-package-update`)**:
+   Update the Git dependency refs in a consumer project and synchronize its `uv` environment using `app-tools update`.
+
+9. **Contributor Dev-Skill (`app-common-contributor`)**:
    Only linked when `--dev` is specified. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.

@@ -119,7 +119,9 @@ elif $auto_detect; then
     if grep -qE "app-layer-base|app-error" "$manifest" 2>/dev/null || [ "$PWD" = "$repo_root" ]; then
       skills_to_link+=(app-backend-core)
     fi
-    grep -q "app-tools" "$manifest" 2>/dev/null && skills_to_link+=(app-local-dev)
+    if grep -q "app-tools" "$manifest" 2>/dev/null; then
+      skills_to_link+=(app-local-dev app-package-update)
+    fi
     grep -q "app-file-storage" "$manifest" 2>/dev/null && skills_to_link+=(app-file-storage)
     grep -q "app-vector-store" "$manifest" 2>/dev/null && skills_to_link+=(app-vector-store)
     grep -q "app-http-client" "$manifest" 2>/dev/null && skills_to_link+=(app-http-client)
