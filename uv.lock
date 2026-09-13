@@ -389,6 +389,7 @@ version = "0.1.0"
 source = { editable = "packages/transports/app-mcp" }
 dependencies = [
     { name = "app-error" },
+    { name = "pydantic" },
 ]
 
 [package.dev-dependencies]
@@ -399,7 +400,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "app-error", editable = "packages/base/app-error" }]
+requires-dist = [
+    { name = "app-error", editable = "packages/base/app-error" },
+    { name = "pydantic", specifier = ">=2.11.1" },
+]
 
 [package.metadata.requires-dev]
 dev = [

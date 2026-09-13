@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app_error import AppError
+from pydantic import BaseModel
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,8 +15,8 @@ class ToolResult:
     error: dict[str, Any] | None = None
 
     @classmethod
-    def success(cls, content: dict[str, Any]) -> "ToolResult":
-        return cls(content=content)
+    def success(cls, content: BaseModel | dict[str, Any]) -> "ToolResult":
+        return cls(content=content.model_dump(mode="json") if isinstance(content, BaseModel) else content)
 
     @classmethod
     def from_app_error(cls, error: AppError) -> "ToolResult":

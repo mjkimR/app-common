@@ -1,21 +1,30 @@
-from typing import Any
-
 import pytest
 from app_error import Actor, AppError, Retry
-from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult
+from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult, ToolRisk
+from pydantic import BaseModel
 
 
-async def _echo(_: ToolContext, arguments: dict[str, Any]) -> ToolResult:
-    return ToolResult.success({"value": arguments["value"]})
+class EchoArguments(BaseModel):
+    value: str
 
 
-async def _fails(_: ToolContext, __: dict[str, Any]) -> ToolResult:
+class EchoResult(BaseModel):
+    value: str
+
+
+async def _echo(_: ToolContext, arguments: EchoArguments) -> ToolResult:
+    return ToolResult.success(EchoResult(value=arguments.value))
+
+
+async def _fails(_: ToolContext, __: EchoArguments) -> ToolResult:
     raise AppError("Action required", code="ACTION_REQUIRED", actor=Actor.USER, retry=Retry.AFTER_FIX)
 
 
 async def test_registry_enforces_scopes_before_invocation():
     registry = ToolRegistry()
-    registry.register(ToolDefinition("echo", "Echo a value", _echo, frozenset({"tools:echo"})))
+    registry.register(
+        ToolDefinition("echo", "Echo a value", _echo, EchoArguments, EchoResult, frozenset({"tools:echo"}))
+    )
 
     denied = await registry.invoke("echo", ToolContext(subject="user-1"), {"value": "hello"})
     allowed = await registry.invoke(
@@ -30,9 +39,9 @@ async def test_registry_enforces_scopes_before_invocation():
 
 async def test_registry_converts_app_errors_and_hides_unexpected_failures():
     registry = ToolRegistry()
-    registry.register(ToolDefinition("fails", "Fails intentionally", _fails))
+    registry.register(ToolDefinition("fails", "Fails intentionally", _fails, EchoArguments))
 
-    result = await registry.invoke("fails", ToolContext(subject="user-1"), {})
+    result = await registry.invoke("fails", ToolContext(subject="user-1"), {"value": "ignored"})
     missing = await registry.invoke("missing", ToolContext(subject="user-1"), {})
 
     assert result.error is not None
@@ -44,7 +53,40 @@ async def test_registry_converts_app_errors_and_hides_unexpected_failures():
 
 def test_registry_rejects_duplicate_names():
     registry = ToolRegistry()
-    registry.register(ToolDefinition("echo", "Echo a value", _echo))
+    registry.register(ToolDefinition("echo", "Echo a value", _echo, EchoArguments))
 
     with pytest.raises(ValueError, match="already registered"):
-        registry.register(ToolDefinition("echo", "Echo a value", _echo))
+        registry.register(ToolDefinition("echo", "Echo a value", _echo, EchoArguments))
+
+
+async def test_registry_requires_confirmation_and_idempotency_key():
+    registry = ToolRegistry()
+    registry.register(
+        ToolDefinition(
+            "record.delete",
+            "Delete a record",
+            _echo,
+            EchoArguments,
+            required_scopes=frozenset({"records:delete"}),
+            risk=ToolRisk.DESTRUCTIVE,
+            requires_confirmation=True,
+            idempotency_key_required=True,
+        )
+    )
+
+    context = ToolContext(subject="user-1", scopes=frozenset({"records:delete"}))
+    confirmation = await registry.invoke("record.delete", context, {"value": "x"})
+    invoked = await registry.invoke(
+        "record.delete",
+        ToolContext(
+            subject="user-1",
+            scopes=frozenset({"records:delete"}),
+            confirmed_tools=frozenset({"record.delete"}),
+            idempotency_key="request-1",
+        ),
+        {"value": "x"},
+    )
+
+    assert confirmation.error is not None
+    assert confirmation.error["code"] == "MCP_CONFIRMATION_REQUIRED"
+    assert invoked.content == {"value": "x"}

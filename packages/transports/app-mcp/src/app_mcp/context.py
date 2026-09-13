@@ -10,6 +10,8 @@ class ToolContext:
     subject: str
     scopes: frozenset[str] = field(default_factory=frozenset)
     request_id: str | None = None
+    confirmed_tools: frozenset[str] = field(default_factory=frozenset)
+    idempotency_key: str | None = None
 
     def permits(self, required_scopes: frozenset[str]) -> bool:
         """Return whether this caller has every scope required by a tool."""
