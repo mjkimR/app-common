@@ -86,26 +86,43 @@ else
     skills_to_install=()
     if [ ${#selected_skills[@]} -gt 0 ]; then
         skills_to_install=("${selected_skills[@]}")
-    elif $auto_detect || [ -f "pyproject.toml" ]; then
-        manifest="pyproject.toml"
-        [ ! -f "$manifest" ] && [ -f "uv.lock" ] && manifest="uv.lock"
-        if [ -f "$manifest" ]; then
-            log_info "Auto-detecting installed dependencies from $manifest..."
-            grep -qE "app-layer-base|app-error" "$manifest" 2>/dev/null && skills_to_install+=(app-backend-core)
-            if grep -q "app-tools" "$manifest" 2>/dev/null; then
+    elif $auto_detect || [ -f "pyproject.toml" ] || [ -f "uv.lock" ]; then
+        manifest_files=()
+        [ -f "uv.lock" ] && manifest_files+=("uv.lock")
+        while IFS= read -r f; do
+            [ -n "$f" ] && manifest_files+=("$f")
+        done < <(find . -maxdepth 3 -name "pyproject.toml" -not -path "*/.*" 2>/dev/null)
+
+        has_dep() {
+            local pat="$1"
+            for m in "${manifest_files[@]}"; do
+                grep -qE "$pat" "$m" 2>/dev/null && return 0
+            done
+            return 1
+        }
+
+        has_frontend() {
+            [ -f "package.json" ] || [ -d "web" ] || [ -f "web/package.json" ] && return 0
+            find . -maxdepth 3 -name "package.json" -not -path "*/.*" -not -path "*/node_modules/*" 2>/dev/null | grep -q . && return 0
+            return 1
+        }
+
+        if [ ${#manifest_files[@]} -gt 0 ]; then
+            log_info "Auto-detecting installed dependencies across ${#manifest_files[@]} manifest(s)..."
+            has_dep "app-layer-base|app-error" && skills_to_install+=(app-backend-core)
+            if has_dep "app-tools"; then
                 skills_to_install+=(app-local-dev app-package-update)
             fi
-            grep -q "app-file-storage" "$manifest" 2>/dev/null && skills_to_install+=(app-file-storage)
-            grep -q "app-vector-store" "$manifest" 2>/dev/null && skills_to_install+=(app-vector-store)
-            grep -q "app-http-client" "$manifest" 2>/dev/null && skills_to_install+=(app-http-client)
-            grep -q "app-ai-catalog" "$manifest" 2>/dev/null && skills_to_install+=(app-ai-catalog)
-            grep -q "app-mcp" "$manifest" 2>/dev/null && skills_to_install+=(app-mcp)
-            grep -q "app-prebuilt-user" "$manifest" 2>/dev/null && skills_to_install+=(app-prebuilt-user)
-            grep -q "app-prebuilt-outbox" "$manifest" 2>/dev/null && skills_to_install+=(app-prebuilt-outbox)
-            grep -q "app-testing-base" "$manifest" 2>/dev/null && skills_to_install+=(app-testing)
+            has_dep "app-file-storage" && skills_to_install+=(app-file-storage)
+            has_dep "app-vector-store" && skills_to_install+=(app-vector-store)
+            has_dep "app-http-client" && skills_to_install+=(app-http-client)
+            has_dep "app-ai-catalog" && skills_to_install+=(app-ai-catalog)
+            has_dep "app-mcp" && skills_to_install+=(app-mcp)
+            has_dep "app-prebuilt-user" && skills_to_install+=(app-prebuilt-user)
+            has_dep "app-prebuilt-outbox" && skills_to_install+=(app-prebuilt-outbox)
+            has_dep "app-testing-base" && skills_to_install+=(app-testing)
 
-            # Detect frontend/Svelte UI project
-            if [ -f "package.json" ] || [ -d "web" ] || [ -f "web/package.json" ]; then
+            if has_frontend; then
                 skills_to_install+=(app-svelte-ui)
             fi
         fi
