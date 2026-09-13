@@ -16,6 +16,7 @@ agents/
 │   ├── app-vector-store/      # Qdrant vector database + LangChain embeddings
 │   ├── app-http-client/       # Pooled singleton httpx client (async & sync)
 │   ├── app-ai-catalog/        # LiteLLM YAML catalog & model routing
+│   ├── app-mcp/               # MCP tool registry, scopes, and error boundary
 │   ├── app-prebuilt-user/     # User authentication, JWT, OAuth2 form login
 │   ├── app-prebuilt-outbox/   # Transactional Outbox pattern & event relay
 │   └── app-svelte-ui/         # Svelte 5 Runes, SvelteKit, Tailwind, openapi-fetch
@@ -71,11 +72,14 @@ just link-skills --dev
 4. **Prebuilt Domains (`app-prebuilt-user`, `app-prebuilt-outbox`)**:
    Ready-to-mount business components: user auth & JWT (`app-prebuilt-user`) and guaranteed event delivery (`app-prebuilt-outbox`).
 
-5. **Frontend UI (`app-svelte-ui`)**:
+5. **MCP Transport (`app-mcp`)**:
+   Protocol-neutral MCP tool registry, trusted caller context, scope enforcement, and `AppError` translation.
+
+6. **Frontend UI (`app-svelte-ui`)**:
    Agent-First Svelte 5 Runes, SvelteKit layout and AppShell, shadcn atomic primitives, Tailwind tokens, and type-safe `openapi-fetch` client bindings.
 
-6. **Local Development Linking (`app-local-dev`)**:
+7. **Local Development Linking (`app-local-dev`)**:
    Seamlessly link installed `app-common` packages in consumer repositories to a local clone of `app-common` using `app-tools dev` (`link`, `unlink`, `status`) without touching `pyproject.toml` or `package.json`.
 
-7. **Contributor Dev-Skill (`app-common-contributor`)**:
+8. **Contributor Dev-Skill (`app-common-contributor`)**:
    Only linked when `--dev` is specified. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.

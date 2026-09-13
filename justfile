@@ -44,7 +44,7 @@ lint module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
+    for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
@@ -63,7 +63,7 @@ check module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
+    for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
@@ -81,7 +81,7 @@ lint-check module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog; do
+    for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
@@ -134,5 +134,4 @@ check-ui:
 # Build UI package into dist/
 build-ui:
     npm run build --prefix packages/ui/app-ui-base
-
 

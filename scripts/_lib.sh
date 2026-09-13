@@ -2,7 +2,7 @@
 # Shared helpers for module resolution.
 # Source this file from scripts or justfile recipes: source ./scripts/_lib.sh
 
-AVAILABLE_MODULES="all app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog"
+AVAILABLE_MODULES="all app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp"
 
 resolve_module() {
     case "$1" in
@@ -16,6 +16,7 @@ resolve_module() {
         app-vector-store|vector-store|vector) echo "app-vector-store" ;;
         app-http-client|http-client|http) echo "app-http-client" ;;
         app-ai-catalog|ai-catalog|ai) echo "app-ai-catalog" ;;
+        app-mcp|mcp) echo "app-mcp" ;;
         all) echo "all" ;;
         *) echo "$1" ;;
     esac
@@ -33,6 +34,7 @@ resolve_module_path() {
         app-vector-store) echo "packages/adapters/app-vector-store" ;;
         app-http-client) echo "packages/adapters/app-http-client" ;;
         app-ai-catalog) echo "packages/adapters/app-ai-catalog" ;;
+        app-mcp) echo "packages/transports/app-mcp" ;;
         *) echo "$1" ;;
     esac
 }
@@ -43,7 +45,7 @@ should_run() {
 
 validate_module() {
     case "$1" in
-        all|app-error|app-prebuilt-user|app-prebuilt-outbox|app-tools|app-layer-base|app-testing-base|app-file-storage|app-vector-store|app-http-client|app-ai-catalog) ;;
+        all|app-error|app-prebuilt-user|app-prebuilt-outbox|app-tools|app-layer-base|app-testing-base|app-file-storage|app-vector-store|app-http-client|app-ai-catalog|app-mcp) ;;
         *)
             echo "Unknown module: $1" >&2
             echo "Available modules: $AVAILABLE_MODULES" >&2

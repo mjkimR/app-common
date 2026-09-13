@@ -3,6 +3,7 @@ members = [
     "packages/base/*",
     "packages/adapters/*",
     "packages/prebuilt/*",
+    "packages/transports/*",
     "tools/*",
 ]
 
@@ -11,6 +12,7 @@ members = [
     "packages/base/*",
     "packages/adapters/*",
     "packages/prebuilt/*",
+    "packages/transports/*",
     "tools/*",
 ]
 
@@ -47,6 +49,7 @@ extraPaths = [
     "./packages/adapters/app-vector-store/src",
     "./packages/adapters/app-http-client/src",
     "./packages/adapters/app-ai-catalog/src",
+    "./packages/transports/app-mcp/src",
 ]
 
 [dependency-groups]

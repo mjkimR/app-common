@@ -24,7 +24,10 @@ Each adapter isolates a specific technology stack and can be imported independen
 - **[app-prebuilt-user](./packages/prebuilt/app-prebuilt-user/README.md)**: Fully scaffolding-ready user authentication, JWT login flow, and user profile management.
 - **[app-prebuilt-outbox](./packages/prebuilt/app-prebuilt-outbox/README.md)**: A production-ready Transactional Outbox pattern engine for guaranteed message delivery.
 
-### 4. UI Library & Developer Productivity
+### 4. Inbound Transports
+- **[app-mcp](./packages/transports/app-mcp/README.md)**: Protocol-neutral MCP tool registry, trusted invocation context, scope checks, and structured error translation.
+
+### 5. UI Library & Developer Productivity
 - **[app-ui-base](./packages/ui/app-ui-base/README.md)**: Agent-First Svelte 5 foundational UI library (`@app-common/ui-base`) providing layout shell (`AppShell`), atomic UI primitives (`Button`, `Card`, `Input`), reactive state stores (`sessionStore`, `themeStore`), and Tailwind design tokens.
 - **[app-tools](./tools/app-tools/README.md)**: Developer CLI tool to automatically generate layered CRUD code (backend features and Svelte 5 web features) and manage local development symlinks (`app-tools dev`).
 
@@ -97,5 +100,4 @@ just link-skills --dev
 ### AI Agent Onboarding
 To bootstrap a new FastAPI project from scratch with an AI agent, give the agent this GitHub link:
 > `https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md`
-
 

@@ -84,6 +84,8 @@ The repository is structured into organized category directories under `packages
 - **`packages/prebuilt/`**:
     - **`app-prebuilt-user/`**: Prebuilt authentication, signup, and user management controllers, services, and models.
     - **`app-prebuilt-outbox/`**: Prebuilt Transactional Outbox pattern engine for reliable event messaging.
+- **`packages/transports/`**:
+    - **`app-mcp/`**: Protocol-neutral MCP tool registry and authorization boundary; concrete transports live outside this core package.
 - **`packages/ui/`**:
     - **`app-ui-base/`**: Svelte 5 foundational UI library (`@app-common/ui-base`).
         - `components/`: Accessible, responsive components (`AppShell`, `PageHeader`, `EmptyState`, `StatusBadge`, `LoadingSpinner`, `ThemeToggle`).
@@ -148,5 +150,4 @@ That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session
 Skills are agent-neutral assets under `agents/`.
 - In `app-common`: link with `just link-skills --dev` (or `./agents/link-skills.sh --dev`).
 - In downstream consumer projects: link with `./agents/link-skills.sh --auto` to link **only** installed package skills.
-
 

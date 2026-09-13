@@ -14,6 +14,7 @@ members = [
     "app-file-storage",
     "app-http-client",
     "app-layer-base",
+    "app-mcp",
     "app-prebuilt-outbox",
     "app-prebuilt-user",
     "app-testing-base",
@@ -381,6 +382,31 @@ provides-extras = ["testing"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "app-layer-base", extras = ["testing"] }]
+
+[[package]]
+name = "app-mcp"
+version = "0.1.0"
+source = { editable = "packages/transports/app-mcp" }
+dependencies = [
+    { name = "app-error" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "app-error", editable = "packages/base/app-error" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-asyncio", specifier = ">=0.26.0" },
+    { name = "ruff", specifier = ">=0.14.14" },
+]
 
 [[package]]
 name = "app-prebuilt-outbox"

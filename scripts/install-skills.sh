@@ -97,6 +97,7 @@ else
             grep -q "app-vector-store" "$manifest" 2>/dev/null && skills_to_install+=(app-vector-store)
             grep -q "app-http-client" "$manifest" 2>/dev/null && skills_to_install+=(app-http-client)
             grep -q "app-ai-catalog" "$manifest" 2>/dev/null && skills_to_install+=(app-ai-catalog)
+            grep -q "app-mcp" "$manifest" 2>/dev/null && skills_to_install+=(app-mcp)
             grep -q "app-prebuilt-user" "$manifest" 2>/dev/null && skills_to_install+=(app-prebuilt-user)
             grep -q "app-prebuilt-outbox" "$manifest" 2>/dev/null && skills_to_install+=(app-prebuilt-outbox)
             grep -q "app-testing-base" "$manifest" 2>/dev/null && skills_to_install+=(app-testing)

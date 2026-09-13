@@ -1,0 +1,31 @@
+[project]
+name = "app-mcp"
+version = "0.1.0"
+description = "Protocol-neutral MCP tool boundary for app-common"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "app-error",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_mcp"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "ruff>=0.14.14",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = "tests"
+asyncio_mode = "auto"
+
+[tool.uv.sources]
+app-error = { workspace = true }
