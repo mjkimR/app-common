@@ -74,3 +74,17 @@ async def test_close_storage_client_not_initialized():
     await close_storage_client()
     with pytest.raises(RuntimeError, match=r"File storage client is not initialized. Check lifespan."):
         get_storage_client()
+
+
+def test_storage_not_initialized_has_agent_advisory():
+    from app_error import AppError
+    from app_file_storage.instance import FileStorageNotInitializedError
+
+    err = FileStorageNotInitializedError()
+    assert isinstance(err, AppError)
+    assert isinstance(err, RuntimeError)
+    assert err.code == "FILE_STORAGE_NOT_INITIALIZED"
+    assert "register_file_storage_lifespan" in (err.fix or "")
+    lines = "\n".join(err.lines())
+    assert "[ACTION]" in lines
+    assert "[FIX]" in lines

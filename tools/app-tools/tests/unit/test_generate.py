@@ -20,6 +20,8 @@ EXPECTED_FILES = [
     "usecases/crud.py",
     "api/__init__.py",
     "api/v1.py",
+    "tests/__init__.py",
+    "tests/test_integrate.py",
 ]
 
 
@@ -63,7 +65,12 @@ def test_generated_feature_typechecks_with_pyright(tmp_path):
 
     config = {
         "typeCheckingMode": "basic",
-        "extraPaths": [str(REPO_ROOT / "packages" / "base" / "app-layer-base" / "src"), "."],
+        "extraPaths": [
+            str(REPO_ROOT / "packages" / "base" / "app-layer-base" / "src"),
+            str(REPO_ROOT / "packages" / "base" / "app-testing-base" / "src"),
+            str(REPO_ROOT / "packages" / "base" / "app-error" / "src"),
+            ".",
+        ],
         "venvPath": str(REPO_ROOT),
         "venv": ".venv",
         "include": ["genpkg"],
@@ -79,6 +86,14 @@ def test_generated_feature_typechecks_with_pyright(tmp_path):
 
     assert result.returncode == 0, f"pyright reported issues on generated code:\n{result.stdout}\n{result.stderr}"
     assert feature_dir.exists()
+
+
+def test_create_feature_dry_run_does_not_touch_disk(tmp_path):
+    result = create_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="genpkg", dry_run=True)
+    assert result["dry_run"] is True
+    assert result["status"] == "preview"
+    assert not (tmp_path / "genpkg" / "widgets").exists()
+    assert len(result["files"]) >= len(EXPECTED_FILES)
 
 
 def test_feature_already_exists_raises_app_error(tmp_path):

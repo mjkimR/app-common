@@ -14,26 +14,45 @@ FastAPI layered architecture framework based on `app-layer-base`, `app-tools`, a
 
 ---
 
+## Critical Invariants (NEVER DO THIS)
+
+| Forbidden Action | Why It Breaks The System | Correct Pattern |
+|---|---|---|
+| **Calling `super()` in Hook methods** | Hooks are isolated protocols chained by executor; calling `super()` causes duplicate or broken hook runs. | Implement method standalone (`create_pre`, etc.). |
+| **Router directly importing `repos`** | Violates 4-layer architecture and bypasses UseCase transaction & Service Hooks. | Router delegates to `UseCase` or `Service`. |
+| **Calling `commit()` inside Service** | Services contain business logic, not transaction boundaries. | Transactions are committed by `UseCase` or session lifespan. |
+| **Random data generators** | Generates non-deterministic strings that fail unique/format constraints. | Use `app_testing_base.random_string` & explicit `make_*_payload`. |
+
+---
+
 ## Quick Scaffolding
 
 **Never hand-write boilerplate from scratch.** Use `app-tools` to scaffold a complete feature:
 
 ```bash
 uv run app-tools create-code feature --name Book
+# Preview without touching disk:
+uv run app-tools create-code feature --name Book --dry-run --json
 # With explicit plural:
 uv run app-tools create-code feature --name Category --plural categories
 ```
 
-Generated structure in `app/books/`:
+Generated structure in `app/features/books/`:
 ```
 books/
 ├── models.py       # SQLAlchemy model with standard mixins
 ├── schemas.py      # Pydantic validation schemas (Create, Update, Response)
-├── repo.py         # BaseRepository implementation
-├── service.py      # BaseService with hooks tuple
-├── usecase.py      # Transaction-aware UseCase coordinating services
-├── router.py       # FastAPI router with dependency injection
-└── deps.py         # Annotated dependency injection providers
+├── repos.py        # BaseRepository implementation
+├── services.py     # BaseService with hooks tuple
+├── usecases/       # Transaction-aware UseCases coordinating services
+│   ├── __init__.py
+│   └── crud.py
+├── api/            # FastAPI router with dependency injection
+│   ├── __init__.py
+│   └── v1.py
+└── tests/          # Integration tests inheriting from IntegrationTest
+    ├── __init__.py
+    └── test_integrate.py
 ```
 
 ---

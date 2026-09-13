@@ -20,9 +20,9 @@ Optimized for AI Agents to produce deterministic, high-ROI tests without flaky f
 
 ---
 
-## 2. Test Data Seeding Rules (No Polyfactory)
+## 2. Test Data Seeding Rules
 
-**Never use Polyfactory or random data generators for database entities.** Random strings cause flaky tests by violating field constraints (email regex, cron syntax, max length, unique keys).
+**Never use random data generators for database entities.** Random strings cause flaky tests by violating field constraints (email regex, cron syntax, max length, unique keys).
 
 ### Rule 1: Explicit Seeder Function (`_seed_<entity>`)
 When a test file needs one or more entities in the database, define a lightweight seeder function using the `defaults | overrides` pattern:

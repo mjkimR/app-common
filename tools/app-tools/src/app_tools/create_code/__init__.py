@@ -19,12 +19,21 @@ def create_code():
 @click.option(
     "--prefix", help="The prefix path for the feature directory (e.g., 'app/features'). Defaults to 'app/features'."
 )
-def feature(name: str, plural: str | None, prefix: str | None):
+@click.option("--dry-run", is_flag=True, help="Preview generated files without writing to disk.")
+@click.option("--json", "as_json", is_flag=True, help="Emit machine-readable JSON output.")
+def feature(name: str, plural: str | None, prefix: str | None, dry_run: bool, as_json: bool):
     """Create a new backend feature module"""
+    import json as json_lib
+
     base_dir = Path.cwd()
     try:
-        create_feature(name=name, plural=plural, base_dir=base_dir, feature_prefix=prefix)
+        result = create_feature(name=name, plural=plural, base_dir=base_dir, feature_prefix=prefix, dry_run=dry_run)
+        if as_json:
+            click.echo(json_lib.dumps(result, indent=2))
     except AppError as e:
+        if as_json:
+            click.echo(json_lib.dumps({"error": e.to_dict()}, indent=2))
+            raise SystemExit(1) from None
         raise click.ClickException("\n".join(e.lines())) from e
 
 

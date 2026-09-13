@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 from string import Template
+from typing import Any
 
 from app_error import Actor, AppError, Retry
 
@@ -16,7 +17,7 @@ class FeatureAlreadyExistsError(AppError):
         super().__init__(
             f"Feature '{plural_name}' already exists at {feature_dir}.",
             target_files=[str(feature_dir)],
-            fix=f"rm -rf {feature_dir}",
+            fix=f"rm -rf {feature_dir} (or choose a different feature name)",
             what_to_report=f"Feature '{plural_name}' already exists.",
         )
 
@@ -36,7 +37,7 @@ def to_snake_case(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-def update_router(plural_name: str, base_dir: Path, import_prefix: str):
+def update_router(plural_name: str, base_dir: Path, import_prefix: str, dry_run: bool = False) -> None:
     """
     Updates backend/app/router.py to include the new feature's router.
     """
@@ -87,8 +88,11 @@ def update_router(plural_name: str, base_dir: Path, import_prefix: str):
             except ValueError:
                 lines.append(include_statement)  # Add at the end if anchor not found
 
-        router_path.write_text("\n".join(lines) + "\n")
-        print(f"  - Updated {router_path}")
+        if dry_run:
+            print(f"  - [DRY-RUN] Would update {router_path}")
+        else:
+            router_path.write_text("\n".join(lines) + "\n")
+            print(f"  - Updated {router_path}")
 
     except FileNotFoundError:
         print(f"Warning: Could not find {router_path} to update.")
@@ -101,7 +105,8 @@ def create_feature(
     plural: str | None,
     base_dir: Path | None = None,
     feature_prefix: str | None = None,
-):
+    dry_run: bool = False,
+) -> dict[str, Any]:
     """
     Generates a new CRUD feature.
 
@@ -109,6 +114,8 @@ def create_feature(
     :param plural: The plural name of the feature in snake_case.
     :param base_dir: The base directory of the project.
     :param feature_prefix: The prefix path for the feature directory (e.g., "app/features"). Defaults to "app/features".
+    :param dry_run: If True, preview generated files without writing them to disk.
+    :return: Summary dictionary of generated files and paths.
     """
     if base_dir is None:
         base_dir = Path.cwd()
@@ -121,10 +128,11 @@ def create_feature(
 
     feature_dir = base_dir / f"{prefix}/{plural_name}"
 
-    if feature_dir.exists():
+    if feature_dir.exists() and not dry_run:
         raise FeatureAlreadyExistsError(plural_name, feature_dir)
 
-    print(f"Creating feature '{class_name}' in '{feature_dir}'...")
+    prefix_msg = "[DRY-RUN] Would create" if dry_run else "Creating"
+    print(f"{prefix_msg} feature '{class_name}' in '{feature_dir}'...")
 
     mapping = {
         "class_name": class_name,
@@ -133,23 +141,43 @@ def create_feature(
         "import_prefix": import_prefix,
     }
 
+    created_files: list[str] = []
+
     # Render every template under templates/feature/ into the feature directory,
     # mirroring its layout. That directory IS the feature skeleton: add or remove a
     # *.tmpl file to change what gets generated — no code change needed here.
-    # Templates use string.Template ($placeholders), so literal braces in the
-    # generated Python (e.g. route paths like "/{book_id}") need no escaping.
     for template_path in sorted(FEATURE_TEMPLATES_DIR.rglob("*.tmpl")):
         relative_output = template_path.relative_to(FEATURE_TEMPLATES_DIR).with_suffix("")
         content = Template(template_path.read_text()).substitute(mapping)
 
         output_path = feature_dir / relative_output
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(content.strip())
-        print(f"  - Created {output_path}")
+        created_files.append(str(output_path))
+        if dry_run:
+            print(f"  - [DRY-RUN] Would create {output_path}")
+        else:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(content.strip())
+            print(f"  - Created {output_path}")
 
-    print(f"\nFeature '{class_name}' created successfully!")
-    update_router(plural_name, base_dir, import_prefix)
+    if not dry_run:
+        print(f"\nFeature '{class_name}' created successfully!")
+    else:
+        print(f"\nFeature '{class_name}' preview completed (no files written).")
 
-    print("\nNext steps:")
-    print(f"1. Review the generated files in '{feature_dir}'.")
-    print("2. Add the new model to 'alembic' and run migrations.")
+    update_router(plural_name, base_dir, import_prefix, dry_run=dry_run)
+
+    if not dry_run:
+        print("\nNext steps:")
+        print(f"1. Review the generated files in '{feature_dir}'.")
+        print("2. Run tests: just test")
+        print("3. Add the new model to 'alembic' and run migrations.")
+
+    return {
+        "status": "preview" if dry_run else "created",
+        "feature": class_name,
+        "singular_name": singular_name,
+        "plural_name": plural_name,
+        "feature_dir": str(feature_dir),
+        "files": created_files,
+        "dry_run": dry_run,
+    }

@@ -92,6 +92,10 @@ lint-check module="all":
         fi
     done
 
+# Run architectural constraint validation across packages or specific paths
+check-arch +paths="":
+    uv run app-tools check-arch {{ paths }}
+
 # Install pre-commit hooks
 hooks-install:
     uv run pre-commit install

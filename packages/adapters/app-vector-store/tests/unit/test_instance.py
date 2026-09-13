@@ -129,3 +129,17 @@ async def test_close_vector_store_not_initialized():
     await close_vector_store()
     with pytest.raises(RuntimeError, match=r"Vector Store provider is not initialized. Check lifespan."):
         get_vector_store_provider()
+
+
+def test_vector_store_not_initialized_has_agent_advisory():
+    from app_error import AppError
+    from app_vector_store.instance import VectorStoreNotInitializedError
+
+    err = VectorStoreNotInitializedError()
+    assert isinstance(err, AppError)
+    assert isinstance(err, RuntimeError)
+    assert err.code == "VECTOR_STORE_NOT_INITIALIZED"
+    assert "register_vector_store_lifespan" in (err.fix or "")
+    lines = "\n".join(err.lines())
+    assert "[ACTION]" in lines
+    assert "[FIX]" in lines

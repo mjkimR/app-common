@@ -5,6 +5,7 @@ description = "Vector database adapter package supporting Qdrant"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "app-error",
     "app-ai-catalog",
     "qdrant-client>=1.16.2",
     "langchain-qdrant>=1.1.0",
@@ -29,6 +30,7 @@ dev = [
 
 [tool.uv.sources]
 app-ai-catalog = { workspace = true }
+app-error = { workspace = true }
 
 [tool.pytest.ini_options]
 log_level = "INFO"

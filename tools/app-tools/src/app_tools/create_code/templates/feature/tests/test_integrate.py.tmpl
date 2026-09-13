@@ -1,0 +1,58 @@
+from app_testing_base import IntegrationTest, random_string
+from ${import_prefix}.${plural_name}.models import ${class_name}
+from ${import_prefix}.${plural_name}.schemas import ${class_name}Create
+from ${import_prefix}.${plural_name}.usecases.crud import (
+    Create${class_name}UseCase,
+    Delete${class_name}UseCase,
+    Get${class_name}UseCase,
+    GetMulti${class_name}UseCase,
+)
+
+
+def make_${singular_name}_payload(**overrides) -> ${class_name}Create:
+    """Deterministic default schema payload for integration testing."""
+    defaults = {
+        "name": f"${singular_name}-{random_string(6)}",
+    }
+    return ${class_name}Create(**(defaults | overrides))
+
+
+class Test${class_name}Integration(IntegrationTest):
+    """Integration test suite verifying ${class_name} CRUD operations."""
+
+    async def test_create_and_get_${singular_name}(self) -> None:
+        payload = make_${singular_name}_payload()
+        create_uc = self.resolve(Create${class_name}UseCase)
+        created = await create_uc.execute(payload)
+
+        assert created.id is not None
+        assert created.name == payload.name
+
+        get_uc = self.resolve(Get${class_name}UseCase)
+        fetched = await get_uc.execute(created.id)
+        assert fetched is not None
+        assert fetched.id == created.id
+        assert fetched.name == created.name
+
+    async def test_get_multi_${plural_name}(self) -> None:
+        create_uc = self.resolve(Create${class_name}UseCase)
+        item1 = await create_uc.execute(make_${singular_name}_payload())
+        item2 = await create_uc.execute(make_${singular_name}_payload())
+
+        get_multi_uc = self.resolve(GetMulti${class_name}UseCase)
+        result = await get_multi_uc.execute()
+        item_ids = [item.id for item in result.items]
+        assert item1.id in item_ids
+        assert item2.id in item_ids
+
+    async def test_delete_${singular_name}(self) -> None:
+        create_uc = self.resolve(Create${class_name}UseCase)
+        created = await create_uc.execute(make_${singular_name}_payload())
+
+        delete_uc = self.resolve(Delete${class_name}UseCase)
+        delete_resp = await delete_uc.execute(created.id)
+        assert delete_resp.success is True
+
+        get_uc = self.resolve(Get${class_name}UseCase)
+        fetched = await get_uc.execute(created.id)
+        assert fetched is None

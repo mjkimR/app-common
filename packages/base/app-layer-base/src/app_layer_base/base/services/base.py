@@ -17,6 +17,7 @@ from dataclasses import replace
 from functools import cached_property, lru_cache
 from typing import Any
 
+from app_error import Actor, AppError, Retry
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,6 +39,29 @@ from app_layer_base.base.services.hooks import (
 )
 from app_layer_base.core.log import logger
 
+
+class HookContextKeyMissingError(AppError, TypeError):
+    code = "HOOK_CONTEXT_KEY_MISSING"
+    actor = Actor.DEVELOPER
+    retry = Retry.AFTER_FIX
+
+    def __init__(
+        self,
+        service_name: str,
+        model_name: str,
+        missing_keys: list[str],
+        hook_name: str,
+    ) -> None:
+        super().__init__(
+            f"{service_name}.context_model ({model_name}) does not declare "
+            f"context key(s) {missing_keys} required by {hook_name}. "
+            "Declare them on the context model (Required or NotRequired); otherwise "
+            "context validation drops them and the hook silently no-ops.",
+            fix=f"Declare {missing_keys} on {model_name} (using Required or NotRequired)",
+            what_to_report=f"Service {service_name} context model {model_name} missing keys required by {hook_name}.",
+        )
+
+
 __all__ = [
     "BaseContextKwargs",
     "BaseCreateServiceMixin",
@@ -46,6 +70,7 @@ __all__ = [
     "BaseGetServiceMixin",
     "BaseServiceMixinInterface",
     "BaseUpdateServiceMixin",
+    "HookContextKeyMissingError",
 ]
 
 
@@ -120,11 +145,11 @@ class BaseServiceMixinInterface[TContextKwargs: BaseContextKwargs]:
         for hook in self.hooks:
             missing = frozenset(getattr(hook, "required_context_keys", ())) - declared
             if missing:
-                raise TypeError(
-                    f"{type(self).__name__}.context_model ({model.__name__}) does not declare "
-                    f"context key(s) {sorted(missing)} required by {type(hook).__name__}. "
-                    "Declare them on the context model (Required or NotRequired); otherwise "
-                    "context validation drops them and the hook silently no-ops."
+                raise HookContextKeyMissingError(
+                    type(self).__name__,
+                    model.__name__,
+                    sorted(missing),
+                    type(hook).__name__,
                 )
         return True
 
