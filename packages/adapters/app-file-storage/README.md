@@ -5,7 +5,7 @@ A standalone object-storage adapter exposing one async interface (`FileStorageCl
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-file-storage"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-file-storage"
 ```
 
 ## Configuration
@@ -85,4 +85,3 @@ Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on t
 
 - [App File Storage Skill](../../../agents/skills/app-file-storage/SKILL.md) — S3, MinIO, and Local storage integration.
 - [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how adapters fit into the layered app.
-

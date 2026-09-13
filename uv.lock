@@ -394,7 +394,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "app-layer-base", extra = ["testing"] },
+    { name = "app-testing-base" },
     { name = "fastapi" },
     { name = "pytest-mock" },
     { name = "ruff" },
@@ -409,7 +409,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "app-layer-base", extras = ["testing"], editable = "packages/base/app-layer-base" },
+    { name = "app-testing-base", editable = "packages/base/app-testing-base" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "ruff", specifier = ">=0.14.14" },
@@ -429,7 +429,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "app-layer-base", extra = ["testing"] },
+    { name = "app-testing-base" },
     { name = "fastapi" },
     { name = "pytest-mock" },
     { name = "python-multipart" },
@@ -447,7 +447,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "app-layer-base", extras = ["testing"], editable = "packages/base/app-layer-base" },
+    { name = "app-testing-base", editable = "packages/base/app-testing-base" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "python-multipart", specifier = ">=0.0.7" },

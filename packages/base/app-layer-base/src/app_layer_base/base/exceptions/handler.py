@@ -28,26 +28,21 @@ def _get_request_id(request: Request) -> str | None:
         return None
 
 
-def _should_include_advisory(request: Request) -> bool:
-    """Determine whether structured agent advisory metadata should be included in HTTP response."""
-    # 1. Explicit request header override (useful for AI agent tool invocations or test suites)
-    agent_header = request.headers.get("x-agent-context", "").strip().lower()
-    if agent_header in ("1", "true", "yes"):
-        return True
-    if agent_header in ("0", "false", "no"):
-        return False
-
-    # 2. Configured mode in AppSettings
+def _should_include_advisory() -> bool:
+    """Determine HTTP advisory exposure from trusted server-side configuration only."""
     try:
         from app_layer_base.config import get_app_settings
 
         settings = get_app_settings()
         mode = settings.ERROR_ADVISORY_MODE.strip().lower()
-        if mode in ("always", "development", "mcp"):
+        if mode == "always":
             return True
-        if mode in ("never", "production"):
+        if mode == "never":
             return False
-        # 'auto': show in non-production environments
+        # Unknown values are deliberately conservative. MCP callers use
+        # format_mcp_error directly; they do not alter public HTTP responses.
+        if mode != "auto":
+            return False
         return not settings.is_production
     except Exception:
         return False
@@ -89,7 +84,7 @@ def _process_custom_exception(request: Request, exc: CustomException):
     else:
         logger.error(formatted_advisory)
 
-    include_advisory = _should_include_advisory(request)
+    include_advisory = _should_include_advisory()
     content = format_custom_exception(
         exc,
         include_advisory=include_advisory,

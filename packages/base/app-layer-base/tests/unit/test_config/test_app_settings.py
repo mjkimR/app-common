@@ -29,6 +29,12 @@ def test_is_production_ignores_case_and_whitespace():
     assert settings.is_production is True
 
 
+def test_environment_helpers_accept_common_aliases():
+    assert AppSettings(APP_ENV="prod").is_production is True
+    assert AppSettings(APP_ENV="local").is_development is True
+    assert AppSettings(APP_ENV="testing").is_test is True
+
+
 def test_database_url_defaults_to_in_memory():
     with pytest.warns(UserWarning, match=r"DATABASE_URL is set to an in-memory SQLite database"):
         settings = AppSettings()

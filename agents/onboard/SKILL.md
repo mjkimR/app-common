@@ -41,16 +41,16 @@ uv init
 #### 1. Core Foundation (Always Required)
 ```bash
 # Foundational layered architecture
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-layer-base"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/base/app-layer-base"
 
 # Zero-dependency structured error protocol
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-error"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/base/app-error"
 
 # Code scaffolding CLI (dev dependency)
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app-tools" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=tools/app-tools" --dev
 
 # Test foundation & fixtures (dev dependency, recommended)
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-testing-base" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/base/app-testing-base" --dev
 
 # Database driver
 # For PostgreSQL:
@@ -62,23 +62,23 @@ uv add aiosqlite
 #### 2. Selected Adapters & Prebuilts (Install Only Selected)
 ```bash
 # File Storage (S3 / MinIO / Local FS)
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-file-storage"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-file-storage"
 
 # Vector Store (Qdrant)
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-vector-store"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-vector-store"
 
 # HTTP Client Pool
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-http-client"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-http-client"
 
 # AI Model Catalog
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-ai-catalog"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-ai-catalog"
 
 # User Management & JWT Authentication
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-user"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-user"
 uv add python-multipart
 
 # Transactional Outbox Pattern
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-outbox"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-outbox"
 ```
 
 ---
@@ -124,14 +124,14 @@ FIRST_USER_PASSWORD=change_this_password
 
 ### Phase 4: Download Agent Skills Matching Installed Packages
 
-Download and sync the skills matching the packages installed in `pyproject.toml`:
+Download the skills from the same immutable release as the packages you installed:
 
 ```bash
-# For Antigravity (.agents/skills):
-curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/main/scripts/install-skills.sh | bash -s -- --auto
+# Replace <release-tag> with the same tag used above.
+curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scripts/install-skills.sh | bash -s -- --auto --ref=<release-tag>
 
 # Or for Claude Code (.claude/skills):
-curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/main/scripts/install-skills.sh | bash -s -- --auto claude
+curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scripts/install-skills.sh | bash -s -- --auto --ref=<release-tag> claude
 ```
 
 This reads `pyproject.toml` and installs only the skills you actually use (`app-backend-core`, `app-file-storage`, etc.) into your workspace.

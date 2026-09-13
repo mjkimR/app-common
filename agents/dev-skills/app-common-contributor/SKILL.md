@@ -38,7 +38,7 @@ Always run the appropriate test target before finalizing code changes:
 - Always load shared fixtures through the pytest plugin:
   ```python
   # <package>/tests/conftest.py
-  pytest_plugins = ["app_layer_base.testing.db"]
+pytest_plugins = ["app_testing_base.plugin"]
   ```
 - This plugin provides `session`, `session_maker`, `async_engine`, and `is_postgres` fixtures.
 - Mark container-dependent tests with `@pytest.mark.docker`.
@@ -120,4 +120,3 @@ Instead, run `app-tools dev` inside the consumer project to temporarily link its
    ```bash
    uv run app-tools dev status
    ```
-

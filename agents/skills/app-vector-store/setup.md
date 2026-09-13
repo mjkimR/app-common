@@ -2,7 +2,7 @@
 
 ## Installation
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-vector-store"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-vector-store"
 ```
 
 > **Note**: Requires `app-ai-catalog` to be configured (`catalog.yml`), as embedding models and dimensions are resolved from it.

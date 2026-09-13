@@ -2,7 +2,7 @@
 
 ## Installation
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-http-client"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-http-client"
 ```
 
 ## Configuration

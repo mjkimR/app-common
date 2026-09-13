@@ -6,13 +6,13 @@ Add the core foundation packages and developer CLI tool:
 
 ```bash
 # Foundational domain framework
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-layer-base"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/base/app-layer-base"
 
 # Zero-dependency structured error protocol
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-error"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/base/app-error"
 
 # Code scaffolding CLI (dev dependency)
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app-tools" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=tools/app-tools" --dev
 ```
 
 ## Environment Specification & Config

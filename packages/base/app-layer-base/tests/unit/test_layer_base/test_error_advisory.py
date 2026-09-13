@@ -75,7 +75,7 @@ def test_format_mcp_error():
     assert "[REPORT] User ID 123 does not exist" in mcp_output
 
 
-def test_fastapi_advisory_header_switch():
+def test_fastapi_advisory_exposure_uses_server_configuration(monkeypatch):
     app = FastAPI()
     set_exception_handler(app)
     router = APIRouter()
@@ -94,19 +94,20 @@ def test_fastapi_advisory_header_switch():
     app.include_router(router)
     client = TestClient(app, raise_server_exceptions=False)
 
-    # Agent context explicitly disabled (like public human client)
-    res_human = client.get("/error", headers={"X-Agent-Context": "false"})
-    assert res_human.status_code == 500
-    data_human = res_human.json()
-    assert data_human["code"] == "DB_DISCONNECTED"
-    assert "advisory" not in data_human
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("ERROR_ADVISORY_MODE", "auto")
+    from app_layer_base.config import get_app_settings
 
-    # Agent context explicitly enabled
-    res_agent = client.get("/error", headers={"X-Agent-Context": "true"})
-    assert res_agent.status_code == 500
-    data_agent = res_agent.json()
-    assert data_agent["code"] == "DB_DISCONNECTED"
-    assert "advisory" in data_agent
-    assert data_agent["advisory"]["mode"] == "AUTO"
-    assert data_agent["advisory"]["fix"] == "restart db container"
-    assert data_agent["advisory"]["target_files"] == ["docker-compose.yml"]
+    get_app_settings.cache_clear()
+    try:
+        # Request headers cannot expose operational details in production.
+        response = client.get("/error", headers={"X-Agent-Context": "true"})
+        assert response.status_code == 500
+        assert "advisory" not in response.json()
+
+        monkeypatch.setenv("ERROR_ADVISORY_MODE", "always")
+        get_app_settings.cache_clear()
+        response = client.get("/error")
+        assert response.json()["advisory"]["mode"] == "AUTO"
+    finally:
+        get_app_settings.cache_clear()

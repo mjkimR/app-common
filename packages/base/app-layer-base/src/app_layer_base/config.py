@@ -6,6 +6,11 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app_layer_base.config_util import get_project_root
+from app_layer_base.core.environment import (
+    is_development_environment,
+    is_production_environment,
+    is_test_environment,
+)
 
 __all__ = ["AppSettings", "get_app_settings", "get_project_root"]
 
@@ -47,7 +52,7 @@ class AppSettings(BaseSettings):
 
     ERROR_ADVISORY_MODE: str = Field(
         default="auto",
-        description="Controls exposure of agent advisory details in error responses. 'auto' (advisory shown if APP_ENV != 'production'), 'always', 'never', or 'mcp'.",
+        description="Controls exposure of advisory details in HTTP error responses: 'auto' (non-production), 'always', or 'never'.",
     )
 
     model_config = SettingsConfigDict(
@@ -67,7 +72,15 @@ class AppSettings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
-        return self.APP_ENV.strip().lower() == "production"
+        return is_production_environment(self.APP_ENV)
+
+    @property
+    def is_development(self) -> bool:
+        return is_development_environment(self.APP_ENV)
+
+    @property
+    def is_test(self) -> bool:
+        return is_test_environment(self.APP_ENV)
 
 
 @functools.lru_cache

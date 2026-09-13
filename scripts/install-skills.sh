@@ -3,7 +3,7 @@ set -e
 
 # Installs and syncs agent skills for app-common.
 # Works both inside the app-common repository and remotely in downstream consumer projects via curl:
-#   curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/main/scripts/install-skills.sh | bash -s -- --auto
+#   curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/vX.Y.Z/scripts/install-skills.sh | bash -s -- --auto --ref=vX.Y.Z
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 PROJECT_ROOT=""
@@ -24,6 +24,7 @@ with_tools=false
 auto_detect=false
 target_agent="antigravity"
 custom_target=""
+ref="main"
 selected_skills=()
 
 for arg in "$@"; do
@@ -31,6 +32,7 @@ for arg in "$@"; do
         --dev) with_dev=true ;;
         --auto) auto_detect=true ;;
         --with-tools|-t) with_tools=true ;;
+        --ref=*) ref="${arg#--ref=}" ;;
         --global|-g) target_agent="global" ;;
         antigravity|claude|codex) target_agent="$arg" ;;
         app-*) selected_skills+=("$arg") ;;
@@ -63,7 +65,7 @@ else
     TMP_DIR="$(mktemp -d)"
     trap 'rm -rf "$TMP_DIR"' EXIT
 
-    git clone --depth 1 -q https://github.com/mjkimR/app-common.git "$TMP_DIR/app-common"
+    git clone --depth 1 --branch "$ref" -q https://github.com/mjkimR/app-common.git "$TMP_DIR/app-common"
 
     # Resolve target directory
     if [ -n "$custom_target" ]; then

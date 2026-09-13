@@ -5,7 +5,7 @@ A drop-in user-management and JWT authentication feature built on [`app-layer-ba
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-user"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-user"
 ```
 
 > The host application provides `fastapi`; the login route uses OAuth2 form login, so also install `python-multipart` in the host app.
@@ -62,4 +62,3 @@ async def admin_only():
 
 - [App Prebuilt User Skill](../../../agents/skills/app-prebuilt-user/SKILL.md) — user auth, JWT login flow, and admin CRUD.
 - [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — layered architecture and dependencies.
-

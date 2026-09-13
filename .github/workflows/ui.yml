@@ -1,0 +1,36 @@
+name: UI package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/ui/app-ui-base/**"
+      - ".github/workflows/ui.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/ui/app-ui-base/**"
+      - ".github/workflows/ui.yml"
+
+jobs:
+  check-and-build:
+    name: Check and build @app-common/ui-base
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ui/app-ui-base
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/ui/app-ui-base/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run check
+      - name: Build package
+        run: npm run build

@@ -28,6 +28,10 @@ Each adapter isolates a specific technology stack and can be imported independen
 - **[app-ui-base](./packages/ui/app-ui-base/README.md)**: Agent-First Svelte 5 foundational UI library (`@app-common/ui-base`) providing layout shell (`AppShell`), atomic UI primitives (`Button`, `Card`, `Input`), reactive state stores (`sessionStore`, `themeStore`), and Tailwind design tokens.
 - **[app-tools](./tools/app-tools/README.md)**: Developer CLI tool to automatically generate layered CRUD code (backend features and Svelte 5 web features) and manage local development symlinks (`app-tools dev`).
 
+`app-ui-base` has an independent npm/Svelte lifecycle. It is intentionally not a
+member of the Python `uv` workspace; validate it with `just check-ui` and
+`just build-ui` in its own frontend CI workflow.
+
 ---
 
 ## Layered Architecture Overview
@@ -54,13 +58,13 @@ You can easily install any standalone package directly from this repository usin
 
 ```bash
 # Add only the layer base
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/base/app-layer-base"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/base/app-layer-base"
 
 # Add only the File Storage adapter
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-file-storage"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-file-storage"
 
 # Add the developer CLI tool
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=tools/app-tools" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=tools/app-tools" --dev
 ```
 
 ---
@@ -93,6 +97,5 @@ just link-skills --dev
 ### AI Agent Onboarding
 To bootstrap a new FastAPI project from scratch with an AI agent, give the agent this GitHub link:
 > `https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md`
-
 
 

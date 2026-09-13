@@ -5,7 +5,7 @@ A YAML-driven catalog over a [LiteLLM](https://github.com/BerriAI/litellm) `Rout
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-ai-catalog"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-ai-catalog"
 ```
 
 ## Configuration
@@ -73,4 +73,3 @@ For LangChain integrations, `client.get_embedding("text-embedding-3-small")` ret
 
 - [App AI Catalog Skill](../../../agents/skills/app-ai-catalog/SKILL.md) — AI catalog configuration and LiteLLM model routing.
 - [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how AI clients fit into the layered app.
-

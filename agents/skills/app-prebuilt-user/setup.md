@@ -2,7 +2,7 @@
 
 ## Installation
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-user"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-user"
 # OAuth2 password form login requires python-multipart in the host app:
 uv add python-multipart
 ```

@@ -1,6 +1,6 @@
 """Root pytest configuration for app-prebuilt-outbox.
 
-Database fixtures come from `app_layer_base.testing.db`; see that module for
+Database fixtures come from `app_testing_base.plugin`; see that module for
 `--db-type`, the `real_commit` marker, and the fixtures it provides.
 """
 
@@ -11,7 +11,7 @@ import pytest
 # Import models so the Outbox table is registered on Base.metadata before create_all.
 from app_prebuilt_outbox import models  # noqa: F401
 
-pytest_plugins = ["app_layer_base.testing.db"]
+pytest_plugins = ["app_testing_base.plugin"]
 
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 

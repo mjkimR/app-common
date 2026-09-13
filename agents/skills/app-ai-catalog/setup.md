@@ -2,7 +2,7 @@
 
 ## Installation
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/adapters/app-ai-catalog"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-ai-catalog"
 ```
 
 ## Configuration (`catalog.yml`)

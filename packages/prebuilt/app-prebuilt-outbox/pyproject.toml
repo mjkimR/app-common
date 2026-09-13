@@ -12,7 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "app-layer-base[testing]",
+    "app-testing-base",
     "fastapi>=0.115.12",
     "pytest-mock>=3.15.0",
     "ruff>=0.14.14",
@@ -34,3 +34,4 @@ packages = ["src/app_prebuilt_outbox"]
 
 [tool.uv.sources]
 app-layer-base = { workspace = true }
+app-testing-base = { workspace = true }

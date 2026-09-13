@@ -2,7 +2,7 @@
 
 ## Installation
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-outbox"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-outbox"
 ```
 
 ## Prerequisites & Database

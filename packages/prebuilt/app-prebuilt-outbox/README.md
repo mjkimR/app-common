@@ -5,7 +5,7 @@ A Transactional Outbox implementation for [`app-layer-base`](../../base/app-laye
 ## Installation
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@main#subdirectory=packages/prebuilt/app-prebuilt-outbox"
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-outbox"
 ```
 
 Depends on `app-layer-base`, `sqlalchemy` and `apscheduler`. It is **transport-agnostic** — it does not depend on any message-broker package.
@@ -70,4 +70,3 @@ class BookService(BaseCreateServiceMixin[...], BaseDeleteServiceMixin[...]):
 
 - [App Prebuilt Outbox Skill](../../../agents/skills/app-prebuilt-outbox/SKILL.md) — Transactional Outbox pattern engine and event relay.
 - [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — Service Hooks and transaction management.
-
