@@ -1,8 +1,8 @@
 # app-mcp
 
-`app-mcp` is the inbound MCP tool boundary for app-common. It intentionally has
-no dependency on FastAPI or an MCP SDK: a deployment may use stdio, Streamable
-HTTP, or a framework-specific server without changing its tool contracts.
+`app-mcp` is the FastMCP-based MCP package for app-common FastAPI applications.
+It provides schema-aware tools, policy enforcement, and an ASGI app ready to
+mount in FastAPI.
 
 ## Responsibilities
 
@@ -11,9 +11,18 @@ HTTP, or a framework-specific server without changing its tool contracts.
 - Convert `AppError` into structured tool failures.
 - Never execute an advisory `fix`; the server or client owns that policy.
 
-An SDK integration adapts protocol requests into `ToolContext` and
-`ToolRegistry.invoke()`. A FastAPI integration, if needed, is optional and
-belongs outside this core package.
+`create_mcp()` registers the policy-aware registry with FastMCP. Mount the
+result while passing its lifespan to FastAPI:
+
+```python
+mcp = create_mcp("my-service", registry, authenticated_context)
+mcp_app = create_http_app(mcp)
+app = FastAPI(lifespan=mcp_app.lifespan)
+app.mount("/", mcp_app)
+```
+
+`authenticated_context` must derive identity and scopes from trusted FastAPI
+authentication, never from MCP tool arguments.
 
 ## Usage
 

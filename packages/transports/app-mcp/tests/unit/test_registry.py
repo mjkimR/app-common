@@ -1,6 +1,6 @@
 import pytest
 from app_error import Actor, AppError, Retry
-from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult, ToolRisk
+from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult, ToolRisk, create_http_app, create_mcp
 from pydantic import BaseModel
 
 
@@ -90,3 +90,17 @@ async def test_registry_requires_confirmation_and_idempotency_key():
     assert confirmation.error is not None
     assert confirmation.error["code"] == "MCP_CONFIRMATION_REQUIRED"
     assert invoked.content == {"value": "x"}
+
+
+async def test_fastmcp_factory_registers_tools_and_creates_http_app():
+    registry = ToolRegistry()
+    registry.register(ToolDefinition("echo", "Echo a value", _echo, EchoArguments))
+
+    async def context_provider() -> ToolContext:
+        return ToolContext(subject="agent-1")
+
+    mcp = create_mcp("test-mcp", registry, context_provider)
+    app = create_http_app(mcp, path="/mcp")
+
+    assert mcp.name == "test-mcp"
+    assert app is not None

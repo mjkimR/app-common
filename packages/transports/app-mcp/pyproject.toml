@@ -1,11 +1,12 @@
 [project]
 name = "app-mcp"
 version = "0.1.0"
-description = "Protocol-neutral MCP tool boundary for app-common"
+description = "FastMCP integration and policy boundary for FastAPI applications"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "app-error",
+    "fastmcp>=2.0",
     "pydantic>=2.11.1",
 ]
 
