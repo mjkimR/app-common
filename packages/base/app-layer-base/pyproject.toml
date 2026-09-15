@@ -19,6 +19,9 @@ dependencies = [
 # `app_layer_base.testing` -- pytest fixtures and DI helpers for anything built on this
 # package. Not imported by the library itself, so these stay out of the base install.
 [project.optional-dependencies]
+secrets = [
+    "google-cloud-secret-manager>=2.24.0",
+]
 testing = [
     "pytest>=8.3.5",
     "pytest-asyncio>=0.26.0",
@@ -50,4 +53,3 @@ pythonpath = ["tests/unit", "src"]
 
 [tool.uv.sources]
 app-error = { workspace = true }
-

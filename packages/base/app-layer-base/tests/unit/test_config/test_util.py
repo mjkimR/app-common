@@ -1,3 +1,6 @@
+import os
+import sys
+import types
 from pathlib import Path
 
 import app_layer_base.config_util as util
@@ -14,6 +17,53 @@ def test_get_env_filename_uses_env_suffix(monkeypatch):
     # When ENV is set, .env.<ENV> should be used.
     monkeypatch.setenv("ENV", "prod")
     assert util.get_env_filename() == ".env.prod"
+
+
+def test_load_json_env_expands_values_without_overwriting_explicit_env(monkeypatch):
+    monkeypatch.setenv("APP_SECRETS_JSON", '{"DATABASE_URL":"postgres://bundled","NEW_KEY":"value"}')
+    monkeypatch.setenv("DATABASE_URL", "postgres://explicit")
+
+    util.load_json_env()
+
+    assert os.environ["DATABASE_URL"] == "postgres://explicit"
+    assert os.environ["NEW_KEY"] == "value"
+
+
+def test_load_json_env_rejects_invalid_payload(monkeypatch):
+    monkeypatch.setenv("APP_SECRETS_JSON", "not-json")
+
+    with pytest.raises(RuntimeError, match="valid JSON object"):
+        util.load_json_env()
+
+
+def test_resolve_secret_references_uses_secret_manager(monkeypatch):
+    class Payload:
+        data = b'{"DATABASE_URL":"postgres://secret"}'
+
+    class Client:
+        def secret_version_path(self, project, secret, version):
+            assert (project, secret, version) == ("demo", "bundle", "latest")
+            return "projects/demo/secrets/bundle/versions/latest"
+
+        def access_secret_version(self, request):
+            assert request["name"].endswith("versions/latest")
+            return type("Response", (), {"payload": Payload()})()
+
+    monkeypatch.setenv("GCP_PROJECT_ID", "demo")
+    monkeypatch.setenv("APP_SECRETS_JSON", "secretref://bundle/latest")
+    secretmanager = types.ModuleType("google.cloud.secretmanager")
+    secretmanager.SecretManagerServiceClient = Client
+    google_cloud = types.ModuleType("google.cloud")
+    google_cloud.secretmanager = secretmanager
+    google = types.ModuleType("google")
+    google.cloud = google_cloud
+    monkeypatch.setitem(sys.modules, "google", google)
+    monkeypatch.setitem(sys.modules, "google.cloud", google_cloud)
+    monkeypatch.setitem(sys.modules, "google.cloud.secretmanager", secretmanager)
+
+    util.resolve_secret_references()
+
+    assert __import__("os").environ["APP_SECRETS_JSON"] == '{"DATABASE_URL":"postgres://secret"}'
 
 
 def test_get_project_root_prefers_app_home(monkeypatch):
