@@ -20,6 +20,28 @@ def test_inspect_environment_detects_skills_and_packages(tmp_path: Path):
     assert report["missing_recommended_skills"] == []
 
 
+def test_inspect_environment_merges_apm_skill_directories(tmp_path: Path):
+    manifest = tmp_path / "pyproject.toml"
+    manifest.write_text('[project]\ndependencies = ["app-layer-base", "app-file-storage"]\n')
+
+    (tmp_path / ".claude/skills/app-backend-core").mkdir(parents=True)
+    (tmp_path / ".agents/skills/app-file-storage").mkdir(parents=True)
+
+    report = inspect_environment(tmp_path)
+    assert report["linked_skills"] == ["app-backend-core", "app-file-storage"]
+    assert len(report["agent_skills_directories"]) == 2
+    assert report["missing_recommended_skills"] == []
+
+
+def test_inspect_environment_reports_skills_not_installed(tmp_path: Path):
+    (tmp_path / "pyproject.toml").write_text('[project]\ndependencies = ["app-layer-base"]\n')
+
+    report = inspect_environment(tmp_path)
+    assert report["status"] == "error"
+    assert report["agent_skills_directories"] == []
+    assert any(adv["code"] == "SKILLS_NOT_INSTALLED" for adv in report["advisories"])
+
+
 def test_inspect_environment_reports_missing_skills(tmp_path: Path):
     manifest = tmp_path / "pyproject.toml"
     manifest.write_text('[project]\ndependencies = ["app-file-storage"]\n')

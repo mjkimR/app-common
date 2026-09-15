@@ -60,13 +60,13 @@ def inspect_environment(root: Path) -> dict[str, Any]:
     # 2. Declared packages
     declared_packages = sorted(pkg for pkg in ALL_PACKAGES if pkg in manifest_text)
 
-    # 3. Agent skills
-    skills_dir = root / ".agents/skills"
+    # 3. Agent skills (APM deploys to .claude/skills and .agents/skills; app-common links its own)
+    skills_dirs = [d for d in (root / ".claude/skills", root / ".agents/skills") if d.is_dir()]
     linked_skills: list[str] = []
     missing_skills: list[str] = []
 
-    if skills_dir.is_dir():
-        linked_skills = sorted(d.name for d in skills_dir.iterdir() if d.is_dir() or d.is_symlink())
+    if skills_dirs:
+        linked_skills = sorted({e.name for d in skills_dirs for e in d.iterdir() if e.is_dir() or e.is_symlink()})
         for pkg in declared_packages:
             rec_skill = PACKAGE_SKILL_RECOMMENDATIONS.get(pkg)
             if rec_skill and rec_skill not in linked_skills:
@@ -74,9 +74,9 @@ def inspect_environment(root: Path) -> dict[str, Any]:
     else:
         advisories.append(
             {
-                "code": "SKILLS_NOT_LINKED",
-                "message": "Agent skills directory (.agents/skills) is not linked.",
-                "fix": "Run 'just link-skills --dev' (or './agents/link-skills.sh --auto').",
+                "code": "SKILLS_NOT_INSTALLED",
+                "message": "No agent skills directory (.claude/skills or .agents/skills) was found.",
+                "fix": "Declare 'git: mjkimR/app-common' with its skills in apm.yml and run 'apm install'.",
             }
         )
 
@@ -85,7 +85,7 @@ def inspect_environment(root: Path) -> dict[str, Any]:
             {
                 "code": "MISSING_RECOMMENDED_SKILLS",
                 "message": f"Recommended skills for declared packages are missing: {', '.join(missing_skills)}.",
-                "fix": "Run 'just link-skills' to synchronize skills.",
+                "fix": "Add them to the app-common skills list in apm.yml and run 'apm install'.",
             }
         )
 
@@ -121,7 +121,7 @@ def inspect_environment(root: Path) -> dict[str, Any]:
 
     status = (
         "error"
-        if any(a["code"] in ("MISSING_MANIFEST", "SKILLS_NOT_LINKED") for a in advisories)
+        if any(a["code"] in ("MISSING_MANIFEST", "SKILLS_NOT_INSTALLED") for a in advisories)
         else ("warning" if advisories else "ok")
     )
 
@@ -130,7 +130,7 @@ def inspect_environment(root: Path) -> dict[str, Any]:
         "app_common_root": str(root),
         "manifest_found": manifest_found,
         "declared_packages": declared_packages,
-        "agent_skills_directory": str(skills_dir) if skills_dir.is_dir() else None,
+        "agent_skills_directories": [str(d) for d in skills_dirs],
         "linked_skills": linked_skills,
         "missing_recommended_skills": missing_skills,
         "has_env_file": has_env,
@@ -164,7 +164,8 @@ def doctor(as_json: bool) -> None:
     click.echo(f"  manifest:          {'found' if report['manifest_found'] else 'not found'}")
     click.echo(f"  declared packages: {', '.join(report['declared_packages']) or 'none'}")
     click.echo(
-        f"  agent skills:      {len(report['linked_skills'])} linked ({report['agent_skills_directory'] or 'not linked'})"
+        f"  agent skills:      {len(report['linked_skills'])} installed"
+        f" ({', '.join(report['agent_skills_directories']) or 'not installed'})"
     )
     click.echo(f"  database:          {report['database']['status']}")
     click.echo(f"  MCP:               {'declared' if report['mcp']['declared'] else 'not declared'}")

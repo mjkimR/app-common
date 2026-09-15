@@ -88,14 +88,25 @@ Modular, agent-neutral skills are available under [`agents/`](./agents/README.md
 - **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Monorepo package boundaries, multi-tier testing (SQLite, PostgreSQL, Docker), and contributor conventions.
 
 
-To link skills:
-```bash
-# In downstream apps (auto-detects installed app-* packages):
-./agents/link-skills.sh --auto
+Downstream apps install the skills for the packages they use with [APM](https://github.com/microsoft/apm),
+pinned to the same release as the packages (`agents/apm.yml` makes `agents/` a skill bundle):
 
-# In app-common (links all skills + contributor dev-skills):
-just link-skills --dev
+```yaml
+# apm.yml
+dependencies:
+  apm:
+    - git: mjkimR/app-common
+      path: agents
+      ref: <release-tag>
+      skills: [app-backend-core, app-testing]
 ```
+
+```bash
+apm install
+```
+
+In app-common itself, link the sources and contributor dev-skills with `just link-skills --dev`.
+See [`agents/README.md`](./agents/README.md) for the package-to-skill map.
 
 ### AI Agent Onboarding
 To bootstrap a new FastAPI project from scratch with an AI agent, give the agent this GitHub link:

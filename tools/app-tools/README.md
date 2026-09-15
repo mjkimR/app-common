@@ -68,22 +68,6 @@ Link installed `app-common` packages in downstream projects to a local clone of 
   app-tools dev unlink
   ```
 
-#### Update Installed Packages (`update`)
-
-Update every `app-common` Git dependency in the current consumer project's `pyproject.toml` to the latest published release, regenerate `uv.lock`, synchronize `.venv`, and refresh the matching agent skills:
-
-```bash
-app-tools update
-```
-
-Preview the latest upgrade first if desired:
-
-```bash
-app-tools update --dry-run
-```
-
-Skills default to `.agents/skills`; specify another supported agent directory with `--skills-target codex` or `--skills-target claude`. `--no-sync` skips `.venv` installation and `--no-skills` skips skill refresh.
-
 ---
 *More commands will be added as the project evolves.*
 
@@ -92,6 +76,5 @@ Skills default to `.agents/skills`; specify another supported agent directory wi
 For a complete list of commands, usage examples, and details on how code generation and local linking work, please refer to the developer guides:
 
 - **[Local Development Linking Skill (`app-local-dev`)](../../agents/skills/app-local-dev/SKILL.md)**: Details on local symlinking (`app-tools dev`), backup mechanics, and options.
-- **[Package Update Skill (`app-package-update`)](../../agents/skills/app-package-update/SKILL.md)**: Updates downstream projects to a released `app-common` version.
 - **[App Backend Core Developer Skill (`app-backend-core`)](../../agents/skills/app-backend-core/SKILL.md)**: FastAPI feature code scaffolding (`app-tools create-code feature`).
 - **[App Svelte UI Developer Skill (`app-svelte-ui`)](../../agents/skills/app-svelte-ui/SKILL.md)**: Svelte 5 web feature scaffolding (`app-tools create-code web-feature`).

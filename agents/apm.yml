@@ -1,0 +1,9 @@
+# APM skill bundle: consumers install agents/skills/<name> with
+#   - git: mjkimR/app-common
+#     path: agents
+#     ref: <release-tag>
+#     skills: [<name>, ...]
+# Only skills/ is deployed; dev-skills/ and onboard/ are not.
+name: app-common
+version: 0.1.0
+description: Agent skills for applications built with app-common packages

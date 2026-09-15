@@ -122,19 +122,31 @@ FIRST_USER_PASSWORD=change_this_password
 
 ---
 
-### Phase 4: Download Agent Skills Matching Installed Packages
+### Phase 4: Install Agent Skills Matching Installed Packages
 
-Download the skills from the same immutable release as the packages you installed:
+Install [APM](https://github.com/microsoft/apm) if it is missing (`uv tool install apm-cli`), then create `apm.yml`
+listing only the skills for the packages installed above, pinned to the same release tag:
 
-```bash
-# Replace <release-tag> with the same tag used above.
-curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scripts/install-skills.sh | bash -s -- --auto --ref=<release-tag>
-
-# Or for Claude Code (.claude/skills):
-curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scripts/install-skills.sh | bash -s -- --auto --ref=<release-tag> claude
+```yaml
+name: <project-name>
+version: 0.1.0
+targets: [claude, codex]
+dependencies:
+  apm:
+    - git: mjkimR/app-common
+      path: agents
+      ref: <release-tag>
+      # app-layer-base/app-error -> app-backend-core, app-testing-base -> app-testing, app-tools -> app-local-dev,
+      # adapters, prebuilts, and app-mcp -> same name, @app-common/ui-base -> app-svelte-ui
+      skills: [app-backend-core, app-testing, app-local-dev]
 ```
 
-This reads `pyproject.toml` and installs only the skills you actually use (`app-backend-core`, `app-file-storage`, etc.) into your workspace.
+```bash
+apm install
+```
+
+APM copies the skills into `.claude/skills/` and `.agents/skills/` and pins them in `apm.lock.yaml`.
+Commit `apm.yml`, `apm.lock.yaml`, and the copies, and add `apm_modules/` to `.gitignore`.
 
 ---
 

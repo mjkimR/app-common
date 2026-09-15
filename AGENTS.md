@@ -149,5 +149,6 @@ That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session
 
 Skills are agent-neutral assets under `agents/`.
 - In `app-common`: link with `just link-skills --dev` (or `./agents/link-skills.sh --dev`).
-- In downstream consumer projects: link with `./agents/link-skills.sh --auto` to link **only** installed package skills.
+- In downstream consumer projects: declare `git: mjkimR/app-common`, `path: agents`, `ref`, and `skills: [...]` in `apm.yml`, then run `apm install`.
+- `agents/apm.yml` makes `agents/` an APM skill bundle: every `agents/skills/<name>/SKILL.md` is installable, and the directory name must equal the skill's `name:`. `dev-skills/` and `onboard/` are not deployed.
 

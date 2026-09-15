@@ -1,17 +1,23 @@
 # agents/
 
-Agent-neutral assets for `app-common`. The source files live in `skills/` (atomic skills for downstream applications building with `app-common`) and `dev-skills/` (for developers contributing to `app-common` itself). Agent-specific directories (such as `.agents/skills/`, `.claude/skills/`, `.codex/skills/`) are symlinks created by `link-skills.sh`.
+Agent-neutral assets for `app-common`.
+
+- `skills/`: consumer skills for applications built with `app-common`, installed with [APM](https://github.com/microsoft/apm).
+- `apm.yml`: makes `agents/` an APM skill bundle whose skills are `skills/*`.
+- `dev-skills/`: contributor skills for changing `app-common` itself. Not deployed.
+- `onboard/`: one-time onboarding guide read directly from GitHub. Not deployed.
 
 ## Structure
 
 ```
 agents/
 ├── README.md                  # This file
-├── link-skills.sh             # Symlink manager supporting auto-detection and selective linking
-├── skills/                    # Atomic consumer skills (1:1 with packages for lean context)
+├── apm.yml                    # APM skill bundle metadata (consumers use path: agents)
+├── link-skills.sh             # Links this checkout's skills into its own agent directories
+├── onboard/SKILL.md           # One-time onboarding guide for new projects
+├── skills/                    # Consumer skills (1:1 with packages for lean context)
 │   ├── app-backend-core/      # app-layer-base + app-error (FastAPI foundation)
 │   ├── app-local-dev/         # app-tools dev link/unlink/status (local package linking)
-│   ├── app-package-update/    # app-tools update (released dependency upgrades)
 │   ├── app-testing/           # app-testing-base (FastAPI test foundation & assertions)
 │   ├── app-file-storage/      # AWS S3 / MinIO / Local FS object storage
 │   ├── app-vector-store/      # Qdrant vector database + LangChain embeddings
@@ -23,8 +29,63 @@ agents/
 │   └── app-svelte-ui/         # Svelte 5 Runes, SvelteKit, Tailwind, openapi-fetch
 └── dev-skills/                # Contributor skills (for modifying app-common repo itself)
     └── app-common-contributor/# Package isolation, multi-db test harness, release rules
-
 ```
+
+## Using the Skills in Another Project
+
+Install APM once (`uv tool install apm-cli`), then list the skills that match the installed packages,
+pinned to the same release tag as the packages in `pyproject.toml`:
+
+```yaml
+# apm.yml
+name: my-app
+version: 0.1.0
+targets: [claude, codex]
+dependencies:
+  apm:
+    - git: mjkimR/app-common
+      path: agents
+      ref: <release-tag>
+      skills: [app-backend-core, app-testing, app-local-dev]
+```
+
+```bash
+apm install
+```
+
+APM copies the skills into `.claude/skills/` (Claude Code) and `.agents/skills/` (Codex, Antigravity,
+Cursor, Gemini) and pins them in `apm.lock.yaml`. Commit `apm.yml`, `apm.lock.yaml`, and the copies;
+ignore `apm_modules/`. Never edit the copies: `apm audit --ci` reports them as drift.
+
+To move to a newer release, change `ref` in `apm.yml` together with every app-common ref in
+`pyproject.toml`, then run `uv lock` and `apm install`.
+
+| Installed package | Skill |
+| --- | --- |
+| `app-layer-base`, `app-error` | `app-backend-core` |
+| `app-testing-base` | `app-testing` |
+| `app-tools` | `app-local-dev` |
+| `app-file-storage`, `app-vector-store`, `app-http-client`, `app-ai-catalog`, `app-mcp` | same name |
+| `app-prebuilt-user`, `app-prebuilt-outbox` | same name |
+| `@app-common/ui-base` | `app-svelte-ui` |
+
+## Adding a Skill
+
+Create `agents/skills/<name>/SKILL.md` whose `name:` frontmatter equals the directory name. `agents/apm.yml`
+already covers it; consumers add the name to their `skills:` list. Release tags (`vX.Y.Z`) version the
+skills together with the packages.
+
+## Working on `app-common`
+
+```bash
+# Link consumer skills plus contributor dev-skills into .agents/skills
+just link-skills --dev
+
+# Or for Claude Code (.claude/skills)
+./agents/link-skills.sh --dev claude
+```
+
+Links point at the sources, so edits take effect immediately.
 
 ## Remote AI Onboarding (No Installation Needed)
 
@@ -32,32 +93,7 @@ To bootstrap a new FastAPI project from scratch using an AI coding assistant (An
 
 > *"Please onboard app-common into this project using this guide: https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md"*
 
-The agent will read the guide directly from GitHub, interview you about required technologies (database, storage, auth, outbox), install only the necessary packages, and download the matching agent skills into your workspace.
-
-## Quick Start
-
-### In Downstream Projects (Consumer Apps)
-Use `--auto` to automatically inspect `pyproject.toml` and link **only** the skills corresponding to installed `app-*` packages:
-
-```bash
-# Auto-detect installed app-* packages and link to Antigravity (.agents/skills)
-<path-to-app-common>/agents/link-skills.sh --auto
-
-# Auto-detect for Claude Code (.claude/skills)
-<path-to-app-common>/agents/link-skills.sh --auto claude
-
-# Selectively link specific skills
-<path-to-app-common>/agents/link-skills.sh app-backend-core app-file-storage
-```
-
-### In `app-common` (Monorepo Development)
-```bash
-# Link all skills including contributor dev-skills
-just link-skills --dev
-
-# Or directly:
-./agents/link-skills.sh --dev
-```
+The agent will read the guide directly from GitHub, interview you about required technologies (database, storage, auth, outbox), install only the necessary packages, and install the matching agent skills with APM.
 
 ## Skill Categories
 
@@ -82,8 +118,5 @@ just link-skills --dev
 7. **Local Development Linking (`app-local-dev`)**:
    Seamlessly link installed `app-common` packages in consumer repositories to a local clone of `app-common` using `app-tools dev` (`link`, `unlink`, `status`) without touching `pyproject.toml` or `package.json`.
 
-8. **Released Package Updates (`app-package-update`)**:
-   Update the Git dependency refs in a consumer project and synchronize its `uv` environment using `app-tools update`.
-
-9. **Contributor Dev-Skill (`app-common-contributor`)**:
-   Only linked when `--dev` is specified. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.
+8. **Contributor Dev-Skill (`app-common-contributor`)**:
+   Only linked when `--dev` is specified. Not published. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.
