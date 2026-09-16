@@ -53,3 +53,8 @@ pythonpath = ["tests/unit", "src"]
 
 [tool.uv.sources]
 app-error = { workspace = true }
+
+[[tool.app-tools.architecture.boundaries]]
+name = "application contracts do not depend on CRUD, database, transport or settings"
+source = "app_layer_base.application"
+forbidden_imports = ["app_layer_base.base", "app_layer_base.core", "app_layer_base.config", "app_layer_base.config_util", "sqlalchemy", "fastapi"]

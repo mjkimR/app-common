@@ -25,6 +25,9 @@ changes and [hooks](hooks.md) only when implementing hooks.
 
 ## Stores that own their engine and transaction
 
+Use [TransactionScope and command execution](commands.md) to standardize the context
+above a domain store, including nesting, write-policy checks and cache cleanup.
+
 A non-CRUD application can supply its own session maker:
 
 ```python

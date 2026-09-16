@@ -7,6 +7,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from app_tools.architecture_commands import inspect_commands
 from app_tools.architecture_hygiene import ArchViolation
 
 
@@ -15,6 +16,12 @@ class Boundary:
     name: str
     source: str
     forbidden_imports: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ArchitectureConfig:
+    boundaries: tuple[Boundary, ...] = ()
+    commands: tuple[str, ...] = ()
 
 
 def _module_name(value: object) -> bool:
@@ -36,11 +43,11 @@ def _manifest(path: Path) -> Path | None:
     return None
 
 
-def _read(manifest: Path) -> tuple[Boundary, ...]:
+def _read(manifest: Path) -> ArchitectureConfig:
     data = tomllib.loads(manifest.read_text(encoding="utf-8"))
     config = data.get("tool", {}).get("app-tools", {}).get("architecture", {})
-    if not isinstance(config, dict) or set(config) - {"boundaries"}:
-        raise ValueError("architecture must be a table containing only boundaries")
+    if not isinstance(config, dict) or set(config) - {"boundaries", "commands"}:
+        raise ValueError("architecture must be a table containing only boundaries and commands")
     entries = config.get("boundaries", [])
     if not isinstance(entries, list):
         raise ValueError("architecture.boundaries must be an array of tables")
@@ -58,20 +65,30 @@ def _read(manifest: Path) -> tuple[Boundary, ...]:
             raise ValueError(f"boundary {name!r}: forbidden_imports must be a nonempty list of dotted module names")
         boundaries.append(Boundary(name, source, tuple(forbidden)))
         names.add(name)
-    return tuple(boundaries)
+    commands = config.get("commands", [])
+    if not isinstance(commands, list):
+        raise ValueError("architecture.commands must be an array of tables")
+    sources: list[str] = []
+    for entry in commands:
+        if not isinstance(entry, dict) or set(entry) != {"source"} or not _module_name(entry["source"]):
+            raise ValueError("each commands entry requires exactly source, a dotted module name")
+        if entry["source"] in sources:
+            raise ValueError("commands sources must be unique")
+        sources.append(entry["source"])
+    return ArchitectureConfig(tuple(boundaries), tuple(sources))
 
 
 class BoundaryChecks:
     """One scan's configuration cache; report malformed configurations once."""
 
     def __init__(self) -> None:
-        self.configs: dict[Path, tuple[Boundary, ...] | None] = {}
+        self.configs: dict[Path, ArchitectureConfig | None] = {}
         self.violations: list[ArchViolation] = []
 
-    def configuration(self, path: Path) -> tuple[Path | None, tuple[Boundary, ...] | None]:
+    def configuration(self, path: Path) -> tuple[Path | None, ArchitectureConfig | None]:
         manifest = _manifest(path)
         if manifest is None:
-            return None, ()
+            return None, ArchitectureConfig()
         if manifest not in self.configs:
             try:
                 self.configs[manifest] = _read(manifest)
@@ -83,14 +100,14 @@ class BoundaryChecks:
                         str(manifest),
                         1,
                         f"Invalid architecture configuration: {exc}",
-                        "Fix tool.app-tools.architecture.boundaries and rerun check-arch.",
+                        "Fix tool.app-tools.architecture and rerun check-arch.",
                     )
                 )
         return manifest, self.configs[manifest]
 
     def inspect(self, path: Path, tree: ast.AST) -> list[ArchViolation]:
-        manifest, boundaries = self.configuration(path)
-        if manifest is None or not boundaries:
+        manifest, config = self.configuration(path)
+        if manifest is None or config is None:
             return []
         relative = path.resolve().relative_to(manifest.parent).with_suffix("")
         parts = list(relative.parts)
@@ -101,8 +118,12 @@ class BoundaryChecks:
             parts.pop()
         module = ".".join(parts)
         package = parts if is_package else parts[:-1]
-        active = [boundary for boundary in boundaries if _contains(boundary.source, module)]
-        violations = []
+        active = [boundary for boundary in config.boundaries if _contains(boundary.source, module)]
+        violations = (
+            inspect_commands(path, tree)
+            if path.name == "commands.py" and any(_contains(source, module) for source in config.commands)
+            else []
+        )
         for node in ast.walk(tree):
             imports: list[str] = []
             if isinstance(node, ast.Import):

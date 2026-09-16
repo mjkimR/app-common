@@ -21,6 +21,10 @@ Checks use source conventions; the explanations below still guide design decisio
 
 ## Non-CRUD consumers
 
+For a consistent feature shape, caller-owned execution, and checks that keep agent-written
+features aligned, use [command features](commands.md). This is the supported non-CRUD
+path alongside the CRUD stack below.
+
 Use shared infrastructure without adopting generated CRUD features. A verb-driven
 application may use ordinary constructors, domain-specific repositories, and one
 caller-owned transaction. Keep its transport handlers thin and its domain logic

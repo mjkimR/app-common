@@ -5,6 +5,14 @@ Optimized for AI Agents to produce deterministic, high-ROI tests without flaky f
 
 ---
 
+## Non-CRUD application contracts
+
+`app_testing_base.application` provides `assert_command_contracts` for registry shape,
+feature ownership and matching DTO annotations, plus `assert_transaction_scope_contract`
+for a consumer-owned context/store fixture. See [command features](../backend/commands.md)
+for the complete convention and examples. These helpers do not install fixtures or own
+database setup; keep real backend tests for commit/rollback, locks and callbacks.
+
 ## HTTP-only consumers
 
 For apps that own their database lifecycle or do not use a database, load

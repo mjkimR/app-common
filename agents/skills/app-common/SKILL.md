@@ -27,6 +27,7 @@ development use `guide --source <checkout>`. The relative references work withou
 | Task | Reference / CLI topic |
 |---|---|
 | Layered backend, feature scaffolding, hooks | [backend](references/backend/index.md); [backend/hooks](references/backend/hooks.md) |
+| Non-CRUD command features, execution scopes and conventions | [backend/commands](references/backend/commands.md) |
 | Standalone structured errors and advisories | [backend/errors](references/backend/errors.md) |
 | DB sessions and transaction ownership | [backend/session](references/backend/session.md) |
 | Current UTC time and calendar dates | [backend/time](references/backend/time.md) |

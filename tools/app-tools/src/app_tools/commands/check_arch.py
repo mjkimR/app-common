@@ -198,6 +198,8 @@ def scan_directory(targets: Sequence[Path]) -> list[ArchViolation]:
                 ignored = suppressed_lines(source)
                 violations.extend(v for v in visitor.violations if v.rule not in ignored.get(v.line, set()))
                 known = {
+                    "ARCH_COMMAND_SIGNATURE",
+                    "ARCH_COMMAND_TRANSACTION",
                     "ARCH_FORBIDDEN_IMPORT",
                     "ARCH_ROUTER_REPO_IMPORT",
                     "ARCH_SERVICE_COMMIT",
