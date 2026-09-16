@@ -31,20 +31,21 @@ raise ResourceNotFoundError(
 ## Advisory Fields & Types
 
 ### 1. `Actor` (Who should take action?)
-- `Actor.USER`: Human user provided invalid input or lacks permission (fix user input).
-- `Actor.AGENT`: AI agent can autonomously fix the error (e.g. invalid parameter format, missing file).
-- `Actor.DEV`: System bug, schema mismatch, or configuration error requiring developer fix.
-- `Actor.NONE`: No action required / informational.
+- `Actor.TOOL`: The calling agent/tool can correct its input or apply the supplied fix.
+- `Actor.USER`: A person must decide or provide missing configuration.
+- `Actor.DEVELOPER`: The application's code needs repair.
+- `Actor.NONE`: Nobody can act now.
 
 ### 2. `Retry` (Is it safe to retry?)
-- `Retry.SAFE`: Operation is idempotent; safe to retry immediately or after backoff.
-- `Retry.UNSAFE`: Retrying without changes will fail again or cause duplicate mutations.
+- `Retry.SAFE`: Retrying the unchanged operation is safe.
+- `Retry.AFTER_FIX`: Apply the fix before retrying.
+- `Retry.UNSAFE`: Retrying risks duplicate or partially completed work.
 
 ### 3. `ActionMode` (Directive for agents)
-Derived automatically from `actor` and `retry`:
-- `ActionMode.AGENT_FIX`: Agent can modify code or arguments and retry.
-- `ActionMode.ASK_USER`: Agent must prompt the user for clarification.
-- `ActionMode.REPORT_BLOCKER`: Agent must stop and report an unrecoverable failure.
+`Advisory.mode` derives the directive in priority order: a guardrail yields
+`BLOCKED`; a developer-owned failure yields `MAINTENANCE`; an unsafe retry yields
+`HALT`; tool/user ownership yields `AUTO`/`INTERACTION`; remaining cases yield
+`DEFER` for safe retries and `HALT` otherwise. These are the enum member names.
 
 ### 4. Remediation Properties
 - `fix`: Direct, actionable string instruction for how to fix the issue.
@@ -68,3 +69,11 @@ mcp_text: str = error.render_mcp()
 # Dictionary serialization for API JSON responses
 payload: dict = error.to_dict(include_advisory=True)
 ```
+
+## Domain-specific contracts
+
+Subclass `AppError` to retain application error codes and class defaults. Its
+initializer, advisory fields, mode derivation, and serialization are shared.
+An application may subclass `Advisory` for an existing CLI presentation and return
+that subtype from its error's `advisory` property; keep its wording at the application
+boundary instead of copying the enums or retry/actor decision logic.

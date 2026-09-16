@@ -22,3 +22,25 @@ engine/session maker; a deliberately separate database needs its own explicit li
 services. `ARCH_SERVICE_COMMIT` catches service commit/rollback calls. It is a convention-based
 check, not proof of transaction correctness. Read [backend](index.md) for broader layer
 changes and [hooks](hooks.md) only when implementing hooks.
+
+## Stores that own their engine and transaction
+
+A non-CRUD application can supply its own session maker:
+
+```python
+from app_layer_base.core.database.transaction import AsyncTransaction
+
+async with AsyncTransaction(session_maker=store.maker) as session:
+    await update_project(session)
+```
+
+The owning boundary commits on success, rolls back on a body exception, and closes
+the session. `AsyncTransaction(session=session)` joins an existing session and leaves
+commit, rollback, close, and after-commit dispatch to the owner. Domain-specific locks
+and repository bundles remain application responsibilities. Avoid opening a new
+transaction inside a command whose caller already owns one.
+
+Importing the transaction utility does not configure the global logger or read
+application settings. The default maker still loads settings when actually requested;
+an explicit maker avoids it. Logger setup belongs to application startup. After-commit
+callbacks remain best-effort and are dispatched only by the owning shared transaction.

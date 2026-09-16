@@ -1,9 +1,9 @@
 from collections.abc import Awaitable, Callable
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app_layer_base.core.database import engine
-from app_layer_base.core.log import logger
 
 AfterCommitCallback = Callable[[], Awaitable[None]]
 

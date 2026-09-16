@@ -225,3 +225,11 @@ class TestItemsAPI(E2ETest):
 | DB assertion failed after API call | Stale SQLAlchemy Identity Map cache. | Use `await refresh_get(session, Model, id)` or call `session.expire_all()` before `session.get(...)`. |
 | `DependencyResolutionError` | Parameter has no default and is not marked with Depends(). | Add `Annotated[T, Depends()]` in constructor or pass mock instance via `overrides={T: mock}`. |
 | `NotImplementedError: No FastAPI 'app' could be auto-discovered` | App fixture was not found in `app.main`. | Define `@pytest.fixture def app(): return create_app()` in your root `tests/conftest.py`. |
+
+## Application-owned store contracts
+
+The HTTP-only plugin can coexist with custom fixtures for workspace snapshots,
+per-project databases, multiple apps, and CLI connectors. Preserve those fixtures'
+resource ownership rather than routing every connection through a single test session.
+For a SQL-backed consumer, keep real-backend tests for commit visibility, joined
+transactions, failed writes, and concurrent writers in addition to HTTP surface tests.
