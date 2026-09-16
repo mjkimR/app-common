@@ -1,0 +1,5 @@
+name: app-common
+version: 0.1.0
+description: Application guidance for app-common packages
+# Consumers select path: agents and skills: [app-common].
+# skills/ contains the canonical files; no .apm is needed.

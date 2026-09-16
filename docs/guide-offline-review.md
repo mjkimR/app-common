@@ -12,10 +12,10 @@ are also distributed as a self-contained copied skill.
 | Copied consumer skill, no Python or app-tools | Read `SKILL.md` and relative references directly | Copy the complete bundle before isolation; no CLI is needed |
 | app-tools and its dependencies already installed | `app-tools guide`, `guide list`, and `guide show` work locally | Use the installed executable; no package import beyond app-tools' own dependencies |
 | Existing uv environment | `uv run --no-sync --offline app-tools guide` | The environment must already contain app-tools; an empty uv cache cannot supply missing packages |
-| app-common checkout available | Local `agents/link-skills.sh --copy` works without network | Requires Bash and standard filesystem utilities |
-| Consumer with only links to a developer's checkout | Links can break when moved to cloud | Use `--copy` and include the resulting files in the cloud checkout/artifact |
+| app-common checkout available | Read canonical files under `agents/skills/app-common/` | No installer is needed for direct file access |
+| Consumer with only links to a developer's checkout | Links can break when moved to cloud | Provision ordinary skill files through APM and include them in the cloud checkout/artifact |
 | No skill bundle and no installed tool | Guidance is unavailable locally | Provision the skill or tool during image/setup preparation |
-| Remote installer / `app-tools update` | Still requires network | GitHub release lookup, clone/download, uv locking/syncing are not offline operations |
+| APM provisioning / `app-tools update` | May require network | Prepare skills and package dependencies before isolation; package updates no longer install skills |
 | Package setup or service-backed tests | Depends on the task | Downloaded dependencies, browser binaries, Docker images, S3/Qdrant/LLM services must be provisioned or reachable separately |
 
 The guide reader uses only local manifests, lock entries, distribution metadata,
@@ -44,26 +44,31 @@ test passed with the environment variables above and the existing environment.
 - Tested separate declared, locked, and installed state with synthetic project
   metadata; the CLI does not inspect the global app-tools environment as the consumer.
 - Blocked socket and subprocess calls during guide reads.
-- Tested local copy installation, legacy custom-file backups, repeated installation,
-  contributor links, and remote installer routing using a local Git stub with a
-  pinned ref. The latter validates installer behavior, not GitHub availability.
-- Deleted the original checkout after copying and confirmed references remained readable.
+- The initial implementation tested legacy copy/link installers and portable
+  copies. Those installers and their dedicated tests have since been removed
+  in favor of APM. Bundle integrity and offline read tests remain.
+- Package-update regression coverage verifies that an explicit-ref update does
+  not download a skill installer or change APM-managed files.
 - Built an app-tools wheel and sdist using locally cached build tooling. Checked
   all 28 bundle files (26 topics, entry point, catalog), rebuilt a wheel from the
   extracted sdist, and read guidance from an extracted wheel outside the source
   checkout with socket/subprocess calls blocked.
-- All 70 app-tools tests passed with `UV_NO_SYNC=true UV_OFFLINE=true`; Ruff,
-  Pyright, shell syntax checks, and skill validation passed.
+- After installer removal, all 66 remaining app-tools tests passed with
+  `UV_NO_SYNC=true UV_OFFLINE=true`. Ruff, Pyright, and wheel/sdist offline
+  packaging checks also passed. Four removed tests covered the retired installers.
 
 This is local validation of the offline execution paths, not a deployment test in
 an external agent-cloud service. Cloud checkout inclusion, executable permissions,
 Python availability, and setup-stage dependencies remain properties of that service.
 
-## Ownership after the planned apm transition
+## Ownership after the APM transition
 
 The planned delegation concerns **skill management**, not Python/Node package
-management. apm integration is not implemented here, and its concrete commands,
-metadata format, and offline guarantees have not been established.
+management. Microsoft APM 0.30.0 installs the `agents/apm.yml` skill collection.
+See [installation](../agents/README.md) for the supported manifest and commands.
+The canonical bundle is now `agents/skills/app-common/`; app-tools links to it
+and packages the same files in wheel and sdist artifacts. Provisioning may need
+network access; reading the installed bundle remains offline.
 
 | Responsibility | Intended owner |
 |---|---|
@@ -74,24 +79,18 @@ metadata format, and offline guarantees have not been established.
 | Comparing available guide provenance with application package metadata | app-tools guide, without fetching or resolving skill versions |
 | Python/Node dependencies and existing package update operations | Existing package tooling; unchanged by the skill-management decision |
 
-Keep `agents/link-skills.sh` and `scripts/install-skills.sh` as transitional
-installation paths. Do not expand them into a registry, cache, version resolver,
-or general-purpose skill manager. Once apm can provision the complete bundle and
-consumer workflows have migrated, retire these paths or retain only a thin
-compatibility wrapper if callers still need it.
-
-The skill synchronization step in `app-tools update` is a separate delegation
-point: replace that step with the established apm integration when available.
-Do not move application dependency updates to apm as part of this transition.
-The existing `--no-skills` option already lets a caller manage skill provisioning
-separately from package updates.
+The custom skill installers and `just link-skills` recipe have been removed.
+`app-tools update` now updates package dependencies only; it does not download a
+skill installer or invoke APM. Consumers manage the skill ref and installation
+through their APM manifest separately. The former `--no-skills` and
+`--skills-target` options are removed. Read contributor guidance directly from
+`agents/dev-skills/app-common-contributor/SKILL.md` in this repository.
 
 Preserve the manager-independent bundle contract: `SKILL.md`, its relative
 references, and `catalog.json` must remain readable together after installation.
 The catalog maps topics to package applicability; it is not an installation
 lockfile. Keep one canonical document source for the skill artifact and app-tools
-package. Avoid adding an apm-specific adapter or manifest before its interface is
-known. The guide reader must not invoke apm or install anything during a read.
+package. Use the supported APM manifest rather than a custom installation adapter. The guide reader must not invoke apm or install anything during a read.
 
 ## Reduced follow-up scope
 

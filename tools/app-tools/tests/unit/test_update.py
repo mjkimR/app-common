@@ -28,11 +28,15 @@ def test_update_uses_explicit_ref_and_syncs(tmp_path: Path, monkeypatch) -> None
         calls.append((command, cwd))
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    skill_calls: list[tuple[str, str, Path]] = []
-    monkeypatch.setattr(
-        "app_tools.commands.update.sync_skills",
-        lambda ref, target, cwd: skill_calls.append((ref, target, cwd)),
-    )
+
+    def unexpected_download(*args, **kwargs):
+        raise AssertionError("Explicit-ref package update must not download skill installers")
+
+    monkeypatch.setattr("app_tools.commands.update.urlopen", unexpected_download)
+    (tmp_path / "apm.yml").write_text("name: consumer\n")
+    skill = tmp_path / ".agents/skills/app-common/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("APM-managed content")
 
     result = CliRunner().invoke(cli, ["update", "--ref", "v1.2.3"])
 
@@ -40,7 +44,8 @@ def test_update_uses_explicit_ref_and_syncs(tmp_path: Path, monkeypatch) -> None
     assert "dependencies to update: 2" in result.output
     assert "@v1.2.3#subdirectory=" in (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
     assert calls == [(["uv", "lock"], tmp_path), (["uv", "sync"], tmp_path)]
-    assert skill_calls == [("v1.2.3", "antigravity", tmp_path)]
+    assert skill.read_text() == "APM-managed content"
+    assert (tmp_path / "apm.yml").read_text() == "name: consumer\n"
 
 
 def test_update_dry_run_leaves_manifest_unchanged(tmp_path: Path, monkeypatch) -> None:

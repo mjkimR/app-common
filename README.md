@@ -80,12 +80,8 @@ Two agent-neutral skills are available under [`agents/`](./agents/README.md):
 - **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Package boundaries, multi-tier testing, and release conventions for contributors.
 
 ```bash
-# Link the consumer entry point from a checkout (run inside the consumer project):
-<app-common-checkout>/agents/link-skills.sh --auto
-# Copy a portable bundle, including all offline references:
-<app-common-checkout>/agents/link-skills.sh --copy
-# Link consumer + contributor skills inside app-common:
-just link-skills --dev
+# Declare apm.yml as described in agents/README.md, then:
+apm install
 ```
 
 ### AI Agent Onboarding

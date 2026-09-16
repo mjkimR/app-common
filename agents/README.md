@@ -5,50 +5,52 @@ Consumers install one `app-common` skill. Contributors additionally use
 files, loaded only when needed. The onboarding guide under `onboard/` is a one-time
 bootstrap procedure, not another installed skill.
 
-The canonical consumer bundle is `tools/app-tools/src/app_tools/guide_data/`.
-`agents/skills/app-common` is a relative symlink to that directory, so the wheel,
-source distribution, and copied skill share the same documents. Do not maintain a
-second copy. `catalog.json` records topics, package applicability, and the document
-version; update that version when bumping package versions.
+The canonical consumer bundle is `agents/skills/app-common/`. app-tools'
+`src/app_tools/guide_data` links to it; wheel and sdist builds include ordinary
+files. Edit the canonical files only. `catalog.json` records topics, package
+applicability, and document version. Bump the manifest and catalog versions with
+the package release.
 
-## Install
+## Install with Microsoft APM
 
-Skill lifecycle management is planned to move to apm. The scripts below remain
-transitional installation paths; their current behavior is unchanged. app-common
-owns the guide content and app-tools owns read-only document selection. Do not
-add a parallel skill registry, cache, or version resolver here. apm integration
-will be specified once its interface is established. This delegation does not
-change Python/Node package management. See the
-[ownership and reduced roadmap](../docs/guide-offline-review.md#ownership-after-the-planned-apm-transition).
+`agents/apm.yml` exposes the `skills/` collection without `.apm/`. Contributor
+skills and onboarding are excluded. In a consumer's `apm.yml`:
 
-Run from the consumer project, using an existing checkout:
-
-```bash
-<checkout>/agents/link-skills.sh --auto
-<checkout>/agents/link-skills.sh claude
-<checkout>/agents/link-skills.sh --copy
+```yaml
+name: my-app
+version: 0.1.0
+targets: [claude, codex]
+dependencies:
+  apm:
+    - git: mjkimR/app-common
+      path: agents
+      ref: <release-tag>
+      skills: [app-common]
 ```
 
-`--auto` remains accepted; every consumer receives the same small entry point.
-Dependency detection now selects recommended documents at read time. `--copy`
-includes the Markdown references as ordinary files without checkout symlinks.
-Use it when preparing a cloud checkout or an offline artifact. No Python or network
-is needed for this local installation or for reading the copied references.
+Install APM with `uv tool install apm-cli==0.30.0`, then run `apm install`.
+Use a release containing this layout; old refs containing the directory symlink
+are not compatible. For an unpublished sibling checkout replace `git`, `path`,
+and `ref` with `path: ../app-common/agents`. Local installs are snapshots; rerun
+`apm install` after source changes.
 
-Inside app-common, use `just link-skills --dev` to include contributor guidance.
-`--target <directory>` overrides the destination. Former consumer skill names
-remain accepted as aliases for the unified entry point.
+Track `apm.yml`, `apm.lock.yaml`, and the copies in `.agents/skills/app-common/`
+and `.claude/skills/app-common/`. Ignore `apm_modules/`. Use `apm install --frozen`
+for reproduction and `apm audit --ci` to check integrity. Never edit installed
+copies. A Git ref update requires `apm install --refresh` and a reviewed lockfile.
 
-On migration, existing legacy skills and replaced copies are moved into
-`<agent-directory>/skill-backups/app-common.<unique-id>/`, outside the skills
-directory. This preserves local edits for comparison or restoration. Existing
-links to the same bundle are left alone. Backups can be removed after reviewing
-any local changes.
+## Package updates and contributors
 
-The remote `scripts/install-skills.sh --ref=<release-tag>` installer clones that
-ref and uses the same installer in copy mode. `app-tools update` downloads the
-selected release's installer, so a release containing this change migrates to the
-unified skill. Both remote installation and updates need network access.
+`app-tools update` updates Python package dependencies only. Update the skill ref
+in the consumer's APM manifest separately and use the APM workflow above. The
+legacy installers, `just link-skills`, and the update command's `--no-skills` and
+`--skills-target` options have been removed. Existing callers should drop those
+options and replace installer calls with APM provisioning.
+
+For work inside app-common, read `agents/dev-skills/app-common-contributor/SKILL.md`
+directly alongside `AGENTS.md`. This repository-only guidance is excluded from the
+consumer collection and does not need a custom installer. Existing local links
+and prior migration backups are not removed by this change.
 
 ## Read
 

@@ -65,7 +65,7 @@ def inspect_environment(root: Path) -> dict[str, Any]:
             {
                 "code": "SKILLS_NOT_LINKED",
                 "message": "Agent skills directory (.agents/skills) is not linked.",
-                "fix": "Run 'just link-skills --dev' (or './agents/link-skills.sh --auto').",
+                "fix": "Declare app-common in apm.yml and run 'apm install'.",
             }
         )
 
@@ -74,7 +74,7 @@ def inspect_environment(root: Path) -> dict[str, Any]:
             {
                 "code": "MISSING_RECOMMENDED_SKILLS",
                 "message": f"Recommended skills for declared packages are missing: {', '.join(missing_skills)}.",
-                "fix": "Run 'just link-skills' to synchronize skills.",
+                "fix": "Run 'apm install' to provision the configured skills.",
             }
         )
 

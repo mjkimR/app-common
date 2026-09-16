@@ -151,7 +151,7 @@ Link installed `app-common` packages in downstream projects to a local clone of 
 
 #### Update Installed Packages (`update`)
 
-Update every `app-common` Git dependency in the current consumer project's `pyproject.toml` to the latest published release, regenerate `uv.lock`, synchronize `.venv`, and refresh the matching agent skills:
+Update every `app-common` Git dependency in the current consumer project's `pyproject.toml` to the latest published release, regenerate `uv.lock`, and synchronize `.venv`:
 
 ```bash
 app-tools update
@@ -163,7 +163,7 @@ Preview the latest upgrade first if desired:
 app-tools update --dry-run
 ```
 
-Skills default to `.agents/skills`; specify another supported agent directory with `--skills-target codex` or `--skills-target claude`. `--no-sync` skips `.venv` installation and `--no-skills` skips skill refresh.
+`--no-sync` skips `.venv` installation. Skills are managed separately through APM; update the skill ref in `apm.yml` and follow the [APM installation workflow](../../../agents/README.md). Package updates do not download, install, or change skills.
 
 ---
 *More commands will be added as the project evolves.*

@@ -77,9 +77,7 @@ def resolve_secret_references() -> None:
         try:
             from google.cloud import secretmanager
         except ImportError as exc:
-            raise RuntimeError(
-                "google-cloud-secret-manager is required to resolve secretref:// values"
-            ) from exc
+            raise RuntimeError("google-cloud-secret-manager is required to resolve secretref:// values") from exc
         client = secretmanager.SecretManagerServiceClient()
         name = client.secret_version_path(project, match.group(1), match.group(2))
         response = client.access_secret_version(request={"name": name})

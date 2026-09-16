@@ -142,11 +142,12 @@ The consumer entry point routes to topic guides. Run `app-tools guide` for proje
 recommendations, `app-tools guide list --all` for all topics, and `app-tools guide show <topic>`
 for one document. Standalone `app-error` does not imply the backend architecture rules.
 
-Canonical consumer documents live in `tools/app-tools/src/app_tools/guide_data/` and ship
-inside app-tools. `agents/skills/app-common` points there; edit the canonical files only.
+Canonical consumer documents live in `agents/skills/app-common/` and ship inside app-tools.
+`tools/app-tools/src/app_tools/guide_data` points there; edit the canonical files only.
+`agents/apm.yml` exposes this collection to Microsoft APM without `.apm/`.
 The contributor skill remains under `agents/dev-skills/`.
 
-- In app-common: `just link-skills --dev`.
-- In consumers: `<checkout>/agents/link-skills.sh --auto` installs the single entry point.
-- For portable/offline consumers: add `--copy`; this includes all reference documents.
+- In app-common: read `agents/dev-skills/app-common-contributor/SKILL.md` directly.
+- In consumers: use `apm.yml` and `apm install`; see `agents/README.md`.
+- For offline consumers: provision the complete APM skill bundle before network isolation.
 - When releasing, update the guide catalog version alongside package versions. Tests check parity.

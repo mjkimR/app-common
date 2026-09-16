@@ -124,15 +124,24 @@ FIRST_USER_PASSWORD=change_this_password
 
 ### Phase 4: Download Agent Skills Matching Installed Packages
 
-Download the skills from the same immutable release as the packages you installed:
+Declare the skill from the same immutable release as the packages in `apm.yml`:
 
-```bash
-# Replace <release-tag> with the same tag used above.
-curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scripts/install-skills.sh | bash -s -- --auto --ref=<release-tag>
-
-# Or for Claude Code (.claude/skills):
-curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scripts/install-skills.sh | bash -s -- --auto --ref=<release-tag> claude
+```yaml
+name: my-app
+version: 0.1.0
+targets: [claude, codex]
+dependencies:
+  apm:
+    - git: mjkimR/app-common
+      path: agents
+      ref: <release-tag>
+      skills: [app-common]
 ```
+
+Use a release containing `agents/apm.yml` and ordinary files under `agents/skills/`.
+Install Microsoft APM (`uv tool install apm-cli==0.30.0`) and run `apm install`.
+Track the manifest, lockfile and installed skills; ignore `apm_modules/`.
+No `.apm/` directory is required.
 
 This installs the single `app-common` skill with all references. `app-tools guide` recommends topics from the project dependencies; without app-tools, follow the skill’s relative document links.
 

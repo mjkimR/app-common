@@ -54,6 +54,8 @@ extraPaths = [
 
 [dependency-groups]
 dev = [
+    # Type-check the optional Secret Manager integration without requiring it at runtime.
+    "google-cloud-secret-manager>=2.24.0",
     "pre-commit>=4.6.0",
     "pyright>=1.1.409",
     "pytest-cov>=7.0.0",
