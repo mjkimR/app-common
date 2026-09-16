@@ -26,7 +26,7 @@ uv run app-tools get-env-spec --type database_sqlalchemy
 ### Core Database Settings
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | — | SQLAlchemy async database connection string (e.g. `postgresql+asyncpg://...` or `sqlite+aiosqlite://...`) |
+| `DATABASE_URL` | — | SQLAlchemy async database connection string (e.g. `postgresql+psycopg://...` or `sqlite+aiosqlite://...`) |
 | `DB_ECHO` | `false` | Enable SQL query echo logging |
 | `DB_POOL_SIZE` | `5` | Connection pool size |
 | `DB_MAX_OVERFLOW` | `10` | Max pool overflow connections |

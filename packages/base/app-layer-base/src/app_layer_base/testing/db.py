@@ -84,7 +84,7 @@ def db_url(db_type: str) -> Iterator[str]:
         postgres_version = os.getenv("POSTGRES_VERSION", "16")
         with PostgresContainer(f"postgres:{postgres_version}") as postgres:
             sync_url = postgres.get_connection_url()  # psycopg2
-            yield sync_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+            yield sync_url.replace("postgresql+psycopg2://", "postgresql+psycopg://")
     else:
         raise ValueError(f"Unsupported db_type: {db_type!r}")
 

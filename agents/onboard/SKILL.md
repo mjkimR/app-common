@@ -17,7 +17,7 @@ Follow these sequential phases to set up the project:
 
 ### Phase 1: Requirements Interview
 Before writing code or running commands, ask the developer:
-1. **Database Backend**: PostgreSQL (`asyncpg`) or SQLite (`aiosqlite`)?
+1. **Database Backend**: PostgreSQL (`psycopg 3`) or SQLite (`aiosqlite`)?
 2. **Object Storage**: AWS S3, MinIO, Local filesystem, or None?
 3. **Vector Database / RAG**: Qdrant required?
 4. **AI Models**: LiteLLM model router & catalog (`catalog.yml`) required?
@@ -54,7 +54,7 @@ uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=
 
 # Database driver
 # For PostgreSQL:
-uv add asyncpg
+uv add "psycopg[binary]>=3.1"
 # For SQLite:
 uv add aiosqlite
 ```
@@ -111,7 +111,7 @@ async def health_check():
 Create `.env.example` containing required database and selected adapter variables:
 ```bash
 # Database
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/mydb
+DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/mydb
 # or for SQLite: sqlite+aiosqlite:///./app.db
 
 # If app-prebuilt-user was selected:

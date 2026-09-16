@@ -48,6 +48,6 @@ def test_database_url_warning_emitted_when_memory_specified():
 
 
 def test_database_url_no_warning_for_non_memory(recwarn):
-    AppSettings(DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/dbname")
+    AppSettings(DATABASE_URL="postgresql+psycopg://user:pass@localhost:5432/dbname")
     user_warnings = [w for w in recwarn if issubclass(w.category, UserWarning)]
     assert len(user_warnings) == 0
