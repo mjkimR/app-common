@@ -19,7 +19,39 @@ router repository imports (`ARCH_ROUTER_REPO_IMPORT`), service transactions
 exception uses `# arch: ignore[ARCH_SERVICE_COMMIT] -- reason` on the reported line.
 Checks use source conventions; the explanations below still guide design decisions.
 
-## Critical Invariants (NEVER DO THIS)
+## Non-CRUD consumers
+
+Use shared infrastructure without adopting generated CRUD features. A verb-driven
+application may use ordinary constructors, domain-specific repositories, and one
+caller-owned transaction. Keep its transport handlers thin and its domain logic
+independent of FastAPI. The Service Hooks and scaffolding rules below apply to
+features built on the CRUD service stack, not to all consumers of app-common.
+HTTP-only tests can use [testing](../testing/index.md) without the default DB fixtures.
+
+Declare application-specific import boundaries in the nearest pyproject.toml:
+
+```toml
+[[tool.app-tools.architecture.boundaries]]
+name = "domain is independent of transport"
+source = "my_app.features"
+forbidden_imports = ["my_app.server", "fastapi", "sqlalchemy"]
+```
+
+Each boundary requires a unique nonempty `name`, a dotted module `source`, and a
+nonempty `forbidden_imports` list. Names match exactly or at a module-component
+boundary (`my_app.server` includes its children, but not `my_app.server_utils`).
+The scanner supports `src/` and flat layouts, absolute and relative imports,
+including `from package import module`. Nested projects use their own configuration;
+it is not inherited across a Git boundary. These are static import checks, including
+imports inside functions and type-checking branches, not runtime dependency tracing.
+Tests and migrations retain the existing scanner exclusions.
+
+`ARCH_FORBIDDEN_IMPORT` is an error; a deliberate exception uses the existing
+inline `# arch: ignore[ARCH_FORBIDDEN_IMPORT] -- reason` syntax. Invalid configuration
+fails with `ARCH_CONFIG_ERROR`. Existing CRUD checks continue to run unchanged.
+Run `app-tools check-arch src --json` and wire it into the consumer's normal checks.
+
+## Critical Invariants (CRUD service stack)
 
 | Forbidden Action | Why It Breaks The System | Correct Pattern |
 |---|---|---|

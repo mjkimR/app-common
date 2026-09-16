@@ -21,6 +21,17 @@ dev = [
 ]
 ```
 
+## HTTP-only testing
+
+Load `pytest_plugins = ["app_testing_base.http_plugin"]` in the root conftest,
+provide an `app` fixture returning your FastAPI app, and request `http_client` in
+synchronous tests. Optional `client_headers` sets default authentication headers.
+The client manages app startup/shutdown using TestClient, without requesting a DB
+session or modifying dependency overrides. Existing workspace/database fixtures
+remain owned by the consumer. The package's install dependencies are unchanged.
+
+The original plugin and DB-aware `client` below retain their existing behavior.
+
 ## Quick Start
 
 In your project's top-level `tests/conftest.py`:

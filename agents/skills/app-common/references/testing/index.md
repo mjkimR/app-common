@@ -5,6 +5,44 @@ Optimized for AI Agents to produce deterministic, high-ROI tests without flaky f
 
 ---
 
+## HTTP-only consumers
+
+For apps that own their database lifecycle or do not use a database, load
+`app_testing_base.http_plugin` in the top-level `tests/conftest.py` and provide `app`:
+
+```python
+import pytest
+from my_app.server import create_app
+
+pytest_plugins = ["app_testing_base.http_plugin"]
+
+
+@pytest.fixture
+def app(workspace):
+    return create_app(root=workspace)
+
+
+@pytest.fixture
+def client_headers():
+    return {"X-API-Key": "test-key"}
+
+
+def test_health(http_client):
+    assert http_client.get("/health").status_code == 200
+```
+
+`http_client` is a synchronous FastAPI `TestClient`. It enters and exits the app's
+lifespan, closes on failure, and uses `client_headers` (empty by default). It does
+not request `session`, create tables, or modify dependency overrides. Applications
+and existing workspace fixtures continue to own their stores, independent DB
+connections, commits, and isolation. Request errors propagate as with TestClient.
+Do not use the DB-aware `E2ETest` base class for this path: use ordinary test functions.
+The package still installs its current SQLAlchemy/app-layer-base dependencies;
+HTTP-only fixture use does not require adopting their architecture or DB configuration.
+
+The following DB, DI, seeding, and base-class rules apply to the original
+`app_testing_base.plugin` path. That plugin and its `client` fixture are unchanged.
+
 ## 1. Test Strategy & The Test Trophy
 
 | Scope | Directory | Target | When to Use | Key Tooling |

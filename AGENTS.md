@@ -112,8 +112,8 @@ That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session
 
 ### 2. Core Architecture
 
-- **Layered Flow**: `API (Router) -> UseCase -> Service -> Repository`.
-- **Service Hooks**: All business logic should be implemented as service hooks defined in `app-layer-base`. A hook is a standalone object implementing one or more of the protocols in `base/services/hooks.py` (`CreateHook`, `UpdateHook`, `DeleteHook`, `GetHook`, `GetMultiHook`); a service declares them as one ordered `hooks = (...)` tuple. The executor enters each hook's context in that order, runs the repository call, then unwinds in reverse — hooks never call `super()` and never call each other.
+- **Layered Flow (CRUD stack)**: `API (Router) -> UseCase -> Service -> Repository`. Non-CRUD consumers may keep domain-specific repositories and caller-owned transactions; use explicit import boundaries and the HTTP-only test plugin without adopting CRUD scaffolding.
+- **Service Hooks (CRUD stack)**: All business logic should be implemented as service hooks defined in `app-layer-base`. A hook is a standalone object implementing one or more of the protocols in `base/services/hooks.py` (`CreateHook`, `UpdateHook`, `DeleteHook`, `GetHook`, `GetMultiHook`); a service declares them as one ordered `hooks = (...)` tuple. The executor enters each hook's context in that order, runs the repository call, then unwinds in reverse — hooks never call `super()` and never call each other.
 - **DI**: Extensive use of FastAPI's `Depends` and `Annotated[T, Depends(func)]`.
 - **Settings Composition**: Each package owns its own `Settings` class. There is no central aggregator — `app_layer_base.config` holds only the base `AppSettings`, and an application composes the per-package settings it actually needs, so importing one adapter never drags in another's dependencies.
 

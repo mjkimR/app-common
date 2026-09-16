@@ -14,6 +14,7 @@ from pathlib import Path
 
 import click
 
+from app_tools.architecture_boundaries import BoundaryChecks
 from app_tools.architecture_hygiene import ArchViolation, HygieneVisitor
 
 
@@ -161,7 +162,9 @@ def suppressed_lines(source: str) -> dict[int, set[str]]:
 def scan_directory(targets: Sequence[Path]) -> list[ArchViolation]:
     violations: list[ArchViolation] = []
     seen: set[Path] = set()
+    boundaries = BoundaryChecks()
     for target in targets:
+        boundaries.configuration(target)
         if target.is_file() and target.suffix == ".py":
             files = [target]
         elif target.is_dir():
@@ -181,17 +184,21 @@ def scan_directory(targets: Sequence[Path]) -> list[ArchViolation]:
             if {"tests", "alembic", "migrations"}.intersection(py_file.parts) or py_file.resolve() in seen:
                 continue
             seen.add(py_file.resolve())
+            if boundaries.configuration(py_file)[1] is None:
+                continue
             try:
                 source = py_file.read_text(encoding="utf-8")
                 tree = ast.parse(source, filename=str(py_file))
                 visitor = ArchitecturalVisitor(py_file)
                 visitor.visit(tree)
+                visitor.violations.extend(boundaries.inspect(py_file, tree))
                 hygiene = HygieneVisitor(py_file)
                 hygiene.visit(tree)
                 visitor.violations.extend(hygiene.violations)
                 ignored = suppressed_lines(source)
                 violations.extend(v for v in visitor.violations if v.rule not in ignored.get(v.line, set()))
                 known = {
+                    "ARCH_FORBIDDEN_IMPORT",
                     "ARCH_ROUTER_REPO_IMPORT",
                     "ARCH_SERVICE_COMMIT",
                     "ARCH_HOOK_SUPER_CALL",
@@ -228,7 +235,7 @@ def scan_directory(targets: Sequence[Path]) -> list[ArchViolation]:
                         "Fix the syntax or UTF-8 encoding and rerun check-arch.",
                     )
                 )
-    return violations
+    return [*boundaries.violations, *violations]
 
 
 @click.command("check-arch")

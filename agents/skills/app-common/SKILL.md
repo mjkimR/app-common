@@ -8,7 +8,9 @@ description: Use or integrate app-common packages and app-tools. Routes to task-
 Read a guide when the current change touches its concern, not merely because its
 package is installed. HTTP calls → `http`; DB session/transaction work →
 `backend/session`; current-time or date work → `backend/time`. Unrelated tasks need
-none of these. Apply backend architecture guidance when working with app-layer-base,
+none of these. The backend guide distinguishes CRUD conventions from non-CRUD import boundaries.
+The testing guide offers an HTTP-only plugin for application-owned stores.
+Apply backend architecture guidance when working with app-layer-base,
 not when using standalone app-error or adapters. Read before editing; lint is a safety
 net for omissions and cannot decide design intent.
 
