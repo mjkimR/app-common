@@ -1,12 +1,12 @@
 import datetime
 import logging
 from contextlib import asynccontextmanager
-from datetime import UTC
 from functools import partial
 from typing import Any, Protocol
 
 from app_layer_base.base.schemas.event import DomainEvent
 from app_layer_base.core.database.transaction import AsyncTransaction
+from app_layer_base.utils.time_util import get_current_utc_time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 
@@ -94,7 +94,7 @@ async def process_outbox_events_job(publisher: EventPublisher):
                         ),
                     )
                     event.status = EventStatus.PUBLISHED
-                    event.processed_at = datetime.datetime.now(UTC)
+                    event.processed_at = get_current_utc_time()
                 except Exception as e:
                     logger.error(f"Failed to process event {event.id}: {e}")
                     event.status = EventStatus.FAILED
@@ -124,7 +124,7 @@ async def resolve_zombie_events():
             repo = OutboxRepository()
 
             # Find events stuck in PROCESSING for more than the timeout
-            timeout_threshold = datetime.datetime.now(UTC) - datetime.timedelta(seconds=_ZOMBIE_TIMEOUT)
+            timeout_threshold = get_current_utc_time() - datetime.timedelta(seconds=_ZOMBIE_TIMEOUT)
 
             zombie_events = await repo.get_zombie_events(session, timeout_threshold)
 

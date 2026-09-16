@@ -1,11 +1,13 @@
 """Time and date test utilities for deterministic time offsets."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+
+from app_layer_base.utils.time_util import get_current_utc_time
 
 
 def utc_now() -> datetime:
     """Return timezone-aware current UTC datetime."""
-    return datetime.now(UTC)
+    return get_current_utc_time()
 
 
 def days_ago(days: int) -> datetime:

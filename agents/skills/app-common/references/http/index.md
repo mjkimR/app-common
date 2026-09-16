@@ -34,3 +34,17 @@ def call_api_sync():
     resp = client.get("https://api.example.com/data")
     return resp.json()
 ```
+
+## Ownership and lint
+
+Use this guide when changing outbound HTTP behavior in a project that uses
+app-http-client. Merely having the package installed does not require loading it.
+
+The returned clients are shared. Do not use `with`/`async with` around them or close
+them in request code; lifespan owns shutdown. A dedicated client for separate auth,
+transport, or lifecycle requirements can be appropriate and needs its own cleanup.
+
+`ARCH_HTTP_CLIENT_CONSTRUCTION` advises using the shared getters instead of directly
+constructing httpx clients. `ARCH_SHARED_CLIENT_CLOSE` detects direct or locally assigned
+shared-client closure and context-manager use. Both are warnings, support reasoned
+inline `arch: ignore[...]` exceptions, and leave transport-specific decisions to you.

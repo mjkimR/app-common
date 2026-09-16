@@ -9,6 +9,16 @@ FastAPI layered architecture framework based on `app-layer-base`, `app-tools`, a
 
 ---
 
+## Architecture checks
+
+Run `app-tools check-arch <source-directory> --json` for actionable architecture
+violations with rule codes, locations, and fixes. To include it in `app-tools run lint`,
+set `[tool.app-tools] check-arch = true` in pyproject.toml. The checks below cover
+router repository imports (`ARCH_ROUTER_REPO_IMPORT`), service transactions
+(`ARCH_SERVICE_COMMIT`), and hook chaining (`ARCH_HOOK_SUPER_CALL`). A justified
+exception uses `# arch: ignore[ARCH_SERVICE_COMMIT] -- reason` on the reported line.
+Checks use source conventions; the explanations below still guide design decisions.
+
 ## Critical Invariants (NEVER DO THIS)
 
 | Forbidden Action | Why It Breaks The System | Correct Pattern |

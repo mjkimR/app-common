@@ -1,6 +1,7 @@
 from typing import Any
 
-from app_ai_catalog.models import get_ai_client
+# Existing model-name API resolves embeddings through the catalog; migrate to injection separately.
+from app_ai_catalog.models import get_ai_client  # arch: ignore[ARCH_ADAPTER_DEPENDENCY] -- Legacy model API
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

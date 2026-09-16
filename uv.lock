@@ -544,6 +544,14 @@ dependencies = [
     { name = "questionary" },
 ]
 
+[package.optional-dependencies]
+env-spec = [
+    { name = "app-file-storage" },
+    { name = "app-layer-base" },
+    { name = "app-prebuilt-user" },
+    { name = "app-vector-store" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -555,9 +563,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "app-error", editable = "packages/base/app-error" },
+    { name = "app-file-storage", marker = "extra == 'env-spec'", editable = "packages/adapters/app-file-storage" },
+    { name = "app-layer-base", marker = "extra == 'env-spec'", editable = "packages/base/app-layer-base" },
+    { name = "app-prebuilt-user", marker = "extra == 'env-spec'", editable = "packages/prebuilt/app-prebuilt-user" },
+    { name = "app-vector-store", marker = "extra == 'env-spec'", editable = "packages/adapters/app-vector-store" },
     { name = "click", specifier = ">=8.3.1" },
     { name = "questionary", specifier = ">=2.1.1" },
 ]
+provides-extras = ["env-spec"]
 
 [package.metadata.requires-dev]
 dev = [

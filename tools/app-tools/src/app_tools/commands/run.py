@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import tempfile
 from pathlib import Path
 
@@ -27,13 +28,25 @@ class RunCommand(click.Command):
 @click.option("--path", "directory", type=click.Path(exists=True, file_okay=False, path_type=Path), default=".")
 @click.option("--raw", is_flag=True, help="Print complete output instead of compact output.")
 @click.option("--fix", is_flag=True, help="Apply fixes (lint only; npm requires a lint:fix script).")
+@click.option(
+    "--warn-after",
+    type=click.FloatRange(min=0),
+    default=60.0,
+    show_default=True,
+    help="Warn once per command after this many seconds; 0 disables warnings. Does not cancel commands.",
+)
+@click.option("--no-warn", is_flag=True, help="Disable runner duration warnings; overrides --warn-after.")
 @click.pass_context
-def run(ctx: click.Context, command: str | None, directory: Path, raw: bool, fix: bool) -> None:
+def run(
+    ctx: click.Context, command: str | None, directory: Path, raw: bool, fix: bool, warn_after: float, no_warn: bool
+) -> None:
     """Run lint/check/test, a tool, or -- COMMAND ARGS.
 
     Uses existing project manifests; no app-tools configuration is required.
     Pass tool arguments after --. Relative paths belong to --path (default: cwd).
     """
+    if not math.isfinite(warn_after):
+        raise click.BadParameter("must be a finite number", param_hint="--warn-after")
     forwarded = ctx.meta.get("forwarded", ())
     root = directory.resolve()
     if fix and command != "lint":
@@ -57,7 +70,7 @@ def run(ctx: click.Context, command: str | None, directory: Path, raw: bool, fix
         raise click.ClickException("No runnable targets found")
     # OS temporary storage keeps logs out of source control without editing .gitignore.
     log_dir = Path(tempfile.mkdtemp(prefix="app-tools-run-"))
-    codes = [execute(step, log_dir, raw) for step in steps]
+    codes = [execute(step, log_dir, raw, warn_after=0 if no_warn else warn_after) for step in steps]
     if len(steps) > 1:
         click.echo(f"Result: {sum(code == 0 for code in codes)} passed, {sum(code != 0 for code in codes)} failed")
     ctx.exit(codes[0] if len(codes) == 1 else int(any(codes)))

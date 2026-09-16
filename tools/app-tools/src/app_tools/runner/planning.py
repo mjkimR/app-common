@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -84,6 +85,20 @@ def python_step(directory: Path, tool: str, args: list[str]) -> Step:
     return Step(directory, ("uv", "run", "--no-sync", tool, *args), label)
 
 
+def architecture_enabled(directory: Path) -> bool:
+    """Use the nearest explicit setting, without crossing a repository boundary."""
+    for parent in ancestors(directory):
+        config = parent / "pyproject.toml"
+        if config.exists():
+            settings = read_python(config).get("tool", {}).get("app-tools", {})
+            if "check-arch" in settings:
+                value = settings["check-arch"]
+                if not isinstance(value, bool):
+                    raise ValueError(f"{config}: tool.app-tools.check-arch must be a boolean")
+                return value
+    return False
+
+
 def plan_task(root: Path, task: str, fix: bool = False) -> tuple[list[Step], list[str]]:
     steps: list[Step] = []
     skipped: list[str] = []
@@ -95,6 +110,11 @@ def plan_task(root: Path, task: str, fix: bool = False) -> tuple[list[Step], lis
                 if task == "lint":
                     steps.append(python_step(directory, "ruff", ["format", *([] if fix else ["--check"]), "."]))
                     steps.append(python_step(directory, "ruff", ["check", *(["--fix"] if fix else []), "."]))
+                    if architecture_enabled(directory):
+                        target = "src" if (directory / "src").is_dir() else "."
+                        steps.append(
+                            Step(directory, (sys.executable, "-m", "app_tools.cli", "check-arch", target), "check-arch")
+                        )
                 elif task == "test":
                     pytest = data.get("tool", {}).get("pytest", {}).get("ini_options", {})
                     if (directory / "tests").exists() or pytest or (directory / "pytest.ini").exists():

@@ -19,7 +19,7 @@ ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 MAX_OUTPUT = 16_000
 
 
-def execute(step: Step, log_dir: Path, raw: bool = False) -> int:
+def execute(step: Step, log_dir: Path, raw: bool = False, warn_after: float = 60.0) -> int:
     started = time.monotonic()
     with tempfile.NamedTemporaryFile(prefix="command-", suffix=".log", dir=log_dir, delete=False) as log:
         log_path = Path(log.name)
@@ -32,7 +32,16 @@ def execute(step: Step, log_dir: Path, raw: bool = False) -> int:
             code = 127 if isinstance(error, FileNotFoundError) else 126
         else:
             try:
-                code = process.wait()
+                try:
+                    code = process.wait(timeout=warn_after if warn_after > 0 else None)
+                except subprocess.TimeoutExpired:
+                    click.echo(
+                        f"WARN [RUN_SLOW_COMMAND] {step.label} [{step.cwd}] exceeded {warn_after:g}s; "
+                        f"still running. Inspect suite scope, fixtures, or external waits. log: {log_path}. "
+                        "Adjust --warn-after SECONDS (0 disables this warning).",
+                        err=True,
+                    )
+                    code = process.wait()
             except KeyboardInterrupt:
                 # npm/uv often have children; stop the entire command group on cancellation.
                 if os.name == "posix":
@@ -67,6 +76,17 @@ def execute(step: Step, log_dir: Path, raw: bool = False) -> int:
                 tail = stream.read().decode(errors="replace")
                 output = f"{head}\n... output omitted; full log: {log_path} ...\n{tail}"
         click.echo(ANSI.sub("", output), nl=not output.endswith("\n"))
+    elif step.label == "check-arch":
+        # Only extract our own stable diagnostic format; arbitrary tool output stays in the log.
+        remaining = MAX_OUTPUT
+        with log_path.open(errors="replace") as stream:
+            for line in stream:
+                if line.startswith("WARN [ARCH_"):
+                    if len(line) > remaining:
+                        click.echo(f"... warnings omitted; full log: {log_path}")
+                        break
+                    click.echo(line, nl=False)
+                    remaining -= len(line)
     status = "PASS" if code == 0 else f"FAIL({code})"
     click.echo(f"{status} {step.label} [{step.cwd}] ({time.monotonic() - started:.1f}s) log: {log_path}")
     return code

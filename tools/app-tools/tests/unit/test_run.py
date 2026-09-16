@@ -92,7 +92,7 @@ def test_tool_uses_local_node_binary_and_never_downloads(tmp_path):
 def test_tool_arguments_after_separator_are_not_parsed_by_wrapper(tmp_path, monkeypatch):
     calls = []
 
-    def record(step, log_dir, raw):
+    def record(step, log_dir, raw, warn_after):
         calls.append((step, raw))
         return 5
 
@@ -147,7 +147,7 @@ def test_all_task_steps_execute_after_failure(tmp_path, monkeypatch):
     manifest(tmp_path)
     calls = []
 
-    def record(step, log_dir, raw):
+    def record(step, log_dir, raw, warn_after):
         calls.append(step)
         return 3 if len(calls) == 1 else 0
 
@@ -208,3 +208,85 @@ def test_raw_generic_command_does_not_expand_shell_characters(tmp_path):
     )
     assert result.exit_code == 0
     assert argument in result.output
+
+
+@pytest.mark.parametrize("code", [0, 7])
+@pytest.mark.parametrize("raw", [False, True])
+def test_slow_command_warns_once_and_preserves_result(tmp_path, mocker, capsys, code, raw):
+    import subprocess
+
+    process = mocker.Mock()
+    process.wait.side_effect = [subprocess.TimeoutExpired("test", 2), code]
+    mocker.patch("app_tools.runner.execution.subprocess.Popen", return_value=process)
+    assert execute(Step(tmp_path, ("test",), "test"), tmp_path, raw, warn_after=2) == code
+    assert process.wait.call_args_list == [mocker.call(timeout=2), mocker.call()]
+    output = capsys.readouterr()
+    assert output.err.count("RUN_SLOW_COMMAND") == 1
+    assert "still running" in output.err
+
+
+def test_slow_warning_can_be_disabled(tmp_path, mocker, capsys):
+    process = mocker.Mock()
+    process.wait.return_value = 0
+    mocker.patch("app_tools.runner.execution.subprocess.Popen", return_value=process)
+    assert execute(Step(tmp_path, ("test",), "test"), tmp_path, warn_after=0) == 0
+    process.wait.assert_called_once_with(timeout=None)
+    assert "RUN_SLOW_COMMAND" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("value", ["-1", "nan", "inf"])
+def test_invalid_warning_threshold_is_rejected(value):
+    result = CliRunner().invoke(cli, ["run", "--warn-after", value, "--", "echo", "ok"])
+    assert result.exit_code == 2
+
+
+def test_cli_forwards_warning_threshold(tmp_path, mocker):
+    execute_mock = mocker.patch("app_tools.commands.run.execute", return_value=0)
+    result = CliRunner().invoke(cli, ["run", "--warn-after", "15", "--path", str(tmp_path), "--", "echo", "ok"])
+    assert result.exit_code == 0
+    assert execute_mock.call_args.kwargs == {"warn_after": 15}
+
+
+@pytest.mark.parametrize("options", [["--no-warn"], ["--warn-after", "2", "--no-warn"]])
+def test_no_warn_disables_runner_warning(tmp_path, mocker, options):
+    execute_mock = mocker.patch("app_tools.commands.run.execute", return_value=0)
+    result = CliRunner().invoke(cli, ["run", *options, "--path", str(tmp_path), "--", "echo", "ok"])
+    assert result.exit_code == 0
+    assert execute_mock.call_args.kwargs == {"warn_after": 0}
+
+
+def test_architecture_lint_opt_in_inherits_and_can_be_overridden(tmp_path):
+    (tmp_path / "pyproject.toml").write_text("[tool.app-tools]\ncheck-arch = true\n")
+    package = manifest(tmp_path / "package")
+    (package / "src").mkdir()
+    steps, _ = plan_task(package, "lint")
+    assert steps[-1].argv == (sys.executable, "-m", "app_tools.cli", "check-arch", "src")
+    manifest(package, extra="[tool.app-tools]\ncheck-arch = false\n")
+    steps, _ = plan_task(package, "lint")
+    assert len(steps) == 2
+
+
+def test_architecture_setting_does_not_cross_repository_boundary(tmp_path):
+    (tmp_path / "pyproject.toml").write_text("[tool.app-tools]\ncheck-arch = true\n")
+    package = manifest(tmp_path / "package")
+    (package / ".git").mkdir()
+    steps, _ = plan_task(package, "lint")
+    assert len(steps) == 2
+
+
+def test_successful_architecture_warnings_are_visible_in_compact_output(tmp_path, capsys):
+    script = "print('noise'); print('WARN [ARCH_DIRECT_CURRENT_TIME] file.py:1: use UTC utility')"
+    step = Step(tmp_path, (sys.executable, "-c", script), "check-arch")
+    assert execute(step, tmp_path, warn_after=0) == 0
+    output = capsys.readouterr().out
+    assert "WARN [ARCH_DIRECT_CURRENT_TIME]" in output
+    assert "noise" not in output
+    assert "PASS" in output
+
+
+def test_success_warning_output_is_bounded(tmp_path, capsys):
+    script = "print(('WARN [ARCH_DIRECT_CURRENT_TIME] ' + 'x' * 100 + '\\n') * 300)"
+    assert execute(Step(tmp_path, (sys.executable, "-c", script), "check-arch"), tmp_path) == 0
+    output = capsys.readouterr().out
+    assert len(output) < MAX_OUTPUT + 1000
+    assert "warnings omitted" in output

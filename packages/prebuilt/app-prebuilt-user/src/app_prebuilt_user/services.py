@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from typing import Annotated
 from uuid import UUID, uuid4
 
@@ -9,6 +9,7 @@ from app_layer_base.base.services.base import (
     BaseGetMultiServiceMixin,
     BaseGetServiceMixin,
 )
+from app_layer_base.utils.time_util import get_current_utc_time
 from fastapi import Depends
 from passlib.context import CryptContext
 from pydantic import EmailStr
@@ -105,7 +106,7 @@ class UserService(
         return None
 
     def create_access_token(self, user: User) -> str:
-        now = datetime.now(tz=UTC)
+        now = get_current_utc_time()
         expire = now + timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
         payload = {

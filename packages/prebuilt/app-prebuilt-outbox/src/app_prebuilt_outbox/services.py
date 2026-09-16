@@ -1,8 +1,7 @@
-import datetime
-from datetime import UTC
 from typing import Annotated
 from uuid import UUID
 
+from app_layer_base.utils.time_util import get_current_utc_time
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,7 +42,7 @@ class OutboxService:
         """
         update_data = OutboxUpdate(status=status)
         if status == EventStatus.PUBLISHED:
-            update_data.processed_at = datetime.datetime.now(UTC)
+            update_data.processed_at = get_current_utc_time()
 
         if retry_count is not None:
             update_data.retry_count = retry_count

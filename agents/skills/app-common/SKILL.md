@@ -1,24 +1,33 @@
 ---
 name: app-common
-description: Build applications with app-common packages (app-layer-base, app-error, app-testing-base, adapters, app-mcp, prebuilt user/outbox, and Svelte UI); use app-tools for scaffolding, local linking, and dependency updates. Applies when using or introducing app-common, not generic FastAPI or Svelte work.
+description: Use or integrate app-common packages and app-tools. Routes to task-specific backend, testing, adapter, and UI guidance; does not apply to unrelated Python, HTTP, or datetime work.
 ---
 
 # app-common
 
-Read only the guide relevant to the task. Package availability narrows the default recommendations; it does not prevent reading setup guidance for a new package. Apply backend architecture rules only when using `app-layer-base`, not when using standalone `app-error` or adapters.
+Read a guide when the current change touches its concern, not merely because its
+package is installed. HTTP calls → `http`; DB session/transaction work →
+`backend/session`; current-time or date work → `backend/time`. Unrelated tasks need
+none of these. Apply backend architecture guidance when working with app-layer-base,
+not when using standalone app-error or adapters. Read before editing; lint is a safety
+net for omissions and cannot decide design intent.
 
-## Find guidance
+If the topic is known, open its reference below or run `app-tools guide show <topic>`
+directly. Otherwise use `app-tools guide` to discover candidates; do not read every
+recommendation. The target package's declared dependencies indicate applicability;
+lock entries and installed packages alone do not establish task relevance.
 
-When app-tools is already installed, run `app-tools guide` in the target project, then `app-tools guide show <topic>`. Use `app-tools guide --project <path>` for another project and `app-tools guide list --all` to discover all topics. The report distinguishes declared dependencies, lock entries, and packages installed in the project's `.venv`; none is interchangeable with the others. It never installs dependencies or fetches documentation.
-
-In an offline environment, invoke the existing executable directly (for example `.venv/bin/app-tools`); `uv run --no-sync --offline app-tools guide` is another option when that environment is provisioned. If the CLI is absent, read the relative references below directly. Do not install app-tools just to read a guide.
-
-Check the reported document version/source against the project's dependency refs. An unresolved Git ref or mismatched version is not proof of compatibility. For local package development, select the matching checkout with `app-tools guide --source <app-common-checkout>` or read its references directly. Do not fetch a newer guide automatically.
+Use the existing executable (`.venv/bin/app-tools` or `uv run --no-sync --offline
+app-tools`); do not install tools or fetch guides just to read instructions. For another
+project use `guide --project <path>`. Match guide versions to dependency refs; for local
+development use `guide --source <checkout>`. The relative references work without CLI.
 
 | Task | Reference / CLI topic |
 |---|---|
 | Layered backend, feature scaffolding, hooks | [backend](references/backend/index.md); [backend/hooks](references/backend/hooks.md) |
 | Standalone structured errors and advisories | [backend/errors](references/backend/errors.md) |
+| DB sessions and transaction ownership | [backend/session](references/backend/session.md) |
+| Current UTC time and calendar dates | [backend/time](references/backend/time.md) |
 | Database and backend installation | [backend/setup](references/backend/setup.md) |
 | Tests, fixtures, deterministic seeders | [testing](references/testing/index.md) |
 | Object storage | [storage](references/storage/index.md); [storage/setup](references/storage/setup.md) |

@@ -51,6 +51,7 @@ lint module="all":
                 echo "Linting $m ($path)..."
                 uv run ruff format "$path"
                 uv run ruff check --fix "$path"
+                uv run app-tools check-arch "$path/src"
             fi
         fi
     done
@@ -88,6 +89,7 @@ lint-check module="all":
                 echo "Checking lint for $m ($path)..."
                 uv run ruff format --check "$path"
                 uv run ruff check "$path"
+                uv run app-tools check-arch "$path/src"
             fi
         fi
     done

@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from typing import Any, cast
 
 from pydantic import BaseModel
@@ -23,6 +23,7 @@ from app_layer_base.base.exceptions.basic import BadRequestException
 from app_layer_base.base.repos.query_options import ListQueryOptions, WhereClause
 from app_layer_base.base.schemas.paginated import PaginatedList
 from app_layer_base.core.log import logger
+from app_layer_base.utils.time_util import get_current_utc_time
 from app_layer_base.utils.type_hint import SeqOrOneOrNone, to_sequence
 
 PrimaryKeyType = Sequence[str | int | uuid.UUID] | str | int | uuid.UUID
@@ -137,7 +138,7 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
     def _soft_delete_values(self) -> dict[str, Any]:
         values: dict[str, Any] = {cast(str, self.is_deleted_column): True}
         if self.deleted_at_column:
-            values[self.deleted_at_column] = datetime.now(UTC)
+            values[self.deleted_at_column] = get_current_utc_time()
         return values
 
     # ============================================================
@@ -496,7 +497,7 @@ class BaseRepository[ModelType: Any, CreateSchemaType: BaseModel, PutSchemaType:
         if older_than is not None:
             if not self.deleted_at_column:
                 raise ValueError("purge_soft_deleted(older_than=...) requires deleted_at_column to be configured.")
-            cutoff = datetime.now(UTC) - older_than
+            cutoff = get_current_utc_time() - older_than
             conditions.append(getattr(self.model, self.deleted_at_column) <= cutoff)
 
         if limit is None:

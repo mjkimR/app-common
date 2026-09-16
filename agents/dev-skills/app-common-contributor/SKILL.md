@@ -47,6 +47,13 @@ pytest_plugins = ["app_testing_base.plugin"]
 
 ## 3. Linting & Static Typing
 
+`just lint`, `just lint-check`, and `app-tools run lint` enforce architecture checks
+alongside Ruff. `ARCH_ERROR_DEPENDENCY` checks standard-library-only app-error imports;
+`ARCH_ADAPTER_DEPENDENCY` rejects sibling adapter imports. Use `app-tools check-arch
+packages tools --json` for locations and fixes. Existing compatibility exceptions must
+carry `# arch: ignore[RULE_CODE] -- reason` on the diagnostic line. These import checks
+do not replace dependency-manifest review or the design constraints above.
+
 Before submitting changes, all checks must pass with zero errors:
 
 ```bash

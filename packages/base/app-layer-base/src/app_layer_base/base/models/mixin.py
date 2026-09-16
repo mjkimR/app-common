@@ -4,6 +4,8 @@ import uuid
 from sqlalchemy import JSON, UUID, DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from app_layer_base.utils.time_util import get_current_utc_time
+
 
 class Base(DeclarativeBase):
     pass
@@ -36,7 +38,7 @@ class SoftDeleteMixin:
 
     def mark_deleted(self):
         self.is_deleted = True
-        self.deleted_at = datetime.datetime.now(datetime.UTC)
+        self.deleted_at = get_current_utc_time()
 
 
 class TaggableMixin:

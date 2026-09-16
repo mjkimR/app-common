@@ -10,8 +10,15 @@ dependencies = [
     "questionary>=2.1.1",
 ]
 
+[project.optional-dependencies]
+env-spec = ["app-layer-base", "app-file-storage", "app-prebuilt-user", "app-vector-store"]
+
 [tool.uv.sources]
 app-error = { workspace = true }
+app-layer-base = { workspace = true }
+app-file-storage = { workspace = true }
+app-prebuilt-user = { workspace = true }
+app-vector-store = { workspace = true }
 
 [project.scripts]
 app-tools = "app_tools.cli:cli"
