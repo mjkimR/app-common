@@ -133,21 +133,20 @@ That plugin owns `--db-type`, the `real_commit` marker, the `session` / `session
 
 ## Skills
 
-| Situation | Skill | Scope |
-|---|---|---|
-| Developing FastAPI CRUD features, services, hooks, models, error advisories | `app-backend-core` | `app-layer-base`, `app-error` |
-| Modifying `app-common` packages locally via `app-tools dev` | `app-local-dev` | `tools/app-tools` |
-| Writing and maintaining integration/E2E tests, deterministic seeders, DI resolving | `app-testing` | `app-testing-base` |
-| Integrating S3 / MinIO / Local object storage | `app-file-storage` | `app-file-storage` |
-| Integrating Qdrant vector database | `app-vector-store` | `app-vector-store` |
-| Using pooled HTTP client | `app-http-client` | `app-http-client` |
-| Configuring LiteLLM AI catalog & model routing | `app-ai-catalog` | `app-ai-catalog` |
-| Mounting user auth, JWT login, and admin endpoints | `app-prebuilt-user` | `app-prebuilt-user` |
-| Integrating Transactional Outbox pattern & event relay | `app-prebuilt-outbox` | `app-prebuilt-outbox` |
-| Developing Svelte 5 UI, shadcn components, and Type-Safe API binding | `app-svelte-ui` | Frontend (`web/`, Svelte 5, SvelteKit) |
-| Contributing to `app-common` (multi-db testing, package isolation, release tags) | `app-common-contributor` | Internal dev (`packages/*`, `tools/*`) |
+| Situation | Skill |
+|---|---|
+| Using or introducing app-common packages, testing, UI, local linking, or updates | `app-common` |
+| Contributing to app-common itself (package isolation, multi-db tests, releases) | `app-common-contributor` |
 
-Skills are agent-neutral assets under `agents/`.
-- In `app-common`: link with `just link-skills --dev` (or `./agents/link-skills.sh --dev`).
-- In downstream consumer projects: link with `./agents/link-skills.sh --auto` to link **only** installed package skills.
+The consumer entry point routes to topic guides. Run `app-tools guide` for project-specific
+recommendations, `app-tools guide list --all` for all topics, and `app-tools guide show <topic>`
+for one document. Standalone `app-error` does not imply the backend architecture rules.
 
+Canonical consumer documents live in `tools/app-tools/src/app_tools/guide_data/` and ship
+inside app-tools. `agents/skills/app-common` points there; edit the canonical files only.
+The contributor skill remains under `agents/dev-skills/`.
+
+- In app-common: `just link-skills --dev`.
+- In consumers: `<checkout>/agents/link-skills.sh --auto` installs the single entry point.
+- For portable/offline consumers: add `--copy`; this includes all reference documents.
+- When releasing, update the guide catalog version alongside package versions. Tests check parity.

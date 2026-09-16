@@ -71,5 +71,5 @@ For LangChain integrations, `client.get_embedding("text-embedding-3-small")` ret
 
 ## See also
 
-- [App AI Catalog Skill](../../../agents/skills/app-ai-catalog/SKILL.md) — AI catalog configuration and LiteLLM model routing.
-- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how AI clients fit into the layered app.
+- [App AI Catalog Skill](../../../agents/skills/app-common/references/ai/index.md) — AI catalog configuration and LiteLLM model routing.
+- [App Backend Core Skill](../../../agents/skills/app-common/references/backend/index.md) — how AI clients fit into the layered app.

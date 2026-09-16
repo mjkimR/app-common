@@ -46,5 +46,5 @@ The collection is created automatically if it does not exist, using the embeddin
 
 ## See also
 
-- [App Vector Store Skill](../../../agents/skills/app-vector-store/SKILL.md) — Qdrant vector store integration and embeddings.
-- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how adapters fit into the layered app.
+- [App Vector Store Skill](../../../agents/skills/app-common/references/vector/index.md) — Qdrant vector store integration and embeddings.
+- [App Backend Core Skill](../../../agents/skills/app-common/references/backend/index.md) — how adapters fit into the layered app.

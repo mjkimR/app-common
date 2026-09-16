@@ -1,0 +1,162 @@
+{
+  "version": "0.1.0",
+  "guides": {
+    "backend/errors": {
+      "path": "references/backend/errors.md",
+      "packages": [
+        "app-error",
+        "app-layer-base"
+      ]
+    },
+    "backend/hooks": {
+      "path": "references/backend/hooks.md",
+      "packages": [
+        "app-layer-base"
+      ]
+    },
+    "backend": {
+      "path": "references/backend/index.md",
+      "packages": [
+        "app-layer-base"
+      ]
+    },
+    "backend/setup": {
+      "path": "references/backend/setup.md",
+      "packages": [
+        "app-layer-base"
+      ]
+    },
+    "testing": {
+      "path": "references/testing/index.md",
+      "packages": [
+        "app-testing-base"
+      ]
+    },
+    "storage": {
+      "path": "references/storage/index.md",
+      "packages": [
+        "app-file-storage"
+      ]
+    },
+    "storage/setup": {
+      "path": "references/storage/setup.md",
+      "packages": [
+        "app-file-storage"
+      ]
+    },
+    "vector": {
+      "path": "references/vector/index.md",
+      "packages": [
+        "app-vector-store"
+      ]
+    },
+    "vector/setup": {
+      "path": "references/vector/setup.md",
+      "packages": [
+        "app-vector-store"
+      ]
+    },
+    "http": {
+      "path": "references/http/index.md",
+      "packages": [
+        "app-http-client"
+      ]
+    },
+    "http/setup": {
+      "path": "references/http/setup.md",
+      "packages": [
+        "app-http-client"
+      ]
+    },
+    "ai": {
+      "path": "references/ai/index.md",
+      "packages": [
+        "app-ai-catalog"
+      ]
+    },
+    "ai/setup": {
+      "path": "references/ai/setup.md",
+      "packages": [
+        "app-ai-catalog"
+      ]
+    },
+    "mcp": {
+      "path": "references/mcp/index.md",
+      "packages": [
+        "app-mcp"
+      ]
+    },
+    "user": {
+      "path": "references/user/index.md",
+      "packages": [
+        "app-prebuilt-user"
+      ]
+    },
+    "user/setup": {
+      "path": "references/user/setup.md",
+      "packages": [
+        "app-prebuilt-user"
+      ]
+    },
+    "outbox": {
+      "path": "references/outbox/index.md",
+      "packages": [
+        "app-prebuilt-outbox"
+      ]
+    },
+    "outbox/setup": {
+      "path": "references/outbox/setup.md",
+      "packages": [
+        "app-prebuilt-outbox"
+      ]
+    },
+    "ui/api": {
+      "path": "references/ui/api.md",
+      "packages": [
+        "@app-common/ui-base"
+      ]
+    },
+    "ui/checklist": {
+      "path": "references/ui/checklist.md",
+      "packages": [
+        "@app-common/ui-base"
+      ]
+    },
+    "ui/components": {
+      "path": "references/ui/components.md",
+      "packages": [
+        "@app-common/ui-base"
+      ]
+    },
+    "ui": {
+      "path": "references/ui/index.md",
+      "packages": [
+        "@app-common/ui-base"
+      ]
+    },
+    "ui/runes": {
+      "path": "references/ui/runes.md",
+      "packages": [
+        "@app-common/ui-base"
+      ]
+    },
+    "ui/setup": {
+      "path": "references/ui/setup.md",
+      "packages": [
+        "@app-common/ui-base"
+      ]
+    },
+    "local-dev": {
+      "path": "references/local-dev/index.md",
+      "packages": [
+        "app-tools"
+      ]
+    },
+    "update": {
+      "path": "references/update/index.md",
+      "packages": [
+        "app-tools"
+      ]
+    }
+  }
+}

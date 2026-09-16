@@ -1,8 +1,3 @@
----
-name: app-prebuilt-user
-description: Drop-in user authentication, JWT login flow, OAuth2 password handling, and user management endpoints.
----
-
 # app-prebuilt-user
 
 Drop-in user authentication and management module built on `app-layer-base`. Provides the `User` model, layered service/usecase stack, auth dependencies, and FastAPI routers.
@@ -35,9 +30,11 @@ router = APIRouter()
 CurrentUser = Annotated[User, Depends(get_current_user)]
 SuperUser = Annotated[User, Depends(on_superuser)]
 
+
 @router.get("/me")
 async def read_current_user(user: CurrentUser):
     return {"id": str(user.id), "email": user.email}
+
 
 @router.delete("/admin/users/{user_id}")
 async def delete_user(user_id: str, admin: SuperUser):

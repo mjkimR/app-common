@@ -9,10 +9,12 @@ Raise structured exceptions inheriting from `AppError` rather than generic `Valu
 ```python
 from app_error import AppError, Actor, Retry
 
+
 class ResourceNotFoundError(AppError):
     code = "RESOURCE_NOT_FOUND"
     actor = Actor.USER
     retry = Retry.UNSAFE
+
 
 raise ResourceNotFoundError(
     "Book with id 42 does not exist",

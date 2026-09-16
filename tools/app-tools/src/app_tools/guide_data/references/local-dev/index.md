@@ -1,8 +1,3 @@
----
-name: app-local-dev
-description: Modifying app-common packages locally from consumer repositories using app-tools dev (link, unlink, status) without modifying pyproject.toml or package.json.
----
-
 # app-local-dev
 
 Modifying `app-common` packages locally from downstream consumer repositories using `app-tools dev`.
@@ -34,7 +29,7 @@ uv run app-tools dev link --target-path ../app-common
 ### Step 2: Develop and Test
 1. Make your code changes in your local `app-common` repository clone.
 2. Run downstream application tests to verify the behavior immediately.
-3. For multi-database testing (PostgreSQL row-locking, MinIO/Docker contracts) and package contribution standards, refer to the [app-common-contributor guide](https://github.com/mjkimR/app-common/blob/main/agents/dev-skills/app-common-contributor/SKILL.md).
+3. For multi-database testing (PostgreSQL row-locking, MinIO/Docker contracts) and package contribution standards, refer to the `agents/dev-skills/app-common-contributor/SKILL.md` in the local app-common checkout (when available).
 
 ### Step 3: Unlink and Restore
 Once changes are verified and committed/pushed to `app-common`, **always restore the consumer repository**:

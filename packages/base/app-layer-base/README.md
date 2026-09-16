@@ -77,7 +77,7 @@ Projects follow a decoupled flow: **API (Router) → UseCase → Service → Rep
 
 See the developer guide for the full picture:
 
-- [App Backend Core Developer Skill](../../../agents/skills/app-backend-core/SKILL.md) — layered architecture, service hooks, and code scaffolding.
+- [App Backend Core Developer Skill](../../../agents/skills/app-common/references/backend/index.md) — layered architecture, service hooks, and code scaffolding.
 
 ## Public API
 

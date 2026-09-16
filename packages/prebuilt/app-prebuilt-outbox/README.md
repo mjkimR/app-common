@@ -68,5 +68,5 @@ class BookService(BaseCreateServiceMixin[...], BaseDeleteServiceMixin[...]):
 
 ## See also
 
-- [App Prebuilt Outbox Skill](../../../agents/skills/app-prebuilt-outbox/SKILL.md) — Transactional Outbox pattern engine and event relay.
-- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — Service Hooks and transaction management.
+- [App Prebuilt Outbox Skill](../../../agents/skills/app-common/references/outbox/index.md) — Transactional Outbox pattern engine and event relay.
+- [App Backend Core Skill](../../../agents/skills/app-common/references/backend/index.md) — Service Hooks and transaction management.

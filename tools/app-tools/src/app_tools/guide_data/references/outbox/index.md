@@ -1,8 +1,3 @@
----
-name: app-prebuilt-outbox
-description: Transactional Outbox pattern engine for guaranteed domain event delivery with OutboxHook and background relay.
----
-
 # app-prebuilt-outbox
 
 Guaranteed message delivery: domain events are saved in the same database transaction as business writes, then a background relay publishes them with `SELECT ... FOR UPDATE SKIP LOCKED` guarantees.
@@ -25,6 +20,7 @@ BOOK_EVENTS: OutboxHookEventTypeDict = {
     "DELETE": "BOOK_DELETED",
 }
 
+
 class BookOutboxHook(OutboxHook[Book]):
     def payload(self, op: str, obj: Book, identity: str) -> dict:
         return {
@@ -32,6 +28,7 @@ class BookOutboxHook(OutboxHook[Book]):
             "title": obj.title,
             "operation": op,
         }
+
 
 class BookService(BaseService[Book, BookCreate, BookUpdate]):
     hooks = (

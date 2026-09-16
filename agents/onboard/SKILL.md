@@ -7,7 +7,7 @@ description: One-time onboarding guide for bootstrapping new FastAPI projects wi
 
 This guide is designed for AI coding assistants (Antigravity, Claude Code, Cursor, Codex) to bootstrap a new or existing FastAPI project using `app-common` modular packages.
 
-> **Note for Agents**: This is a one-time onboarding workflow. Do not save or keep this skill in the project's local skills directory. Once onboarding is complete, only the day-to-day skills for installed packages will be installed into `.agents/skills/`.
+> **Note for Agents**: This is a one-time onboarding workflow. Do not save or keep this skill in the project's local skills directory. Once onboarding is complete, the single `app-common` skill and its offline references will be installed into `.agents/skills/`.
 
 ---
 
@@ -134,7 +134,7 @@ curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scri
 curl -sSL https://raw.githubusercontent.com/mjkimR/app-common/<release-tag>/scripts/install-skills.sh | bash -s -- --auto --ref=<release-tag> claude
 ```
 
-This reads `pyproject.toml` and installs only the skills you actually use (`app-backend-core`, `app-file-storage`, etc.) into your workspace.
+This installs the single `app-common` skill with all references. `app-tools guide` recommends topics from the project dependencies; without app-tools, follow the skill’s relative document links.
 
 ---
 

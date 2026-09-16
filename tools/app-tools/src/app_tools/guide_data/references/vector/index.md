@@ -1,8 +1,3 @@
----
-name: app-vector-store
-description: Qdrant vector database adapter with automatic embedding resolution via app-ai-catalog.
----
-
 # app-vector-store
 
 LangChain-compatible `VectorStore` adapter backed by Qdrant with automatic embedding model resolution.
@@ -24,6 +19,7 @@ app = FastAPI(lifespan=lifespan_vector_store)
 
 ```python
 from app_vector_store import get_vector_store
+
 
 async def search_similar(query: str):
     # Resolves embedding model and vector dimension automatically from catalog.yml

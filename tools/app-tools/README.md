@@ -172,7 +172,24 @@ Skills default to `.agents/skills`; specify another supported agent directory wi
 
 For a complete list of commands, usage examples, and details on how code generation and local linking work, please refer to the developer guides:
 
-- **[Local Development Linking Skill (`app-local-dev`)](../../agents/skills/app-local-dev/SKILL.md)**: Details on local symlinking (`app-tools dev`), backup mechanics, and options.
-- **[Package Update Skill (`app-package-update`)](../../agents/skills/app-package-update/SKILL.md)**: Updates downstream projects to a released `app-common` version.
-- **[App Backend Core Developer Skill (`app-backend-core`)](../../agents/skills/app-backend-core/SKILL.md)**: FastAPI feature code scaffolding (`app-tools create-code feature`).
-- **[App Svelte UI Developer Skill (`app-svelte-ui`)](../../agents/skills/app-svelte-ui/SKILL.md)**: Svelte 5 web feature scaffolding (`app-tools create-code web-feature`).
+- **[Local Development Guide](../../../agents/skills/app-common/references/local-dev/index.md)**: Details on local symlinking (`app-tools dev`), backup mechanics, and options.
+- **[Package Update Guide](../../../agents/skills/app-common/references/update/index.md)**: Updates downstream projects to a released `app-common` version.
+- **[Backend Guide](../../../agents/skills/app-common/references/backend/index.md)**: FastAPI feature code scaffolding (`app-tools create-code feature`).
+- **[Svelte UI Guide](../../../agents/skills/app-common/references/ui/index.md)**: Svelte 5 web feature scaffolding (`app-tools create-code web-feature`).
+
+## Offline package guidance
+
+`app-tools guide` lists relevant topics for the current project. Use
+`app-tools guide show backend/hooks` to read a document or
+`app-tools guide list --all` to discover setup guides for uninstalled packages.
+`--project <directory>` selects another project; `--source <app-common-checkout>`
+selects local-development documentation. These options precede `list` or `show`.
+
+All documents ship inside app-tools. The command reads manifests and distribution
+metadata without importing optional packages, spawning subprocesses, syncing an
+environment, or contacting the network. It distinguishes declarations, lock
+entries, and installed packages and reports known version mismatches.
+
+In a pre-provisioned offline environment, call `.venv/bin/app-tools guide` directly
+or use `uv run --no-sync --offline app-tools guide`. With no CLI installed, the
+copied `app-common` skill contains the same references and works by file reads.

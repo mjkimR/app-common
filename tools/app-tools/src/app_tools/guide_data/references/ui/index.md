@@ -1,8 +1,3 @@
----
-name: app-svelte-ui
-description: Agent-First Svelte 5 (Runes) + SvelteKit + Tailwind + shadcn-svelte architecture, Type-Safe API binding with openapi-fetch, and self-healing validation.
----
-
 # app-svelte-ui
 
 Agent-First & Friendly UI development guidelines for **Svelte 5 (Runes)**, **SvelteKit**, **Tailwind CSS**, **shadcn-svelte (bits-ui)**, and **openapi-fetch**.
@@ -200,4 +195,4 @@ This generates:
 When developing frontend features that require changes to `@app-common/ui-base`:
 1. Use `uv run app-tools dev link` to temporarily symlink `node_modules/@app-common/ui-base` to the local `app-common` repository without editing `package.json`.
 2. After finishing and pushing changes, **always run `uv run app-tools dev unlink`** to restore original packages.
-3. For core contribution details, see the [app-common-contributor guide](https://github.com/mjkimR/app-common/blob/main/agents/dev-skills/app-common-contributor/SKILL.md).
+3. For core contribution details, see the `agents/dev-skills/app-common-contributor/SKILL.md` in the local app-common checkout (when available).

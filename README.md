@@ -74,26 +74,17 @@ uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=
 
 ## Developer Skills & Agent Assets
 
-Modular, agent-neutral skills are available under [`agents/`](./agents/README.md) to assist developers and AI assistants:
+Two agent-neutral skills are available under [`agents/`](./agents/README.md):
 
-- **[`app-backend-core`](./agents/skills/app-backend-core/SKILL.md)**: Layered architecture (Router → UseCase → Service → Repository → Model/Schema), Service Hooks, feature scaffolding with `app-tools`, and structured error advisories (`app-error`).
-- **[`app-testing`](./agents/skills/app-testing/SKILL.md)**: FastAPI test foundation with `app-testing-base` (unit/integrate/e2e test cases, deterministic seeders, DI resolver, and assertion helpers).
-- **[`app-file-storage`](./agents/skills/app-file-storage/SKILL.md)**: AWS S3, MinIO, and Local filesystem object storage.
-- **[`app-vector-store`](./agents/skills/app-vector-store/SKILL.md)**: Qdrant vector database integration.
-- **[`app-http-client`](./agents/skills/app-http-client/SKILL.md)**: Shared connection-pooled httpx client.
-- **[`app-ai-catalog`](./agents/skills/app-ai-catalog/SKILL.md)**: LiteLLM model routing and LangChain embedding integration.
-- **[`app-prebuilt-user`](./agents/skills/app-prebuilt-user/SKILL.md)**: User auth, JWT login flow, and admin CRUD.
-- **[`app-prebuilt-outbox`](./agents/skills/app-prebuilt-outbox/SKILL.md)**: Transactional Outbox pattern engine for guaranteed domain event delivery.
-- **[`app-svelte-ui`](./agents/skills/app-svelte-ui/SKILL.md)**: Svelte 5 Runes + SvelteKit + Tailwind + shadcn architecture and Type-Safe API binding.
-- **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Monorepo package boundaries, multi-tier testing (SQLite, PostgreSQL, Docker), and contributor conventions.
+- **[`app-common`](./agents/skills/app-common/SKILL.md)**: One consumer entry point for package use, testing, UI, scaffolding, local linking, and updates. Read only the topic needed using `app-tools guide show <topic>` or the bundled references.
+- **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Package boundaries, multi-tier testing, and release conventions for contributors.
 
-
-To link skills:
 ```bash
-# In downstream apps (auto-detects installed app-* packages):
-./agents/link-skills.sh --auto
-
-# In app-common (links all skills + contributor dev-skills):
+# Link the consumer entry point from a checkout (run inside the consumer project):
+<app-common-checkout>/agents/link-skills.sh --auto
+# Copy a portable bundle, including all offline references:
+<app-common-checkout>/agents/link-skills.sh --copy
+# Link consumer + contributor skills inside app-common:
 just link-skills --dev
 ```
 

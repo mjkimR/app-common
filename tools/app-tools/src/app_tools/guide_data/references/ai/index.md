@@ -1,8 +1,3 @@
----
-name: app-ai-catalog
-description: YAML-driven AI model catalog for LiteLLM completion, embeddings, and LangChain model routing.
----
-
 # app-ai-catalog
 
 Typed client interface for LLM completions, embeddings, and LangChain adapters driven by a centralized `catalog.yml`.

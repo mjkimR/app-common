@@ -42,6 +42,7 @@ from app_layer_base.base.services.base import BaseService
 from app_layer_base.base.services.hooks import CreateHook
 from app_error import AppError, Actor, Retry
 
+
 class UniqueIsbnHook(CreateHook[Book, BookCreate]):
     async def before_create(self, session: AsyncSession, data: BookCreate) -> None:
         stmt = select(Book.id).where(Book.isbn == data.isbn).limit(1)

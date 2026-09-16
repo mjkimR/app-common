@@ -1,8 +1,3 @@
----
-name: app-mcp
-description: Build authenticated MCP tool boundaries with app-mcp's registry, tool context, scopes, and structured error results.
----
-
 # app-mcp
 
 Use `app-mcp` for MCP tools. It is protocol-neutral: do not import FastAPI or a
@@ -23,8 +18,10 @@ from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult
 
 registry = ToolRegistry()
 
+
 async def read_status(context: ToolContext, _: dict[str, object]) -> ToolResult:
     return ToolResult.success({"subject": context.subject, "status": "ok"})
+
 
 registry.register(ToolDefinition("status.get", "Read status", read_status, frozenset({"status:read"})))
 ```

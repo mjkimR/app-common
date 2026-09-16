@@ -1,89 +1,70 @@
-# agents/
+# Agent guidance
 
-Agent-neutral assets for `app-common`. The source files live in `skills/` (atomic skills for downstream applications building with `app-common`) and `dev-skills/` (for developers contributing to `app-common` itself). Agent-specific directories (such as `.agents/skills/`, `.claude/skills/`, `.codex/skills/`) are symlinks created by `link-skills.sh`.
+Consumers install one `app-common` skill. Contributors additionally use
+`app-common-contributor`. Package-specific instructions remain separate reference
+files, loaded only when needed. The onboarding guide under `onboard/` is a one-time
+bootstrap procedure, not another installed skill.
 
-## Structure
+The canonical consumer bundle is `tools/app-tools/src/app_tools/guide_data/`.
+`agents/skills/app-common` is a relative symlink to that directory, so the wheel,
+source distribution, and copied skill share the same documents. Do not maintain a
+second copy. `catalog.json` records topics, package applicability, and the document
+version; update that version when bumping package versions.
 
-```
-agents/
-├── README.md                  # This file
-├── link-skills.sh             # Symlink manager supporting auto-detection and selective linking
-├── skills/                    # Atomic consumer skills (1:1 with packages for lean context)
-│   ├── app-backend-core/      # app-layer-base + app-error (FastAPI foundation)
-│   ├── app-local-dev/         # app-tools dev link/unlink/status (local package linking)
-│   ├── app-package-update/    # app-tools update (released dependency upgrades)
-│   ├── app-testing/           # app-testing-base (FastAPI test foundation & assertions)
-│   ├── app-file-storage/      # AWS S3 / MinIO / Local FS object storage
-│   ├── app-vector-store/      # Qdrant vector database + LangChain embeddings
-│   ├── app-http-client/       # Pooled singleton httpx client (async & sync)
-│   ├── app-ai-catalog/        # LiteLLM YAML catalog & model routing
-│   ├── app-mcp/               # MCP tool registry, scopes, and error boundary
-│   ├── app-prebuilt-user/     # User authentication, JWT, OAuth2 form login
-│   ├── app-prebuilt-outbox/   # Transactional Outbox pattern & event relay
-│   └── app-svelte-ui/         # Svelte 5 Runes, SvelteKit, Tailwind, openapi-fetch
-└── dev-skills/                # Contributor skills (for modifying app-common repo itself)
-    └── app-common-contributor/# Package isolation, multi-db test harness, release rules
+## Install
 
-```
+Skill lifecycle management is planned to move to apm. The scripts below remain
+transitional installation paths; their current behavior is unchanged. app-common
+owns the guide content and app-tools owns read-only document selection. Do not
+add a parallel skill registry, cache, or version resolver here. apm integration
+will be specified once its interface is established. This delegation does not
+change Python/Node package management. See the
+[ownership and reduced roadmap](../docs/guide-offline-review.md#ownership-after-the-planned-apm-transition).
 
-## Remote AI Onboarding (No Installation Needed)
-
-To bootstrap a new FastAPI project from scratch using an AI coding assistant (Antigravity, Claude Code, Cursor, Codex), simply prompt your agent with the GitHub link to the onboarding guide:
-
-> *"Please onboard app-common into this project using this guide: https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md"*
-
-The agent will read the guide directly from GitHub, interview you about required technologies (database, storage, auth, outbox), install only the necessary packages, and download the matching agent skills into your workspace.
-
-## Quick Start
-
-### In Downstream Projects (Consumer Apps)
-Use `--auto` to automatically inspect `pyproject.toml` and link **only** the skills corresponding to installed `app-*` packages:
+Run from the consumer project, using an existing checkout:
 
 ```bash
-# Auto-detect installed app-* packages and link to Antigravity (.agents/skills)
-<path-to-app-common>/agents/link-skills.sh --auto
-
-# Auto-detect for Claude Code (.claude/skills)
-<path-to-app-common>/agents/link-skills.sh --auto claude
-
-# Selectively link specific skills
-<path-to-app-common>/agents/link-skills.sh app-backend-core app-file-storage
+<checkout>/agents/link-skills.sh --auto
+<checkout>/agents/link-skills.sh claude
+<checkout>/agents/link-skills.sh --copy
 ```
 
-### In `app-common` (Monorepo Development)
+`--auto` remains accepted; every consumer receives the same small entry point.
+Dependency detection now selects recommended documents at read time. `--copy`
+includes the Markdown references as ordinary files without checkout symlinks.
+Use it when preparing a cloud checkout or an offline artifact. No Python or network
+is needed for this local installation or for reading the copied references.
+
+Inside app-common, use `just link-skills --dev` to include contributor guidance.
+`--target <directory>` overrides the destination. Former consumer skill names
+remain accepted as aliases for the unified entry point.
+
+On migration, existing legacy skills and replaced copies are moved into
+`<agent-directory>/skill-backups/app-common.<unique-id>/`, outside the skills
+directory. This preserves local edits for comparison or restoration. Existing
+links to the same bundle are left alone. Backups can be removed after reviewing
+any local changes.
+
+The remote `scripts/install-skills.sh --ref=<release-tag>` installer clones that
+ref and uses the same installer in copy mode. `app-tools update` downloads the
+selected release's installer, so a release containing this change migrates to the
+unified skill. Both remote installation and updates need network access.
+
+## Read
+
 ```bash
-# Link all skills including contributor dev-skills
-just link-skills --dev
-
-# Or directly:
-./agents/link-skills.sh --dev
+app-tools guide
+app-tools guide list --all
+app-tools guide show backend/hooks
+app-tools guide --project ./backend show storage/setup
+app-tools guide --source ../app-common show backend/hooks
 ```
 
-## Skill Categories
+The default list uses declared dependencies and the selected project's `.venv`
+metadata. Lock entries are reported separately and do not activate guides by
+themselves. Optional dependencies and dependency groups are declarations, not a
+claim that those extras are installed. Explicit `show` works for uninstalled
+packages, allowing agents to read setup instructions before adding a dependency.
 
-1. **Foundational Core (`app-backend-core`)**:
-   Core 4-layer architecture (`Router → UseCase → Service → Repository → Model/Schema`), service hooks, `app-tools create-code feature` scaffolding, and `app-error` structured advisories.
-
-2. **Testing Foundation (`app-testing`)**:
-   Pytest base classes (`UnitTest`, `IntegrationTest`, `E2ETest`), DI resolution (`resolve_dependency`), deterministic test seeders, and response assertions.
-
-3. **Atomic Adapters (`app-file-storage`, `app-vector-store`, `app-http-client`, `app-ai-catalog`)**:
-   Individual skills matching their respective packages. Projects only load the adapter skills they actually use.
-
-4. **Prebuilt Domains (`app-prebuilt-user`, `app-prebuilt-outbox`)**:
-   Ready-to-mount business components: user auth & JWT (`app-prebuilt-user`) and guaranteed event delivery (`app-prebuilt-outbox`).
-
-5. **MCP Transport (`app-mcp`)**:
-   Protocol-neutral MCP tool registry, trusted caller context, scope enforcement, and `AppError` translation.
-
-6. **Frontend UI (`app-svelte-ui`)**:
-   Agent-First Svelte 5 Runes, SvelteKit layout and AppShell, shadcn atomic primitives, Tailwind tokens, and type-safe `openapi-fetch` client bindings.
-
-7. **Local Development Linking (`app-local-dev`)**:
-   Seamlessly link installed `app-common` packages in consumer repositories to a local clone of `app-common` using `app-tools dev` (`link`, `unlink`, `status`) without touching `pyproject.toml` or `package.json`.
-
-8. **Released Package Updates (`app-package-update`)**:
-   Update the Git dependency refs in a consumer project and synchronize its `uv` environment using `app-tools update`.
-
-9. **Contributor Dev-Skill (`app-common-contributor`)**:
-   Only linked when `--dev` is specified. Contains repo-internal conventions, multi-database test rules (SQLite vs PostgreSQL vs Docker MinIO), and package maintenance guidelines.
+If app-tools is unavailable, read `skills/app-common/SKILL.md` and its relative
+references directly. See [offline operation and follow-up work](../docs/guide-offline-review.md).

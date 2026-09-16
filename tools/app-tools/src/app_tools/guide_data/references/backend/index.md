@@ -1,8 +1,3 @@
----
-name: app-backend-core
-description: FastAPI 4-layer architecture (Router, UseCase, Service Hooks, Repo), code scaffolding with app-tools, and structured error handling with app-error.
----
-
 # app-backend-core
 
 FastAPI layered architecture framework based on `app-layer-base`, `app-tools`, and `app-error`.
@@ -82,6 +77,7 @@ from app_layer_base.base.models.mixin import UUIDMixin, TimestampMixin, SoftDele
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 
+
 class Book(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "books"
 
@@ -119,6 +115,7 @@ UseCases manage the lifecycle of changes across one or more services:
 from app_layer_base.base.usecases.base import BaseUseCase
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 class BookUseCase(BaseUseCase):
     def __init__(self, book_service: BookService, session: AsyncSession) -> None:
         self.service = book_service
@@ -146,16 +143,20 @@ from app_layer_base.core.database.deps import get_session
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
+
 def get_book_service() -> BookService:
     return BookService(repo=BookRepository(Book))
 
+
 BookServiceDep = Annotated[BookService, Depends(get_book_service)]
+
 
 def get_book_usecase(
     service: BookServiceDep,
     session: SessionDep,
 ) -> BookUseCase:
     return BookUseCase(book_service=service, session=session)
+
 
 BookUseCaseDep = Annotated[BookUseCase, Depends(get_book_usecase)]
 ```
@@ -171,4 +172,4 @@ For advisory fields (`Actor`, `Retry`, `ActionMode`), remediation properties (`f
 
 ## 7. Modifying `app-common` Packages Locally (`app-local-dev`)
 
-To modify `app-common` packages while working in a consumer project without modifying `pyproject.toml` or `package.json`, see the dedicated **[app-local-dev](../app-local-dev/SKILL.md)** skill (`uv run app-tools dev link / unlink / status`).
+To modify `app-common` packages while working in a consumer project without modifying `pyproject.toml` or `package.json`, see the **[local development](../local-dev/index.md)** skill (`uv run app-tools dev link / unlink / status`).

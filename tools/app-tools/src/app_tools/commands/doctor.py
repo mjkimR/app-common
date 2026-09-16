@@ -26,18 +26,7 @@ ALL_PACKAGES = (
     "app-tools",
 )
 
-PACKAGE_SKILL_RECOMMENDATIONS: dict[str, str] = {
-    "app-layer-base": "app-backend-core",
-    "app-testing-base": "app-testing",
-    "app-file-storage": "app-file-storage",
-    "app-vector-store": "app-vector-store",
-    "app-http-client": "app-http-client",
-    "app-ai-catalog": "app-ai-catalog",
-    "app-prebuilt-user": "app-prebuilt-user",
-    "app-prebuilt-outbox": "app-prebuilt-outbox",
-    "app-ui-base": "app-svelte-ui",
-    "app-mcp": "app-mcp",
-}
+PACKAGE_SKILL_RECOMMENDATIONS = {package: "app-common" for package in ALL_PACKAGES}
 
 
 def inspect_environment(root: Path) -> dict[str, Any]:
@@ -69,7 +58,7 @@ def inspect_environment(root: Path) -> dict[str, Any]:
         linked_skills = sorted(d.name for d in skills_dir.iterdir() if d.is_dir() or d.is_symlink())
         for pkg in declared_packages:
             rec_skill = PACKAGE_SKILL_RECOMMENDATIONS.get(pkg)
-            if rec_skill and rec_skill not in linked_skills:
+            if rec_skill and rec_skill not in linked_skills and rec_skill not in missing_skills:
                 missing_skills.append(rec_skill)
     else:
         advisories.append(

@@ -1,8 +1,3 @@
----
-name: app-package-update
-description: Update app-common Git dependencies in a downstream uv project to a released version using app-tools.
----
-
 # app-package-update
 
 Use this skill when a downstream project needs a newer released version of `app-common`, rather than local source linking.

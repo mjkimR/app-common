@@ -1,8 +1,3 @@
----
-name: app-testing
-description: FastAPI test writing expert using app-testing-base (Integration with resolve_dependency, E2E with client, explicit deterministic seeders, and assertion helpers).
----
-
 # app-testing
 
 Testing guidance and conventions for FastAPI + SQLAlchemy applications using `app-testing-base`.
@@ -84,8 +79,7 @@ items = [await seed_item(session, name=f"item-{i}") for i in range(5)]
    ```python
    @pytest.mark.e2e
    @pytest.mark.real_commit
-   class TestItemAPI:
-       ...
+   class TestItemAPI: ...
    ```
 4. **USE `refresh_get` before querying DB after API calls**:
    SQLAlchemy holds an in-memory Identity Map cache. After an API commits changes or a worker updates a row, using `await refresh_get(session, Model, id)` automatically clears stale cache and fetches fresh data:

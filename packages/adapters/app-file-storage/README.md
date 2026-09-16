@@ -83,5 +83,5 @@ Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on t
 
 ## See also
 
-- [App File Storage Skill](../../../agents/skills/app-file-storage/SKILL.md) — S3, MinIO, and Local storage integration.
-- [App Backend Core Skill](../../../agents/skills/app-backend-core/SKILL.md) — how adapters fit into the layered app.
+- [App File Storage Skill](../../../agents/skills/app-common/references/storage/index.md) — S3, MinIO, and Local storage integration.
+- [App Backend Core Skill](../../../agents/skills/app-common/references/backend/index.md) — how adapters fit into the layered app.
