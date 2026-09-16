@@ -12,7 +12,6 @@ validate_module "$MODULE"
 
 DEFAULT_PYTEST_OPTIONS="-q --tb=short --disable-warnings --no-header"
 PYTEST_OPTIONS="${PYTEST_OPTIONS:-$DEFAULT_PYTEST_OPTIONS}"
-PROGRESS_LINE_FILTER='^[\.sFxFw]*\s+\[.*\]$'
 
 # Coverage (opt-in via COVERAGE=1, normally through `just test-cov`).
 # Each package is measured from its own directory, so every run writes its own
@@ -82,14 +81,15 @@ run_pytest() {
         marker_args=(-m "not docker")
     fi
 
-    local tmp
-    tmp="$(mktemp)"
-    trap 'rm -f "$tmp"' RETURN
+    # Coverage is an explicit report; keep its table visible instead of summarizing it.
+    local output_args=()
+    if [ "$COVERAGE" = "1" ]; then
+        output_args=(--raw)
+    fi
 
     local status=0
-    uv run --directory "$path" pytest $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" >"$tmp" 2>&1 || status=$?
+    uv run --no-sync app-tools run pytest --path "$path" ${output_args[@]+"${output_args[@]}"} -- $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" || status=$?
 
-    grep -vE "$PROGRESS_LINE_FILTER" "$tmp" || true
     if [ "$status" -eq 5 ]; then
         echo "No tests collected for $module."
         status=0

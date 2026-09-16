@@ -49,9 +49,7 @@ lint module="all":
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Linting $m ($path)..."
-                uv run ruff format "$path"
-                uv run ruff check --fix "$path"
-                uv run app-tools check-arch "$path/src"
+                uv run --no-sync app-tools run lint --fix --path "$path"
             fi
         fi
     done
@@ -69,7 +67,7 @@ check module="all":
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Type checking $m ($path)..."
-                uv run pyright "$path/src"
+                uv run --no-sync app-tools run pyright -- "$path/src"
             fi
         fi
     done
@@ -87,9 +85,7 @@ lint-check module="all":
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Checking lint for $m ($path)..."
-                uv run ruff format --check "$path"
-                uv run ruff check "$path"
-                uv run app-tools check-arch "$path/src"
+                uv run --no-sync app-tools run lint --path "$path"
             fi
         fi
     done
@@ -131,9 +127,9 @@ init-ui:
 
 # Type check UI package
 check-ui:
-    npm run check --prefix packages/ui/app-ui-base
+    uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run check
 
 # Build UI package into dist/
 build-ui:
-    npm run build --prefix packages/ui/app-ui-base
+    uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run build
 

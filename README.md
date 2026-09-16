@@ -35,6 +35,12 @@ Each adapter isolates a specific technology stack and can be imported independen
 member of the Python `uv` workspace; validate it with `just check-ui` and
 `just build-ui` in its own frontend CI workflow.
 
+After initializing dependencies, lint, type checks, tests, and UI checks/builds use
+`app-tools run` for compact results and complete temporary logs. Failures retain
+their exit status and show diagnostics; open the printed `log:` path for full output.
+`just test-cov` keeps coverage tables visible. The existing database and Docker test
+selection still belongs to `just` and `scripts/run-tests.sh`.
+
 ---
 
 ## Layered Architecture Overview

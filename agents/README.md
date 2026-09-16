@@ -24,15 +24,16 @@ dependencies:
   apm:
     - git: mjkimR/app-common
       path: agents
-      ref: <release-tag>
+      ref: <full-commit-sha>
       skills: [app-common]
 ```
 
 Install APM with `uv tool install apm-cli==0.30.0`, then run `apm install`.
-Use a release containing this layout; old refs containing the directory symlink
-are not compatible. For an unpublished sibling checkout replace `git`, `path`,
-and `ref` with `path: ../app-common/agents`. Local installs are snapshots; rerun
-`apm install` after source changes.
+Use a pushed commit containing this layout; old refs containing the directory
+symlink are not compatible. Keep consumer manifests pinned to Git commits so
+standalone and cloud agent checkouts do not require sibling repositories. Push
+producer changes before updating the consumer ref; never commit a local path
+as a consumer dependency. Private repositories require Git credentials.
 
 Track `apm.yml`, `apm.lock.yaml`, and the copies in `.agents/skills/app-common/`
 and `.claude/skills/app-common/`. Ignore `apm_modules/`. Use `apm install --frozen`
