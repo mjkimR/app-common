@@ -94,11 +94,12 @@ from fastapi import FastAPI
 # Import lifespans for selected adapters only:
 # from app_file_storage import lifespan_file_storage
 # from app_http_client import lifespan_http_client
-# from app_vector_store import lifespan_vector_store
+# from app_vector_store import QdrantSettings, open_qdrant
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
-    # Compose adapter contexts here if used
+    # Compose adapter contexts here if used. For vectors, use open_qdrant(QdrantSettings())
+    # and keep the yielded client on app.state for the lifetime of the application.
     yield
 
 app = FastAPI(title="My Application", lifespan=app_lifespan)

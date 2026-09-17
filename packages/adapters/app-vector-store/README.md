@@ -1,6 +1,6 @@
 # app-vector-store
 
-A standalone adapter that builds LangChain `VectorStore` instances for a configured backend. Ships a Qdrant provider and resolves embeddings automatically through [`app-ai-catalog`](../app-ai-catalog/README.md).
+A small async Qdrant adapter. Applications supply vectors; the adapter owns collection validation, storage, payload operations and filtered search. No AI catalog, LangChain, model registry, or global store cache is required.
 
 ## Installation
 
@@ -8,43 +8,80 @@ A standalone adapter that builds LangChain `VectorStore` instances for a configu
 uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-vector-store"
 ```
 
-> Requires `app-ai-catalog` to be configured (a `catalog.yml` with the embedding model), since the vector store looks up the embedding client and its dimension from the AI catalog.
+## Storage and client ownership
 
-## Configuration
+```python
+from app_vector_store import QdrantSettings, open_qdrant
+
+# Choose exactly one mode. A missing mode or conflicting location raises an error.
+settings = QdrantSettings(mode="local", path="./data/vectors")
+# QdrantSettings(mode="remote", url="http://localhost:6333")  # optional api_key
+# QdrantSettings(mode="memory")  # explicitly ephemeral
+
+
+async def example():
+    async with open_qdrant(settings) as client:
+        ...
+```
+
+`open_qdrant` closes the client even when the body raises. For a server, keep this context open for its application lifespan and inject the client into request handlers. A store borrows the client and never closes it. `create_qdrant_client(settings)` is also available when the caller handles `await client.close()` itself. Share one client per local path; embedded storage is not a multi-process server. Use remote Qdrant for shared deployments.
+
+`QdrantSettings()` reads environment variables. Explicit constructor fields take precedence for the same field; contradictory fields from the environment are rejected rather than silently selecting another location.
 
 | Variable | Default | Description |
 |---|---|---|
-| `VECTOR_DB_PROVIDER` | `qdrant` | Backend to use: `none` \| `qdrant` |
-| `VECTOR_DB_QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
-| `VECTOR_DB_QDRANT_API_KEY` | — | API key for Qdrant |
+| `VECTOR_DB_MODE` | required | `local`, `remote`, or `memory` |
+| `VECTOR_DB_PATH` | unset | Required only for local mode |
+| `VECTOR_DB_URL` | unset | Required HTTP(S) URL only for remote mode |
+| `VECTOR_DB_API_KEY` | unset | Optional remote secret |
+| `VECTOR_DB_TIMEOUT` | `10` | Positive remote request timeout, seconds |
 
-## Usage
-
-Wire the lifespan (it clears the store cache on shutdown), then create a store for a collection. The `model_name` refers to an embedding model defined in your AI catalog:
+## Store and independent embeddings
 
 ```python
-from fastapi import FastAPI
-from app_vector_store import get_vector_store, lifespan_vector_store
-
-app = FastAPI(lifespan=lifespan_vector_store)
+from qdrant_client import models
+from app_vector_store import QdrantVectorStore, VectorPoint
 
 
-async def search(query: str):
-    store = await get_vector_store(collection_name="docs", model_name="text-embedding-3-small")
-    return await store.asimilarity_search(query, k=4)
+async def index_and_search(client, embedder):
+    # embedder is application-owned: FastEmbed, an API SDK, or your own provider.
+    store = QdrantVectorStore(
+        client,
+        "documents",
+        dimension=384,
+        embedding_id="my-model@revision1:preprocessing-v1",
+    )
+    await store.ensure_payload_indexes({"project": models.PayloadSchemaType.KEYWORD})
+    vectors = await embedder.embed_documents(["Document text"])
+    await store.upsert([VectorPoint(id=1, vector=vectors[0], payload={"project": "alpha"})])
+
+    project_filter = models.Filter(
+        must=[
+            models.FieldCondition(key="project", match=models.MatchValue(value="alpha")),
+        ]
+    )
+    query_vector = await embedder.embed_query("What is this document about?")
+    hits = await store.search(query_vector, query_filter=project_filter, limit=10)
+    return [(hit.id, hit.score, hit.payload) for hit in hits]
 ```
 
-The collection is created automatically if it does not exist, using the embedding dimension resolved from the AI catalog. Stores are LRU-cached per `(collection, model)`.
+Embedding methods in the example are the application's own interface, not package APIs. Keep document/query embedding operations separate so each model can apply its appropriate input formatting. The adapter accepts only computed dense vectors and never downloads models or makes embedding API calls.
 
-## Public API
+`embedding_id` is persisted as the collection's single named vector. It must identify the model, revision and preprocessing/chunking version that define the embedding space. Existing collections must match this name, dimension and distance (default cosine); mismatches raise `CollectionMismatchError`. Even equal-dimension model changes require a new collection and reindexing. The adapter cannot infer which model actually produced an input vector; the caller must supply the correct identity.
 
-- `VectorStoreProvider` — backend interface
-- `VectorStoreFactory` — wraps a provider and caches created stores
-- `get_vector_store(collection_name, model_name)` — convenience accessor for a cached store
-- `get_vector_store_provider()`, `get_vector_store_factory()` — lower-level accessors
-- `lifespan_vector_store` — FastAPI lifespan that clears the store cache on shutdown
+Writes through `upsert` and explicit `ensure_collection()`/`ensure_payload_indexes()` create missing collections. Search, scroll, delete and payload replacement never create them. `validate_collection()` returns False if absent and validates existing schema; `collection_exists()` only checks presence. Recreate store instances after external collection changes. Anonymous-vector or multi-vector collections are intentionally outside this adapter's contract. Use the exposed native client for advanced Qdrant operations.
 
-## See also
+## Filters, payloads and incremental indexing
 
-- [App Vector Store Skill](../../../agents/skills/app-common/references/vector/index.md) — Qdrant vector store integration and embeddings.
-- [App Backend Core Skill](../../../agents/skills/app-common/references/backend/index.md) — how adapters fit into the layered app.
+- `search(vector, query_filter=..., limit=10, score_threshold=None, offset=0)` returns native Qdrant scored points, including IDs and payloads, without vectors.
+- `upsert(points, batch_size=256)` replaces vectors and payloads by stable integer or UUID IDs, returning the number submitted. Batches are not one transaction; retry with the same IDs after partial network failure.
+- `scroll(query_filter=..., batch_size=256)` is an async iterator over all matching records/payloads, without vectors. Use it for fingerprint inventories.
+- `delete(selector)` accepts `models.PointIdsList` or `models.FilterSelector`.
+- `overwrite_payload(payload, selector)` replaces matching payloads without recomputing vectors.
+- `ensure_payload_indexes({field: schema})` creates missing remote indexes and rejects conflicting definitions; it does not drop indexes. Embedded Qdrant supports filters without indexes, so this operation is a no-op there after collection validation.
+
+Filters are native `models.Filter`, supporting nested AND/OR/NOT, ranges, arrays and other Qdrant conditions. Tenant scoping is application-owned: combine required scope and user filters with AND, including for scroll, delete and payload updates. A filter selector with an empty filter matches all points. IDs must also be unique across tenants within a collection.
+
+Corpus discovery, text/chunking, source-of-truth reads, fingerprint policy and incremental-sync orchestration stay in the application. No domain fields such as `project`, `kind` or `doc_id` are built into the adapter.
+
+This API replaces the old model-name factory and global FastAPI lifespan APIs without a compatibility layer. `app-ai-catalog` remains an independent package but is no longer a dependency.

@@ -77,16 +77,11 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
             )
 
     else:
-        try:
-            settings_instance = settings_class(_env_file=env_file_path)
-        except Exception as e:
-            print(f"Error instantiating settings class {settings_class.__name__}: {e}", file=sys.stderr)
-            return specs
-
-        config_model_config = settings_instance.model_config
+        # Flat settings can be inspected without valid runtime credentials/location.
+        config_model_config = settings_class.model_config
         env_prefix = config_model_config.get("env_prefix", "")
 
-        for field_name, field_info in settings_instance.model_fields.items():
+        for field_name, field_info in settings_class.model_fields.items():
             env_var_name = field_info.alias or field_name.upper()
             full_env_var = f"{env_prefix}{env_var_name}"
 
@@ -114,8 +109,6 @@ def get_env_variable_specs(settings_class: type[Any], provider_type: str | None 
             "file_storage_local",
             "file_storage_s3",
             "vector_db",
-            "vector_db_none",
-            "vector_db_qdrant",
         ]
     ),
     help="The type of configuration to inspect (e.g., auth, file_storage_s3).",
@@ -126,7 +119,7 @@ def get_env_spec(type: str):
         from app_file_storage.config import FileStorageSettings
         from app_layer_base.config import AppSettings
         from app_prebuilt_user.config.auth import AuthSettings
-        from app_vector_store.config import VectorDBSettings
+        from app_vector_store.config import QdrantSettings
     except ImportError as e:
         from app_error import Actor, AppError, Retry
 
@@ -147,9 +140,7 @@ def get_env_spec(type: str):
         "file_storage_none": (FileStorageSettings, "none"),
         "file_storage_local": (FileStorageSettings, "local"),
         "file_storage_s3": (FileStorageSettings, "s3"),
-        "vector_db": (VectorDBSettings, None),
-        "vector_db_none": (VectorDBSettings, "none"),
-        "vector_db_qdrant": (VectorDBSettings, "qdrant"),
+        "vector_db": (QdrantSettings, None),
     }
 
     settings_class, provider_type = settings_map.get(type, (None, None))

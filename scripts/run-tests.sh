@@ -71,7 +71,7 @@ run_pytest() {
     # that enable it accept the flag; passing it elsewhere is a pytest usage error.
     local db_args=()
     case "$module" in
-        app-layer-base|app-testing-base|app-prebuilt-user|app-prebuilt-outbox) db_args=(--db-type "$DB_TYPE") ;;
+        app-layer-base|app-testing-base|app-prebuilt-user|app-prebuilt-outbox|app-prebuilt-search) db_args=(--db-type "$DB_TYPE") ;;
     esac
 
     # Harmless for packages that have no `docker`-marked tests: nothing matches, nothing
@@ -98,7 +98,7 @@ run_pytest() {
 }
 
 status=0
-for m in app-error app-prebuilt-user app-prebuilt-outbox app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp; do
+for m in app-error app-prebuilt-user app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp; do
     if should_run "$MODULE" "$m"; then
         echo "Testing $m..."
         if [ "${#PATHS[@]}" -eq 0 ]; then

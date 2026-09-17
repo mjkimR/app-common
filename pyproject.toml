@@ -44,6 +44,7 @@ typeCheckingMode = "basic"
 extraPaths = [
     "./packages/prebuilt/app-prebuilt-user/src",
     "./packages/prebuilt/app-prebuilt-outbox/src",
+    "./packages/prebuilt/app-prebuilt-search/src",
     "./tools/app-tools/src",
     "./packages/base/app-error/src",
     "./packages/base/app-layer-base/src",

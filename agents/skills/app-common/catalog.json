@@ -175,6 +175,12 @@
       "packages": [
         "app-layer-base"
       ]
+    },
+    "search": {
+      "path": "references/search/index.md",
+      "packages": [
+        "app-prebuilt-search"
+      ]
     }
   }
 }

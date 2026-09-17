@@ -5,15 +5,9 @@ description = "Vector database adapter package supporting Qdrant"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "app-error",
-    "app-ai-catalog",
     "qdrant-client>=1.16.2",
-    "langchain-qdrant>=1.1.0",
-    "loguru>=0.7.3",
     "pydantic>=2.11.1",
     "pydantic-settings>=2.8.1",
-    "dotenv>=0.9.9",
-    "cachetools>=6.2.6",
 ]
 
 [build-system]
@@ -23,18 +17,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/app_vector_store"]
 
-[dependency-groups]
-dev = [
-    "fastapi>=0.115.12",
-]
-
-[tool.uv.sources]
-app-ai-catalog = { workspace = true }
-app-error = { workspace = true }
-
 [tool.pytest.ini_options]
 log_level = "INFO"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 pythonpath = "src"
 testpaths = "tests"
+markers = ["docker: requires a real Qdrant container"]

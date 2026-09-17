@@ -1,17 +1,12 @@
-from .factory import VectorStoreFactory
-from .instance import (
-    get_vector_store,
-    get_vector_store_factory,
-    get_vector_store_provider,
-)
-from .interface import VectorStoreProvider
-from .lifespan import lifespan_vector_store
+from app_vector_store.client import create_qdrant_client, open_qdrant
+from app_vector_store.config import QdrantSettings
+from app_vector_store.store import CollectionMismatchError, QdrantVectorStore, VectorPoint
 
 __all__ = [
-    "VectorStoreFactory",
-    "VectorStoreProvider",
-    "get_vector_store",
-    "get_vector_store_factory",
-    "get_vector_store_provider",
-    "lifespan_vector_store",
+    "CollectionMismatchError",
+    "QdrantSettings",
+    "QdrantVectorStore",
+    "VectorPoint",
+    "create_qdrant_client",
+    "open_qdrant",
 ]

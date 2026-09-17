@@ -16,13 +16,14 @@ This repository is built as a `uv workspace` divided into focused, standalone pa
 ### 2. Standalone Adapters
 Each adapter isolates a specific technology stack and can be imported independently:
 - **[app-file-storage](./packages/adapters/app-file-storage/README.md)**: Support for Local and AWS S3 object storage clients.
-- **[app-vector-store](./packages/adapters/app-vector-store/README.md)**: Support for Qdrant vector databases, seamlessly integrated with `app-ai-catalog`.
+- **[app-vector-store](./packages/adapters/app-vector-store/README.md)**: Async Qdrant storage and filtering with externally supplied embeddings and explicit local/remote locations.
 - **[app-http-client](./packages/adapters/app-http-client/README.md)**: Lightweight asynchronous HTTP client wrapper based on `httpx`.
 
 ### 3. Standalone AI & Prebuilt Services
 - **[app-ai-catalog](./packages/adapters/app-ai-catalog/README.md)**: AI embedding/LLM factory clients leveraging LiteLLM and LangChain.
 - **[app-prebuilt-user](./packages/prebuilt/app-prebuilt-user/README.md)**: Fully scaffolding-ready user authentication, JWT login flow, and user profile management.
 - **[app-prebuilt-outbox](./packages/prebuilt/app-prebuilt-outbox/README.md)**: A production-ready Transactional Outbox pattern engine for guaranteed message delivery.
+- **[app-prebuilt-search](./packages/prebuilt/app-prebuilt-search/README.md)**: DB-backed semantic search, explicit incremental indexing, independent embeddings, and scoped filters.
 
 ### 4. Inbound Transports
 - **[app-mcp](./packages/transports/app-mcp/README.md)**: Protocol-neutral MCP tool registry, trusted invocation context, scope checks, and structured error translation.

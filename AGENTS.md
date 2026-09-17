@@ -83,6 +83,7 @@ The repository is structured into organized category directories under `packages
     - **`app-ai-catalog/`**: AI model factories, LangChain AI clients, and LiteLLM adapters.
 - **`packages/prebuilt/`**:
     - **`app-prebuilt-user/`**: Prebuilt authentication, signup, and user management controllers, services, and models.
+    - **`app-prebuilt-search/`**: DB-backed semantic search and explicit incremental indexing over existing application data.
     - **`app-prebuilt-outbox/`**: Prebuilt Transactional Outbox pattern engine for reliable event messaging.
 - **`packages/transports/`**:
     - **`app-mcp/`**: Protocol-neutral MCP tool registry and authorization boundary; concrete transports live outside this core package.

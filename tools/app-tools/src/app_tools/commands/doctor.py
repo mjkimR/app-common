@@ -22,6 +22,7 @@ ALL_PACKAGES = (
     "app-ai-catalog",
     "app-prebuilt-user",
     "app-prebuilt-outbox",
+    "app-prebuilt-search",
     "app-ui-base",
     "app-tools",
 )

@@ -36,6 +36,7 @@ development use `guide --source <checkout>`. The relative references work withou
 | Object storage | [storage](references/storage/index.md); [storage/setup](references/storage/setup.md) |
 | Vector search | [vector](references/vector/index.md); [vector/setup](references/vector/setup.md) |
 | Pooled HTTP client | [http](references/http/index.md); [http/setup](references/http/setup.md) |
+| DB-backed semantic search | [search](references/search/index.md) |
 | AI model catalog | [ai](references/ai/index.md); [ai/setup](references/ai/setup.md) |
 | MCP tool boundaries | [mcp](references/mcp/index.md) |
 | User authentication | [user](references/user/index.md); [user/setup](references/user/setup.md) |
