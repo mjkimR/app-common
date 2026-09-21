@@ -258,6 +258,121 @@ async def test_timeout_and_cancellation_do_not_leave_orphan_publishers(env):
     assert (await e.relay().recover()).retried == 1
 
 
+@pytest.mark.parametrize("publish_succeeds", [True, False])
+async def test_slow_heartbeat_does_not_block_publish_completion_or_timeout(env, monkeypatch, publish_succeeds):
+    await env.seed()
+    renewing, release, renewed, publisher_done = (asyncio.Event() for _ in range(4))
+
+    async def publish(event_type, event):
+        try:
+            await renewing.wait()
+            if not publish_succeeds:
+                await asyncio.Event().wait()
+        finally:
+            publisher_done.set()
+
+    relay = env.relay(
+        publisher=publish,
+        options=RelayOptions(heartbeat_seconds=0.01, publish_timeout_seconds=0.2),
+    )
+
+    original = relay.repo.renew_claim
+
+    async def slow_renew(*args, **kwargs):
+        result = await original(*args, **kwargs)
+        renewing.set()
+        try:
+            await release.wait()
+            return result
+        finally:
+            renewed.set()
+
+    monkeypatch.setattr(relay.repo, "renew_claim", slow_renew)
+    task = asyncio.create_task(relay.run_once())
+    try:
+        await asyncio.wait_for(renewing.wait(), 5)
+        result = await asyncio.wait_for(asyncio.shield(task), 1)
+        assert publisher_done.is_set() and renewed.is_set()
+        row = (await env.read())[0]
+        if publish_succeeds:
+            assert result.published == 1 and result.retried == 0
+            assert row.status == EventStatus.PUBLISHED and row.last_error is None
+        else:
+            assert result.retried == 1 and result.published == 0
+            assert row.status == EventStatus.PENDING and row.last_error == "publish_timeout"
+    finally:
+        release.set()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_cancellation_drains_publisher_and_heartbeat_before_propagating(env, monkeypatch):
+    await env.seed()
+    renewing = asyncio.Event()
+    cleaning = [asyncio.Event(), asyncio.Event()]
+    release = [asyncio.Event(), asyncio.Event()]
+    cleaned = [asyncio.Event(), asyncio.Event()]
+
+    async def block(index):
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cleaning[index].set()
+            await release[index].wait()
+            cleaned[index].set()
+
+    async def publish(event_type, event):
+        await block(0)
+
+    async def renew(claim):
+        renewing.set()
+        await block(1)
+        return True
+
+    relay = env.relay(publisher=publish, options=RelayOptions(heartbeat_seconds=0.01))
+    monkeypatch.setattr(relay, "_renew", renew)
+    task = asyncio.create_task(relay.run_once())
+    try:
+        await asyncio.wait_for(renewing.wait(), 5)
+        task.cancel()
+        await asyncio.wait_for(asyncio.gather(*(event.wait() for event in cleaning)), 5)
+        for _ in range(2):
+            task.cancel()
+            await asyncio.sleep(0)
+            assert not task.done()
+        release[0].set()
+        await asyncio.wait_for(cleaned[0].wait(), 5)
+        assert not task.done() and not cleaned[1].is_set()
+    finally:
+        for event in release:
+            event.set()
+        outcome = await asyncio.gather(task, return_exceptions=True)
+    assert isinstance(outcome[0], asyncio.CancelledError)
+    assert all(event.is_set() for event in cleaned)
+    assert (await env.read())[0].status == EventStatus.PROCESSING
+
+
+async def test_heartbeat_db_error_cancels_publisher_and_leaves_claim_for_recovery(env, monkeypatch):
+    await env.seed()
+    cancelled = asyncio.Event()
+
+    async def publish(event_type, event):
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+
+    async def fail(claim):
+        raise RuntimeError("heartbeat DB unavailable")
+
+    relay = env.relay(publisher=publish, options=RelayOptions(heartbeat_seconds=0.01))
+    monkeypatch.setattr(relay, "_renew", fail)
+    with pytest.raises(RuntimeError, match="heartbeat DB unavailable"):
+        await relay.run_once()
+    assert cancelled.is_set()
+    row = (await env.read())[0]
+    assert row.status == EventStatus.PROCESSING and row.retry_count == 0
+
+
 async def test_administrative_status_changes_cannot_bypass_active_claim(env):
     e = env
     ids = await e.seed()

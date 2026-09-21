@@ -148,6 +148,10 @@ relay calls in a business transaction or give them a maker bound to its connecti
   publisher and records no completion. Cancellation or a DB completion failure leaves
   a PROCESSING row for expiry recovery. Expiry consumes the same failure budget and
   schedules the same backoff; competing reapers cannot count the same expiry twice.
+- Heartbeat DB work runs separately from publication completion/timeout monitoring.
+  Slow renewal cannot turn an acknowledged publication into a publish timeout or delay
+  cancelling a timed-out publisher. Both tasks drain before DB completion; cleanup
+  itself can exceed the publish timeout while external resources are released.
 - Caller cancellation received during publisher cleanup propagates after cleanup
   completes. Scheduler shutdown drains all owned jobs before propagating cancellation.
 - `last_error` records an exception class or `invalid_event`, `publish_timeout`, `lease_expired`, or

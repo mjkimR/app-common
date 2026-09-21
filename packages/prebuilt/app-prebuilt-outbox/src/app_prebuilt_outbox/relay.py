@@ -168,6 +168,12 @@ class OutboxRelay:
             )
         return status if applied else None
 
+    async def _heartbeat(self, claim: _Claim) -> None:
+        while True:
+            await asyncio.sleep(self.options.heartbeat_seconds)
+            if not await self._renew(claim):
+                raise _LostClaim
+
     async def _publish(self, claim: _Claim) -> None:
         # Validate after the claim commits so malformed persisted events consume
         # their retry budget instead of rolling back and blocking the queue head.
@@ -176,24 +182,34 @@ class OutboxRelay:
         except ValidationError as exc:
             raise _PublishFailure("invalid_event") from exc
         task = asyncio.create_task(self.publisher(event.type, event))
-        deadline = asyncio.get_running_loop().time() + self.options.publish_timeout_seconds
+        heartbeat = asyncio.create_task(self._heartbeat(claim))
         try:
-            while True:
-                remaining = deadline - asyncio.get_running_loop().time()
-                if remaining <= 0:
-                    raise _PublishFailure("publish_timeout")
-                done, _ = await asyncio.wait({task}, timeout=min(self.options.heartbeat_seconds, remaining))
-                if done:
-                    try:
-                        task.result()
-                    except Exception as exc:
-                        # Do not persist transport exception messages, which can contain payloads/credentials.
-                        raise _PublishFailure(type(exc).__name__) from exc
-                    return
-                if not await self._renew(claim):
-                    raise _LostClaim
+            # DB renewal must not delay observing transport completion or its deadline.
+            done, _ = await asyncio.wait(
+                {task, heartbeat},
+                timeout=self.options.publish_timeout_seconds,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            if heartbeat in done:
+                heartbeat.result()  # Propagate DB errors/lease loss before acknowledging.
+            if task not in done:
+                raise _PublishFailure("publish_timeout")
+            try:
+                task.result()
+            except Exception as exc:
+                # Do not persist transport exception messages, which can contain payloads/credentials.
+                raise _PublishFailure(type(exc).__name__) from exc
         finally:
-            if cancellation := await _cancel_and_drain(task):
+            # Cancel both before draining: a slow DB cleanup must not keep publishing,
+            # and no renewal may race the subsequent completion transaction.
+            for child in (task, heartbeat):
+                if not child.done() and not child.cancelling():
+                    child.cancel()
+            cancellation = None
+            for child in (task, heartbeat):
+                if interrupted := await _cancel_and_drain(child):
+                    cancellation = interrupted
+            if cancellation is not None:
                 raise cancellation
 
     async def run_once(self) -> RelayResult:
