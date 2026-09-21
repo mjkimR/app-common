@@ -32,6 +32,12 @@
         "app-testing-base"
       ]
     },
+    "testing/examples": {
+      "path": "references/testing/examples.md",
+      "packages": [
+        "app-testing-base"
+      ]
+    },
     "storage": {
       "path": "references/storage/index.md",
       "packages": [
