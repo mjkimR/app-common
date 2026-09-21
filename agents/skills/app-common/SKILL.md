@@ -39,6 +39,7 @@ development use `guide --source <checkout>`. The relative references work withou
 | DB-backed semantic search | [search](references/search/index.md) |
 | AI model catalog | [ai](references/ai/index.md); [ai/setup](references/ai/setup.md) |
 | MCP tool boundaries | [mcp](references/mcp/index.md) |
+| Machine API keys | [api-key](references/api-key/index.md) |
 | User authentication | [user](references/user/index.md); [user/setup](references/user/setup.md) |
 | Transactional outbox | [outbox](references/outbox/index.md); [outbox/setup](references/outbox/setup.md) |
 | Svelte UI and API binding | [ui](references/ui/index.md); file-size limits and bounded exceptions: [ui/structure](references/ui/structure.md) |

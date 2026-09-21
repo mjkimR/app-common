@@ -2,11 +2,12 @@
 # Shared helpers for module resolution.
 # Source this file from scripts or justfile recipes: source ./scripts/_lib.sh
 
-AVAILABLE_MODULES="all app-error app-prebuilt-user app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp"
+AVAILABLE_MODULES="all app-error app-prebuilt-user app-prebuilt-api-key app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp"
 
 resolve_module() {
     case "$1" in
         app-error|error|errors) echo "app-error" ;;
+        app-prebuilt-api-key|prebuilt-api-key|api-key) echo "app-prebuilt-api-key" ;;
         app-prebuilt-user|prebuilt-user|user) echo "app-prebuilt-user" ;;
         app-prebuilt-outbox|prebuilt-outbox|outbox) echo "app-prebuilt-outbox" ;;
         app-prebuilt-search|prebuilt-search|search) echo "app-prebuilt-search" ;;
@@ -26,6 +27,7 @@ resolve_module() {
 resolve_module_path() {
     case "$1" in
         app-error) echo "packages/base/app-error" ;;
+        app-prebuilt-api-key) echo "packages/prebuilt/app-prebuilt-api-key" ;;
         app-prebuilt-user) echo "packages/prebuilt/app-prebuilt-user" ;;
         app-prebuilt-outbox) echo "packages/prebuilt/app-prebuilt-outbox" ;;
         app-prebuilt-search) echo "packages/prebuilt/app-prebuilt-search" ;;
@@ -47,7 +49,7 @@ should_run() {
 
 validate_module() {
     case "$1" in
-        all|app-error|app-prebuilt-user|app-prebuilt-outbox|app-prebuilt-search|app-tools|app-layer-base|app-testing-base|app-file-storage|app-vector-store|app-http-client|app-ai-catalog|app-mcp) ;;
+        all|app-error|app-prebuilt-user|app-prebuilt-api-key|app-prebuilt-outbox|app-prebuilt-search|app-tools|app-layer-base|app-testing-base|app-file-storage|app-vector-store|app-http-client|app-ai-catalog|app-mcp) ;;
         *)
             echo "Unknown module: $1" >&2
             echo "Available modules: $AVAILABLE_MODULES" >&2

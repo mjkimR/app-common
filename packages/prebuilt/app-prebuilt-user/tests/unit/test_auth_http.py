@@ -92,3 +92,24 @@ async def test_swagger_token_url_accepts_the_password_form(auth_http):
     schema = (await client.get("/openapi.json")).json()
     token_url = schema["components"]["securitySchemes"]["OAuth2PasswordBearer"]["flows"]["password"]["tokenUrl"]
     assert (await client.post(token_url, data=CREDENTIALS)).status_code == 200
+
+
+async def test_host_transaction_factory_is_used_for_login_and_admin_reads(auth_http, session_maker, monkeypatch):
+    from functools import partial
+
+    from app_layer_base.core.database import engine
+    from app_layer_base.core.database.transaction import AsyncTransaction
+    from app_prebuilt_user.database import get_user_transaction
+
+    client, _user_id = auth_http
+    app = client._transport.app
+    app.dependency_overrides[get_user_transaction] = lambda: partial(AsyncTransaction, session_maker)
+
+    def wrong_database():
+        raise AssertionError("The host supplied its own transaction factory")
+
+    monkeypatch.setattr(engine, "get_session_maker", wrong_database)
+    signed_in = await client.post(LOGIN, data=CREDENTIALS)
+    assert signed_in.status_code == 200
+    headers = {"Authorization": f"Bearer {signed_in.json()['access_token']}"}
+    assert (await client.get("/api/v1/users/admin/", headers=headers)).status_code == 200

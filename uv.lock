@@ -15,6 +15,7 @@ members = [
     "app-http-client",
     "app-layer-base",
     "app-mcp",
+    "app-prebuilt-api-key",
     "app-prebuilt-outbox",
     "app-prebuilt-search",
     "app-prebuilt-user",
@@ -431,6 +432,37 @@ requires-dist = [
 dev = [
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
+    { name = "ruff", specifier = ">=0.14.14" },
+]
+
+[[package]]
+name = "app-prebuilt-api-key"
+version = "0.1.0"
+source = { editable = "packages/prebuilt/app-prebuilt-api-key" }
+dependencies = [
+    { name = "app-layer-base" },
+    { name = "sqlalchemy" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "app-testing-base" },
+    { name = "fastapi" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "app-layer-base", editable = "packages/base/app-layer-base" },
+    { name = "sqlalchemy", specifier = ">=2.0.39" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "app-testing-base", editable = "packages/base/app-testing-base" },
+    { name = "fastapi", specifier = ">=0.115.12" },
+    { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "ruff", specifier = ">=0.14.14" },
 ]
 

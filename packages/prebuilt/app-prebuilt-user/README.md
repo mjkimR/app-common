@@ -101,3 +101,12 @@ deployment through `app.dependency_overrides`:
 
 - [App Prebuilt User Skill](../../../agents/skills/app-common/references/user/index.md) — user auth, JWT login flow, and admin CRUD.
 - [App Backend Core Skill](../../../agents/skills/app-common/references/backend/index.md) — layered architecture and dependencies.
+
+### Application-owned transactions
+
+Override `get_user_transaction` from `app_prebuilt_user.database` with a dependency
+returning `partial(AsyncTransaction, your_session_maker)` to bind every user usecase
+to the host's DB. Also override `app_layer_base.core.database.deps.get_session`
+for token refresh and current-user lookup. Close authentication reads before
+starting a separate SQLite write transaction; hosts can override `get_current_user`
+with a short-lived lookup that delegates validation to the original function.
