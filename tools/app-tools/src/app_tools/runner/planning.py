@@ -82,7 +82,7 @@ def is_workspace_member(directory: Path) -> bool:
 
 def python_step(directory: Path, tool: str, args: list[str]) -> Step:
     label = f"{tool} {args[0]}" if tool == "ruff" and args else tool
-    return Step(directory, ("uv", "run", "--no-sync", tool, *args), label)
+    return Step(directory, ("uv", "run", "--no-active", "--no-sync", tool, *args), label)
 
 
 def architecture_enabled(directory: Path) -> bool:

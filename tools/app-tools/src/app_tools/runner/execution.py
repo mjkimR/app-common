@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import os
-import re
 import signal
 import subprocess
 import tempfile
@@ -14,8 +13,8 @@ from pathlib import Path
 import click
 
 from app_tools.runner.planning import Step
+from app_tools.runner.summary import ANSI, summaries
 
-ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 MAX_OUTPUT = 16_000
 
 
@@ -77,7 +76,7 @@ def execute(step: Step, log_dir: Path, raw: bool = False, warn_after: float = 60
                 output = f"{head}\n... output omitted; full log: {log_path} ...\n{tail}"
         click.echo(ANSI.sub("", output), nl=not output.endswith("\n"))
     elif step.label == "check-arch":
-        # Only extract our own stable diagnostic format; arbitrary tool output stays in the log.
+        # Preserve architecture diagnostics with their existing, larger output budget.
         remaining = MAX_OUTPUT
         with log_path.open(errors="replace") as stream:
             for line in stream:
@@ -87,6 +86,9 @@ def execute(step: Step, log_dir: Path, raw: bool = False, warn_after: float = 60
                         break
                     click.echo(line, nl=False)
                     remaining -= len(line)
+    if not raw and code == 0:
+        for summary in summaries(log_path):
+            click.echo(f"  {summary}")
     status = "PASS" if code == 0 else f"FAIL({code})"
     click.echo(f"{status} {step.label} [{step.cwd}] ({time.monotonic() - started:.1f}s) log: {log_path}")
     return code

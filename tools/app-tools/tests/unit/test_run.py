@@ -34,7 +34,7 @@ def test_discovers_packages_without_generated_or_nested_repository_targets(tmp_p
     assert set(discover(tmp_path)) == {tmp_path, package, web}
     steps, _ = plan_task(tmp_path, "test")
     assert [(step.cwd, step.argv[:3]) for step in steps] == [
-        (package, ("uv", "run", "--no-sync")),
+        (package, ("uv", "run", "--no-active")),
         (web, ("npm", "run", "test")),
     ]
     scoped, _ = plan_task(web, "test")
@@ -99,7 +99,7 @@ def test_tool_arguments_after_separator_are_not_parsed_by_wrapper(tmp_path, monk
     monkeypatch.setattr("app_tools.commands.run.execute", record)
     result = CliRunner().invoke(cli, ["run", "pytest", "--path", str(tmp_path), "--", "--raw", "-k", "a or b"])
     assert result.exit_code == 5
-    assert calls[0][0].argv == ("uv", "run", "--no-sync", "pytest", "--raw", "-k", "a or b")
+    assert calls[0][0].argv == ("uv", "run", "--no-active", "--no-sync", "pytest", "--raw", "-k", "a or b")
     assert calls[0][1] is False
 
 
@@ -187,7 +187,7 @@ def test_workspace_exclusions_are_respected_but_explicit_path_can_run_them(tmp_p
 def test_pytest_options_remain_owned_by_project(tmp_path):
     manifest(tmp_path, extra='[tool.pytest.ini_options]\naddopts = "-n auto"\ntestpaths = ["specs"]\n')
     steps, _ = plan_task(tmp_path, "test")
-    assert steps[0].argv == ("uv", "run", "--no-sync", "pytest")
+    assert steps[0].argv == ("uv", "run", "--no-active", "--no-sync", "pytest")
 
 
 def test_raw_generic_command_does_not_expand_shell_characters(tmp_path):

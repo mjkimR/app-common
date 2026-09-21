@@ -88,14 +88,31 @@ target aliases, DB defaults, Docker exclusions, or worker defaults added by app-
 keep those policies in the project's existing configuration or scripts. In particular,
 `run test` does not inherit app-common's `just test` Docker deselection policy.
 
-Output is collected until each command exits. Success produces one line; failure prints
+Output is collected until each command exits. Success prints a status line plus recognized
+tool summaries (up to 2 KB): pytest/Vitest/Playwright outcome counts, Ruff formatting/fix
+results, Pyright/svelte-check/ESLint diagnostic counts, Prettier results, and pytest-cov
+totals. Skips, deselections, expected failures, and warnings remain visible in test
+summaries. Summary lines stay in tool order, including inside npm scripts and shell
+wrappers; counts from separate suites are not combined. Unknown output formats stay in
+the log, and missing summaries never imply zero tests or warnings. Failure prints
 up to 16 KB of output (head and tail when truncated). Complete combined stdout/stderr is
 saved in a private OS temporary directory, and every result includes its log path.
-Successful architecture warnings are also shown in compact output. Other tools' successful
-warnings are retained in the log; the generic renderer does not interpret their formats. `--raw` prints all collected output, including
+Successful architecture warnings are also shown in compact output. Recognized Python,
+Pyright, Node, Ruff/uv, svelte-check, and ESLint warnings show their first message line
+and location when available. Identical messages appear once per command, at their first
+location; counts still reflect the tool's original totals. Warning messages are capped
+at 500 characters each and 2 KB per command, separately from result summaries. Full
+details and unrecognized warning formats remain in the log. Warnings suppressed by the
+tool itself (for example pytest `--disable-warnings`) cannot be recovered by the runner.
+`--raw` prints all collected output, including
 successful output, after each command finishes. These commands are intended for finite
 checks, not interactive shells or watch servers. Logs remain until removed or cleaned by
 the OS; they are not written into the repository.
+
+Generated Python tool commands use `uv run --no-active --no-sync` to explicitly select
+the project environment and avoid warnings about an unrelated inherited `VIRTUAL_ENV`.
+Explicit `run uv -- ...` and generic commands preserve their arguments. If an outer
+`uv run` launches app-tools, add `--no-active` there too to avoid its startup warning.
 
 Independent steps continue after a failure. A single command preserves its exit status;
 a multi-step task returns 1 if any step failed and reports totals. Ctrl-C stops execution
