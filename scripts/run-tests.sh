@@ -98,7 +98,7 @@ run_pytest() {
     fi
 
     local status=0
-    uv run --no-sync app-tools run pytest --path "$path" ${output_args[@]+"${output_args[@]}"} -- $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" || status=$?
+    uv run --no-active --no-sync app-tools run pytest --path "$path" ${output_args[@]+"${output_args[@]}"} -- $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" || status=$?
 
     if [ "$status" -eq 5 ]; then
         echo "No tests collected for $module."
@@ -156,12 +156,12 @@ if [ "$COVERAGE" = "1" ]; then
         echo
         echo "Combined coverage:"
         # `coverage combine` consumes the per-package data files it merges.
-        COVERAGE_FILE="$combined" uv run --directory "$REPO_ROOT" coverage combine "$COVERAGE_DATA_DIR" >/dev/null
+        COVERAGE_FILE="$combined" uv run --no-active --directory "$REPO_ROOT" coverage combine "$COVERAGE_DATA_DIR" >/dev/null
 
         # A coverage failure must not mask a test failure, so `set -e` is sidestepped here.
         cov_status=0
-        COVERAGE_FILE="$combined" uv run --directory "$REPO_ROOT" coverage report || cov_status=$?
-        COVERAGE_FILE="$combined" uv run --directory "$REPO_ROOT" coverage html --directory htmlcov >/dev/null || cov_status=$?
+        COVERAGE_FILE="$combined" uv run --no-active --directory "$REPO_ROOT" coverage report || cov_status=$?
+        COVERAGE_FILE="$combined" uv run --no-active --directory "$REPO_ROOT" coverage html --directory htmlcov >/dev/null || cov_status=$?
 
         if [ "$cov_status" -ne 0 ] && [ "$status" -eq 0 ]; then
             status=$cov_status

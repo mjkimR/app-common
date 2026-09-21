@@ -11,10 +11,10 @@ init module="all":
 
     if [ "$target" = "all" ]; then
         echo "Initializing workspace..."
-        uv sync
+        uv sync --no-active
     else
         echo "Initializing $target..."
-        uv sync --package "$target"
+        uv sync --no-active --package "$target"
     fi
 
     just hooks-install
@@ -28,10 +28,10 @@ init-dev module="all":
 
     if [ "$target" = "all" ]; then
         echo "Initializing workspace with extras..."
-        uv sync --all-extras
+        uv sync --no-active --all-extras
     else
         echo "Initializing $target with extras..."
-        uv sync --package "$target" --all-extras
+        uv sync --no-active --package "$target" --all-extras
     fi
 
     just hooks-install
@@ -49,7 +49,7 @@ lint module="all":
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Linting $m ($path)..."
-                uv run --no-sync app-tools run lint --fix --path "$path"
+                uv run --no-active --no-sync app-tools run lint --fix --path "$path"
             fi
         fi
     done
@@ -67,7 +67,7 @@ check module="all":
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Type checking $m ($path)..."
-                uv run --no-sync app-tools run pyright -- "$path/src"
+                uv run --no-active --no-sync app-tools run pyright -- "$path/src"
             fi
         fi
     done
@@ -85,22 +85,22 @@ lint-check module="all":
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Checking lint for $m ($path)..."
-                uv run --no-sync app-tools run lint --path "$path"
+                uv run --no-active --no-sync app-tools run lint --path "$path"
             fi
         fi
     done
 
 # Run architectural constraint validation across packages or specific paths
 check-arch +paths="":
-    uv run app-tools check-arch {{ paths }}
+    uv run --no-active app-tools check-arch {{ paths }}
 
 # Install pre-commit hooks
 hooks-install:
-    uv run pre-commit install
+    uv run --no-active pre-commit install
 
 # Run pre-commit hooks against all files
 hooks-run:
-    uv run pre-commit run --all-files
+    uv run --no-active pre-commit run --all-files
 
 # Run tests with SQLite; container-backed tests are deselected, so no Docker is needed
 test +paths="":
@@ -128,8 +128,8 @@ init-ui:
 
 # Enforce file-size limits and type check UI package
 check-ui:
-    uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run lint
-    uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run check
+    uv run --no-active --no-sync app-tools run npm --path packages/ui/app-ui-base -- run lint
+    uv run --no-active --no-sync app-tools run npm --path packages/ui/app-ui-base -- run check
 
 # Verify the shared frontend file-size preset
 test-eslint:
@@ -138,4 +138,4 @@ test-eslint:
 
 # Build UI package into dist/
 build-ui:
-    uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run build
+    uv run --no-active --no-sync app-tools run npm --path packages/ui/app-ui-base -- run build
