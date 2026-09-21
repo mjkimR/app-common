@@ -38,9 +38,10 @@ Use the provided scripts to install it automatically:
 - **Type check all modules**: `just check`
 - **Type check one module**: `just check <module-name>`
 - **UI Package Commands**:
-  - `just init-ui` — install Svelte UI library dependencies
-  - `just check-ui` — type check UI library with `svelte-check`
+  - `just init-ui` — install root ESLint tooling and Svelte UI library dependencies
+  - `just check-ui` — enforce file-size limits and type check UI library with `svelte-check`
   - `just build-ui` — build Svelte library to `dist/` with `@sveltejs/package`
+  - `just test-eslint` — test the shared frontend size preset and bounded exceptions
 - **Run tests**: `just test` — every module on SQLite, no Docker needed. Container-backed tests are deselected, so this is the fast one you run constantly.
 - **Run tests on PostgreSQL**: `just test-pg` — **needs Docker**. `SELECT ... FOR UPDATE SKIP LOCKED` is a no-op on SQLite, so this is the only run that verifies the outbox's row locking.
 - **Run container-backed tests**: `just test-docker` — **needs Docker**. Adds the tests marked `docker`, e.g. the S3 storage contract against a real MinIO (mocked aiobotocore hid three real bugs; see `app-file-storage/tests/integrate/`).
@@ -53,7 +54,7 @@ CI runs all three test legs on every push, so anything deselected locally is sti
 
 Packages are consumed as git dependencies (`git+...@<ref>#subdirectory=<path-to-package>`), never published to PyPI. A release is a repo-level tag:
 
-1. Bump `version` in every package's `pyproject.toml` (and `packages/ui/app-ui-base/package.json`) to match the tag (one repo version across all packages — they ship together).
+1. Bump `version` in every package's `pyproject.toml`, root `package.json`, and `packages/ui/app-ui-base/package.json` (and their npm locks) to match the tag (one repo version across all packages — they ship together).
 2. Tag the commit and push it: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 3. CI runs lint / type-check / all three test legs on the tag; only if they pass does the `release` job create a GitHub Release with generated notes.
 
@@ -99,6 +100,10 @@ The repository is structured into organized category directories under `packages
         - Usage (Web Feature Scaffolding): `uv run app-tools create-code web-feature --name <Name>`
         - Usage (Local Dev Linking): `uv run app-tools dev link`, `dev unlink`, `dev status`
         - `create_code/templates/`: generated feature skeletons for backend and Svelte 5 web features.
+- **`packages/tooling/eslint-config/`**: Shared frontend size preset, exported by the
+  root npm package `@app-common/eslint-config`. Follow the `ui/structure` guide:
+  resolve size errors by meaningful splitting or an exact-file, reasoned, finite
+  ceiling. Do not suppress the rule or automatically increase ceilings to pass.
 
 Every package keeps its source in `src/<package_name>/` and its tests in `tests/unit/` (plus `tests/integrate/` where present). Tests never live under `src/`. Each package owns its own pytest config (`[tool.pytest.ini_options]`), so its rootdir is the package directory — there is deliberately no workspace-wide `pythonpath`.
 

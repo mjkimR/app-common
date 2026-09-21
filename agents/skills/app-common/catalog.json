@@ -116,6 +116,13 @@
         "@app-common/ui-base"
       ]
     },
+    "ui/structure": {
+      "path": "references/ui/structure.md",
+      "packages": [
+        "@app-common/ui-base",
+        "@app-common/eslint-config"
+      ]
+    },
     "ui/checklist": {
       "path": "references/ui/checklist.md",
       "packages": [

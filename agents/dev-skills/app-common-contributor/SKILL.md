@@ -67,6 +67,17 @@ just check
 - Pyright checks `src/` directories.
 - Ensure strict type annotations on all public functions, classes, and parameters.
 
+For frontend work, `just init-ui` installs the root shared ESLint tooling and UI
+dependencies; `just check-ui` runs size checks and Svelte type checks. Changes to the
+shared preset also require `just test-eslint`. The root npm manifest exports
+`@app-common/eslint-config` from `packages/tooling/eslint-config/`; include its
+version when updating all packages for a release.
+
+Follow the consumer `ui/structure` guide: split oversized files by responsibility,
+or record an exact path, rationale, and finite ceiling. Do not disable the rule or
+automatically raise a ceiling to pass a check. Keep this policy in the canonical
+consumer guides under `agents/skills/app-common/references/ui/`.
+
 ---
 
 ## 4. Adding a New Package or Adapter

@@ -57,6 +57,13 @@ Every web project should pin standard dependencies:
 
 ## 2. Configuration Files
 
+### ESLint file-size checks
+
+Install and compose the shared `@app-common/eslint-config/structure` preset as
+described in [structure.md](./structure.md). Keep `npm run lint` in local checks and
+CI. Overages fail the check; use a meaningful split or a documented per-file ceiling
+instead of persistent warnings or disabling the rule.
+
 ### `components.json` (shadcn-svelte)
 ```json
 {

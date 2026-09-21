@@ -1,0 +1,29 @@
+{
+  "name": "@app-common/eslint-config",
+  "version": "0.1.0",
+  "description": "Shared Svelte and TypeScript file-size limits with bounded exceptions",
+  "type": "module",
+  "exports": {
+    ".": "./packages/tooling/eslint-config/structure.js",
+    "./structure": "./packages/tooling/eslint-config/structure.js"
+  },
+  "files": ["packages/tooling/eslint-config/structure.js"],
+  "scripts": {
+    "check": "tsc --noEmit --allowJs --checkJs --module nodenext --target es2022 --skipLibCheck packages/tooling/eslint-config/structure.js",
+    "test": "node --test packages/tooling/eslint-config/tests/*.test.js"
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "^8.70.0",
+    "svelte-eslint-parser": "^1.8.1"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0 || ^10.0.0",
+    "svelte": "^5.0.0",
+    "typescript": ">=5.0.0 <6.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.0.0",
+    "svelte": "^5.0.0",
+    "typescript": "~6.0.0"
+  }
+}

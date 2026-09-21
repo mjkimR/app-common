@@ -123,13 +123,19 @@ test-cov module="all":
 
 # Initialize UI package dependencies
 init-ui:
+    npm ci
     npm install --prefix packages/ui/app-ui-base
 
-# Type check UI package
+# Enforce file-size limits and type check UI package
 check-ui:
+    uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run lint
     uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run check
+
+# Verify the shared frontend file-size preset
+test-eslint:
+    npm run check
+    npm test
 
 # Build UI package into dist/
 build-ui:
     uv run --no-sync app-tools run npm --path packages/ui/app-ui-base -- run build
-

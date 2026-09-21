@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Agent-First Svelte 5 foundational UI components, layout shell, and reactive state stores",
   "scripts": {
+    "lint": "eslint src",
     "build": "svelte-package",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "prepack": "npm run build"

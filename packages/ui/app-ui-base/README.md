@@ -58,10 +58,15 @@ pnpm add @app-common/ui-base
 
 ## Development & Building
 
-Inside `packages/ui/app-ui-base`:
+From the repository root:
 
 ```bash
-npm install     # Install dependencies
-npm run check   # Type check with svelte-check
-npm run build   # Package into dist/ with @sveltejs/package
+just init-ui      # Install root ESLint tooling and UI dependencies
+just check-ui     # File-size lint and svelte-check
+just build-ui     # Package into dist/ with @sveltejs/package
+just test-eslint  # Verify the shared size policy
 ```
+
+The UI uses the shared [file-size policy](../../../agents/skills/app-common/references/ui/structure.md).
+Authored components are checked; oversized files need a meaningful split or a
+documented per-file ceiling. Run `npm run lint` inside this package for size checks alone.

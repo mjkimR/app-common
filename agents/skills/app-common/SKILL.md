@@ -41,7 +41,7 @@ development use `guide --source <checkout>`. The relative references work withou
 | MCP tool boundaries | [mcp](references/mcp/index.md) |
 | User authentication | [user](references/user/index.md); [user/setup](references/user/setup.md) |
 | Transactional outbox | [outbox](references/outbox/index.md); [outbox/setup](references/outbox/setup.md) |
-| Svelte UI and API binding | [ui](references/ui/index.md); follow its task-specific references |
+| Svelte UI and API binding | [ui](references/ui/index.md); file-size limits and bounded exceptions: [ui/structure](references/ui/structure.md) |
 | Modify packages from a consumer project | [local-dev](references/local-dev/index.md) |
 | Update released dependencies | [update](references/update/index.md) |
 

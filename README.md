@@ -31,10 +31,13 @@ Each adapter isolates a specific technology stack and can be imported independen
 ### 5. UI Library & Developer Productivity
 - **[app-ui-base](./packages/ui/app-ui-base/README.md)**: Agent-First Svelte 5 foundational UI library (`@app-common/ui-base`) providing layout shell (`AppShell`), atomic UI primitives (`Button`, `Card`, `Input`), reactive state stores (`sessionStore`, `themeStore`), and Tailwind design tokens.
 - **[app-tools](./tools/app-tools/README.md)**: Developer CLI tool to automatically generate layered CRUD code (backend features and Svelte 5 web features) and manage local development symlinks (`app-tools dev`).
+- **[@app-common/eslint-config](./agents/skills/app-common/references/ui/structure.md)**: Shared Svelte/TypeScript file-size errors with documented, bounded per-file exceptions. The root npm manifest packages the implementation under `packages/tooling/eslint-config/` so consumers can install a pinned Git ref independently of the UI library.
 
 `app-ui-base` has an independent npm/Svelte lifecycle. It is intentionally not a
-member of the Python `uv` workspace; validate it with `just check-ui` and
-`just build-ui` in its own frontend CI workflow.
+member of the Python `uv` workspace. Run `just init-ui` to install root lint tooling
+and UI dependencies, then `just check-ui` (size lint and type checks) and
+`just build-ui`. `just test-eslint` verifies the shared preset. The frontend CI
+workflow runs these checks too.
 
 After initializing dependencies, lint, type checks, tests, and UI checks/builds use
 `app-tools run` for compact results and complete temporary logs. Failures retain
@@ -94,4 +97,3 @@ apm install
 ### AI Agent Onboarding
 To bootstrap a new FastAPI project from scratch with an AI agent, give the agent this GitHub link:
 > `https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md`
-

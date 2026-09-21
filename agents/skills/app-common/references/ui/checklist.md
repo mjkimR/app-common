@@ -30,6 +30,10 @@ npm run lint
 
 - [ ] Prettier formatting applied cleanly.
 - [ ] Tailwind class names merged properly with `cn()`.
+- [ ] [File-size checks](./structure.md) pass: Svelte 500, TypeScript 400, routes 200 counted lines.
+- [ ] Any size exception has an exact path, reason, and finite ceiling; no blanket
+  suppression or automatic ceiling increase was used. Remove obsolete exceptions
+  from files touched by this change.
 
 ---
 

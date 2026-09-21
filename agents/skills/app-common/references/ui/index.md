@@ -8,6 +8,7 @@ Agent-First & Friendly UI development guidelines for **Svelte 5 (Runes)**, **Sve
 > - [components.md](./components.md): shadcn-svelte atomic components, Lucide icons, and layout tokens.
 > - [api.md](./api.md): Schema-first API binding with `openapi-fetch` and `gen-api.sh`.
 > - [checklist.md](./checklist.md): Agent self-verification checklist before finishing tasks.
+> - [structure.md](./structure.md): Enforced file-size limits and reasoned, bounded exceptions. Read when configuring lint or resolving a size failure.
 
 ---
 
@@ -32,6 +33,9 @@ When generating or editing UI code, you MUST follow these 5 rules without except
 5. **Self-Healing Verification Loop**:
    - Always run `pnpm check` (or `npm run check`) after editing code to verify type correctness with `svelte-check`.
    - Fix all type and syntax errors before presenting the solution.
+   - Run the project's lint check too. File-size limits are errors: split by responsibility
+     or record a reasoned, finite per-file exception as described in [structure.md](./structure.md).
+     Do not silence the size rule or automatically increase a ceiling to pass checks.
 
 ---
 
