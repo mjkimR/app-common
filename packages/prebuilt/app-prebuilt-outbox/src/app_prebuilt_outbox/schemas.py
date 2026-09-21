@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from typing import Any, TypedDict
 
 from app_layer_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
@@ -34,5 +35,9 @@ class OutboxRead(UUIDSchemaMixin, TimestampSchemaMixin, BaseModel):
     status: EventStatus
     retry_count: int
     processed_at: datetime.datetime | None = None
+    next_attempt_at: datetime.datetime | None = None
+    claim_token: uuid.UUID | None = None
+    lease_expires_at: datetime.datetime | None = None
+    last_error: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

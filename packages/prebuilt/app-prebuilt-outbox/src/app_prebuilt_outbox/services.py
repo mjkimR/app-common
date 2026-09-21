@@ -38,7 +38,8 @@ class OutboxService:
         retry_count: int | None = None,
     ) -> Outbox | None:
         """
-        Updates the status of an outbox event. Used by the event publisher worker.
+        Legacy administrative update for unclaimed events only.
+        Relay workers must use claim-token-fenced completion instead.
         """
         update_data = OutboxUpdate(status=status)
         if status == EventStatus.PUBLISHED:
@@ -47,4 +48,4 @@ class OutboxService:
         if retry_count is not None:
             update_data.retry_count = retry_count
 
-        return await self.repo.update_by_pk(session, pk=event_id, obj_in=update_data)
+        return await self.repo.update_unclaimed_status(session, event_id, update_data)

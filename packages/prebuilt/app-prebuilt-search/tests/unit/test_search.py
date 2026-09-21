@@ -253,3 +253,64 @@ async def test_partial_vector_failure_is_repaired_before_stale_deletion(harness)
     assert (retried.embedded, retried.skipped, retried.deleted) == (3, 2, 1)
     result = await h.service.search(scope="a", query="q")
     assert result.model_dump()["total"] == 5
+
+
+async def test_sqlalchemy_facade_can_hydrate_an_alternate_authorized_scope(harness):
+    h = harness
+    await h.put("doc", filters={"kind": "old"})
+    await h.put("doc", scope="branch", text="branch body", filters={"kind": "new"})
+    await h.service.sync(scope="a")
+    result = await h.service.search(scope="a", source_scope="branch", query="q", filters={"kind": "new"})
+    assert [(i.source_id, i.text) for i in result.items] == [("doc", "branch body")]
+    assert not (await h.service.status(scope="branch")).index_ready
+    assert h.source.enumerations == 1
+
+
+async def test_custom_runtime_joins_caller_transaction_without_committing(harness):
+    import asyncio
+    from contextlib import asynccontextmanager
+
+    from app_prebuilt_search import SearchEngine, SQLAlchemySearchRuntime
+
+    h = harness
+    await h.put("doc", text="committed source")
+    owner = asyncio.current_task()
+
+    class BoundSource:
+        def __init__(self, session, state, repo):
+            self.session, self.state, self.repo = session, state, repo
+
+        async def iter_items(self):
+            assert asyncio.current_task() is owner
+            async for item in h.source.iter_items(self.session, "a"):
+                yield item
+
+        async def record_success(self, result):
+            assert asyncio.current_task() is owner
+            self.repo.record_success(self.state, result)
+
+    class JoinedRuntime(SQLAlchemySearchRuntime):
+        @asynccontextmanager
+        async def sync(self, key):
+            assert asyncio.current_task() is owner
+            state = await self.repo.lock(caller_session, key.index_name, key.scope, key.profile_id)
+            await caller_session.execute(update(h.row).where(h.row.scope == "a").values(text="uncommitted source"))
+            yield BoundSource(caller_session, state, self.repo)
+            # Joining must not close or commit the caller's transaction.
+            assert caller_session.in_transaction()
+
+    runtime = JoinedRuntime(h.maker, h.source)
+    engine = SearchEngine(runtime=runtime, vector_client=h.client, embedder=h.embedder, index=h.service.index)
+    with pytest.raises(RuntimeError, match="caller rollback"):
+        async with h.maker.begin() as caller_session:
+            assert (await engine.sync(scope="a")).embedded == 1
+            assert caller_session.in_transaction()
+            assert (await caller_session.scalars(select(SearchIndexState))).one().last_synced_at is not None
+            raise RuntimeError("caller rollback")
+    async with h.maker() as session:
+        assert (await session.scalar(select(h.row.text))) == "committed source"
+        assert (await session.scalars(select(SearchIndexState))).all() == []
+    # External vectors are not part of the rollback; a normal sync repairs them.
+    assert not (await h.service.status(scope="a")).index_ready
+    assert (await h.service.sync(scope="a")).embedded == 1
+    assert (await h.service.search(scope="a", query="q")).items[0].text == "committed source"

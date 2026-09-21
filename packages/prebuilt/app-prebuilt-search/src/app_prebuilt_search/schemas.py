@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, computed_field
 
 
 class SearchItem(BaseModel):
@@ -14,12 +14,15 @@ class SearchItem(BaseModel):
     title: str = ""
     filters: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Explicitly persisted with the vector; display metadata above stays source-owned.
+    index_metadata: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class SearchHit(BaseModel):
     source_id: str
     item_id: str
     score: float
+    index_metadata: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class SearchResultItem(SearchItem):
@@ -44,6 +47,13 @@ class SyncResult(BaseModel):
     refreshed: int = 0
     skipped: int = 0
     deleted: int = 0
+
+
+class SyncState(BaseModel):
+    """Last successful reconciliation, not a guarantee of source freshness."""
+
+    last_synced_at: datetime | None = None
+    last_result: SyncResult | None = None
 
 
 class IndexStatus(BaseModel):

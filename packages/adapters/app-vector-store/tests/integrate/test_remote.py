@@ -1,7 +1,14 @@
 """Real REST behavior, including payload index schema round trips."""
 
 import pytest
-from app_vector_store import CollectionMismatchError, QdrantSettings, QdrantVectorStore, VectorPoint, open_qdrant
+from app_vector_store import (
+    CollectionMismatchError,
+    PayloadUpdate,
+    QdrantSettings,
+    QdrantVectorStore,
+    VectorPoint,
+    open_qdrant,
+)
 from qdrant_client import models
 
 pytestmark = pytest.mark.docker
@@ -45,6 +52,13 @@ async def test_remote_collection_indexes_filters_and_payloads(endpoint):
         assert [r.id async for r in store.scroll(query_filter=scope, batch_size=1)] == [1]
         await store.overwrite_payload({"project": "a", "kind": "updated"}, models.FilterSelector(filter=scope))
         assert (await store.search([1.0, 0.0], query_filter=scope))[0].payload["kind"] == "updated"
+        await store.overwrite_payloads(
+            [PayloadUpdate(1, {"project": "a", "kind": "batched"}), PayloadUpdate(2, {"project": "b"})],
+            batch_size=1,
+        )
+        records = await client.retrieve("contract", [1, 2], with_vectors=True)
+        assert [r.payload for r in records] == [{"project": "a", "kind": "batched"}, {"project": "b"}]
+        assert all(r.vector == {"model-v1": [1.0, 0.0]} for r in records)
         await store.delete(models.FilterSelector(filter=scope))
         assert [r.id async for r in store.scroll()] == [2]
         wrong = QdrantVectorStore(client, "contract", dimension=2, embedding_id="different-model")

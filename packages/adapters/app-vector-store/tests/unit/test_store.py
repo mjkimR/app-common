@@ -196,3 +196,23 @@ async def test_search_pagination_and_recreate_after_external_deletion(client):
     await client.delete_collection("docs")
     await store.ensure_collection()
     assert await store.collection_exists()
+
+
+async def test_batch_payload_replacement_preserves_vectors_and_scope(client, monkeypatch):
+    from app_vector_store import PayloadUpdate
+
+    store = make_store(client)
+    await store.upsert([VectorPoint(i, [1.0, 0.0], {"legacy": True}) for i in range(6)])
+    batch = AsyncMock(wraps=client.batch_update_points)
+    monkeypatch.setattr(client, "batch_update_points", batch)
+    assert await store.overwrite_payloads([PayloadUpdate(i, {"current": i}) for i in range(5)], batch_size=2) == 5
+    assert batch.await_count == 3
+    records = await client.retrieve("docs", list(range(6)), with_vectors=True)
+    assert all(r.vector == {"model-v1": [1.0, 0.0]} for r in records)
+    assert [r.payload for r in records] == [{"current": i} for i in range(5)] + [{"legacy": True}]
+    assert await store.overwrite_payloads([]) == 0
+    with pytest.raises(ValueError, match="batch_size"):
+        await store.overwrite_payloads([], batch_size=0)
+    await client.delete_collection("docs")
+    assert await store.overwrite_payloads([PayloadUpdate(1, {})]) == 0
+    assert not await store.collection_exists()

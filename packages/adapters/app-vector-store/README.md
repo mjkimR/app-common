@@ -85,3 +85,13 @@ Filters are native `models.Filter`, supporting nested AND/OR/NOT, ranges, arrays
 Corpus discovery, text/chunking, source-of-truth reads, fingerprint policy and incremental-sync orchestration stay in the application. No domain fields such as `project`, `kind` or `doc_id` are built into the adapter.
 
 This API replaces the old model-name factory and global FastAPI lifespan APIs without a compatibility layer. `app-ai-catalog` remains an independent package but is no longer a dependency.
+
+## Batch payload replacement
+
+Use `overwrite_payloads([PayloadUpdate(point_id, payload), ...], batch_size=256)`
+for different complete payloads per point. It uses Qdrant batch updates, preserves
+vectors, removes omitted payload fields and never creates a missing collection.
+The return value counts submitted updates, not existing matched points. Partial
+remote failure can leave earlier batches applied; repeat stable replacements to
+reconcile. Scope authorization and selecting the correct point IDs remain caller
+responsibilities, as with `overwrite_payload`.

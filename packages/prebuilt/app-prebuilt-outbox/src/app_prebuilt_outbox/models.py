@@ -1,9 +1,10 @@
 import datetime
+import uuid
 from enum import StrEnum
 from typing import Any
 
 from app_layer_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
-from sqlalchemy import JSON, DateTime, String
+from sqlalchemy import JSON, UUID, DateTime, Index, String
 from sqlalchemy import Enum as EnumColumn
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,6 +18,10 @@ class EventStatus(StrEnum):
 
 class Outbox(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "outbox"
+    __table_args__ = (
+        Index("ix_outbox_pending_due", "status", "next_attempt_at", "created_at"),
+        Index("ix_outbox_lease_expiry", "status", "lease_expires_at"),
+    )
 
     aggregate_type: Mapped[str] = mapped_column(
         String(255),
@@ -49,3 +54,7 @@ class Outbox(Base, UUIDMixin, TimestampMixin):
         nullable=True,
         comment="Timestamp when the event was last processed or attempted to be published",
     )
+    next_attempt_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    claim_token: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    lease_expires_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)

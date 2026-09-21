@@ -57,15 +57,16 @@ class TestProcessOutboxEventsJob:
         assert all(r.status == EventStatus.PUBLISHED for r in rows)
         assert all(r.processed_at is not None for r in rows)
 
-    async def test_marks_failed_when_publisher_raises(self, session):
+    async def test_schedules_retry_when_publisher_raises(self, session):
         session.add_all([_pending(0), _pending(1)])
         await session.commit()
 
         await process_outbox_events_job(FailingPublisher())
 
         rows = await _read_all()
-        assert all(r.status == EventStatus.FAILED for r in rows)
+        assert all(r.status == EventStatus.PENDING for r in rows)
         assert all(r.retry_count == 1 for r in rows)
+        assert all(r.next_attempt_at is not None and r.claim_token is None for r in rows)
 
 
 class TestResolveZombieEvents:
@@ -118,3 +119,132 @@ class TestMakeFaststreamPublisher:
         message, channel = published[0]
         assert channel == "events.item.created"
         assert message is not None
+
+
+async def test_lifespan_drains_active_publish_on_application_error(session, session_maker):
+    import asyncio
+
+    import pytest
+    from app_prebuilt_outbox import RelayOptions
+    from app_prebuilt_outbox.scheduler import scheduler_lifespan
+    from fastapi import FastAPI
+
+    session.add_all([_pending(0), _pending(1)])
+    await session.commit()
+    entered, release, exiting = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    async def publish(event_type, event):
+        entered.set()
+        await release.wait()
+
+    async def application():
+        async with scheduler_lifespan(
+            FastAPI(),
+            publish,
+            session_maker=session_maker,
+            options=RelayOptions(shutdown_timeout_seconds=5),
+            process_interval_seconds=0.01,
+        ):
+            await entered.wait()
+            exiting.set()
+            raise RuntimeError("application failed")
+
+    task = asyncio.create_task(application())
+    await asyncio.wait_for(exiting.wait(), 5)
+    try:
+        await asyncio.sleep(0)
+        assert not task.done()
+    finally:
+        release.set()
+    with pytest.raises(RuntimeError, match="application failed"):
+        await task
+    rows = await _read_all()
+    assert sum(row.status == EventStatus.PUBLISHED for row in rows) == 1
+    assert sum(row.status == EventStatus.PENDING for row in rows) == 1
+
+
+async def test_lifespan_timeout_cancels_publisher_and_leaves_recoverable_lease(session, session_maker):
+    import asyncio
+
+    from app_prebuilt_outbox import RelayOptions
+    from app_prebuilt_outbox.scheduler import scheduler_lifespan
+    from fastapi import FastAPI
+
+    session.add(_pending(0))
+    await session.commit()
+    entered, cancelled = asyncio.Event(), asyncio.Event()
+
+    async def publish(event_type, event):
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+
+    async with scheduler_lifespan(
+        FastAPI(),
+        publish,
+        session_maker=session_maker,
+        options=RelayOptions(shutdown_timeout_seconds=0.03),
+        process_interval_seconds=0.01,
+    ):
+        await asyncio.wait_for(entered.wait(), 5)
+    assert cancelled.is_set()
+    row = (await _read_all())[0]
+    assert row.status == EventStatus.PROCESSING and row.lease_expires_at is not None
+
+
+async def test_lifespan_caller_cancel_drains_all_jobs_before_propagating(monkeypatch):
+    import asyncio
+
+    from app_prebuilt_outbox import OutboxRelay, RelayOptions
+    from app_prebuilt_outbox.scheduler import scheduler_lifespan
+    from fastapi import FastAPI
+
+    entered = [asyncio.Event(), asyncio.Event()]
+    cleaning = [asyncio.Event(), asyncio.Event()]
+    release = [asyncio.Event(), asyncio.Event()]
+    cleaned = [asyncio.Event(), asyncio.Event()]
+
+    def job(index):
+        async def run(self):
+            entered[index].set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cleaning[index].set()
+                await release[index].wait()
+                cleaned[index].set()
+
+        return run
+
+    monkeypatch.setattr(OutboxRelay, "run_once", job(0))
+    monkeypatch.setattr(OutboxRelay, "recover", job(1))
+
+    async def application():
+        async with scheduler_lifespan(
+            FastAPI(),
+            RecordingPublisher(),
+            options=RelayOptions(shutdown_timeout_seconds=0.01),
+            process_interval_seconds=0.01,
+            zombie_interval_seconds=0.01,
+        ):
+            await asyncio.gather(*(event.wait() for event in entered))
+
+    task = asyncio.create_task(application())
+    try:
+        await asyncio.wait_for(asyncio.gather(*(event.wait() for event in cleaning)), 5)
+        for _ in range(2):
+            task.cancel()
+            await asyncio.sleep(0)
+            assert not task.done()
+        release[0].set()
+        await asyncio.wait_for(cleaned[0].wait(), 5)
+        assert not task.done()
+        assert not cleaned[1].is_set()
+    finally:
+        for event in release:
+            event.set()
+        outcome = await asyncio.gather(task, return_exceptions=True)
+    assert isinstance(outcome[0], asyncio.CancelledError)
+    assert all(event.is_set() for event in cleaned)

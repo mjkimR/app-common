@@ -1,164 +1,57 @@
-import datetime
+"""Optional FastAPI/APScheduler wiring around the independently usable relay."""
+
+import asyncio
 import logging
+import math
+from collections.abc import AsyncIterator, Callable, Coroutine
 from contextlib import asynccontextmanager
+from datetime import datetime
 from functools import partial
-from typing import Any, Protocol
+from typing import Any
 
 from app_layer_base.base.schemas.event import DomainEvent
-from app_layer_base.core.database.transaction import AsyncTransaction
 from app_layer_base.utils.time_util import get_current_utc_time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from .models import EventStatus
-from .repos import OutboxRepository
+from .policy import RelayOptions
+from .relay import EventPublisher, OutboxRelay, RelayResult, _cancel_and_drain
 
 logger = logging.getLogger(__name__)
-_ZOMBIE_MAX_RETRIES = 3
-_ZOMBIE_TIMEOUT = 60 * 60  # 1 hour
-
-
-class EventPublisher(Protocol):
-    """Transport-agnostic publisher injected by the consumer.
-
-    The outbox relay does not own a message broker. The consumer supplies a
-    callable that knows how to publish a ``DomainEvent`` over whatever transport
-    it uses (a FastStream broker, a Taskiq queue, an HTTP webhook, ...). This keeps
-    the outbox package standalone and free of any broker dependency.
-
-    See :func:`make_faststream_publisher` for a ready-made adapter over a
-    FastStream-style broker.
-    """
-
-    async def __call__(self, event_type: str, event: DomainEvent) -> None: ...
 
 
 def make_faststream_publisher(broker: Any) -> EventPublisher:
-    """Build an :class:`EventPublisher` over a FastStream-style broker.
+    """Adapt an async publish(message, channel=...) transport without owning it."""
 
-    ``broker`` only needs an awaitable ``publish(message, channel=...)`` method,
-    so any object honoring that contract works without importing FastStream here.
-    The channel name is derived from the event type (e.g. ``item_created`` ->
-    ``events.item.created``).
-    """
-
-    async def _publish(event_type: str, event: DomainEvent) -> None:
+    async def publish(event_type: str, event: DomainEvent) -> None:
         channel = f"events.{event_type.lower().replace('_', '.')}"
         await broker.publish(event.to_message(), channel=channel)
-        logger.debug(f"Event dispatched: {event_type} -> {channel}")
 
-    return _publish
-
-
-async def process_outbox_events_job(publisher: EventPublisher):
-    """
-    A job function to be run by the scheduler.
-
-    Simply processes pending outbox events. (Not ideal for production use. Just a demo.)
-
-    TODO: more sophisticated scheduling, backoff, batching, exception handling, etc.
-    """
-    logger.info("Running outbox processor job...")
-
-    async with AsyncTransaction() as session:
-        try:
-            repo = OutboxRepository()
-
-            events_to_process = await repo.get_and_lock_pending_events(session, limit=10)
-
-            if not events_to_process:
-                logger.info("No pending outbox events found.")
-                return
-
-            logger.info(f"Found {len(events_to_process)} events to process.")
-
-            # Mark as processing
-            for event in events_to_process:
-                event.status = EventStatus.PROCESSING
-            await session.commit()
-
-            # Process each event
-            for event in events_to_process:
-                try:
-                    await publisher(
-                        event.event_type,
-                        DomainEvent(
-                            id=event.id,
-                            source=f"/{event.aggregate_type.lower()}/outbox",
-                            type=event.event_type,
-                            data=event.payload,
-                            meta={
-                                "aggregate_type": event.aggregate_type,
-                                "aggregate_id": event.aggregate_id,
-                            },
-                        ),
-                    )
-                    event.status = EventStatus.PUBLISHED
-                    event.processed_at = get_current_utc_time()
-                except Exception as e:
-                    logger.error(f"Failed to process event {event.id}: {e}")
-                    event.status = EventStatus.FAILED
-                    event.retry_count += 1
-
-            session.add_all(events_to_process)
-            await session.commit()
-            logger.info("Outbox processor job finished.")
-
-        except Exception as e:
-            logger.error(f"Error during outbox processing job: {e}")
-            await session.rollback()
+    return publish
 
 
-async def resolve_zombie_events():
-    """
-    Resolves zombie events that have been stuck in PROCESSING state for too long.
+async def process_outbox_events_job(
+    publisher: EventPublisher,
+    *,
+    session_maker: async_sessionmaker[AsyncSession] | None = None,
+    options: RelayOptions | None = None,
+    clock: Callable[[], datetime] = get_current_utc_time,
+) -> RelayResult:
+    """Compatible one-shot entry point; application DB injection is recommended."""
+    return await OutboxRelay(publisher, session_maker=session_maker, options=options, clock=clock).run_once()
 
-    These are events that were picked up for processing but never completed,
-    likely due to a crash or network issue. This function resets them to PENDING
-    so they can be retried, or marks them as FAILED if max retries exceeded (DLQ).
-    """
-    logger.info("Running zombie event resolver...")
 
-    async with AsyncTransaction() as session:
-        try:
-            repo = OutboxRepository()
+async def resolve_zombie_events(
+    *,
+    session_maker: async_sessionmaker[AsyncSession] | None = None,
+    options: RelayOptions | None = None,
+    clock: Callable[[], datetime] = get_current_utc_time,
+) -> RelayResult:
+    async def unused(event_type: str, event: DomainEvent) -> None:
+        raise AssertionError("recovery must never publish")
 
-            # Find events stuck in PROCESSING for more than the timeout
-            timeout_threshold = get_current_utc_time() - datetime.timedelta(seconds=_ZOMBIE_TIMEOUT)
-
-            zombie_events = await repo.get_zombie_events(session, timeout_threshold)
-
-            if not zombie_events:
-                logger.info("No zombie events found.")
-                return
-
-            logger.warning(f"Found {len(zombie_events)} zombie events.")
-
-            pending_count = 0
-            failed_count = 0
-
-            for event in zombie_events:
-                event.retry_count += 1
-
-                if event.retry_count >= _ZOMBIE_MAX_RETRIES:
-                    # Dead Letter Queue: exceeded max retries
-                    event.status = EventStatus.FAILED
-                    failed_count += 1
-                    logger.error(
-                        f"Event {event.id} exceeded max retries ({_ZOMBIE_MAX_RETRIES}). Marking as FAILED (DLQ)."
-                    )
-                else:
-                    # Reset to PENDING for retry
-                    event.status = EventStatus.PENDING
-                    pending_count += 1
-
-            session.add_all(zombie_events)
-            await session.commit()
-            logger.info(f"Zombie resolution complete: {pending_count} reset to PENDING, {failed_count} moved to DLQ.")
-
-        except Exception as e:
-            logger.error(f"Error during zombie event resolution: {e}")
-            await session.rollback()
+    return await OutboxRelay(unused, session_maker=session_maker, options=options, clock=clock).recover()
 
 
 @asynccontextmanager
@@ -166,38 +59,72 @@ async def scheduler_lifespan(
     app: FastAPI,
     publisher: EventPublisher,
     *,
-    process_interval_seconds: int = 5,
-    zombie_interval_seconds: int = 60 * 10,
-):
-    """FastAPI lifespan that runs the outbox relay and zombie resolver.
+    session_maker: async_sessionmaker[AsyncSession] | None = None,
+    options: RelayOptions | None = None,
+    process_interval_seconds: float = 5,
+    zombie_interval_seconds: float = 600,
+) -> AsyncIterator[None]:
+    """Stop polling, drain active work, then cancel after the shutdown grace period.
 
-    The consumer injects ``publisher`` (see :class:`EventPublisher`). Wire it into
-    an app with ``functools.partial`` so FastAPI still calls it with just ``app``::
-
-        from functools import partial
-        from app_prebuilt_outbox.scheduler import scheduler_lifespan, make_faststream_publisher
-
-        # `broker` is any object with an awaitable `publish(message, channel=...)`.
-        publisher = make_faststream_publisher(broker)
-        app = FastAPI(lifespan=partial(scheduler_lifespan, publisher=publisher))
+    Compose this inside the application's DB/broker lifespans so those resources
+    remain open during drain. No schema creation or source hooks are installed.
     """
+    for interval in (process_interval_seconds, zombie_interval_seconds):
+        if not math.isfinite(interval) or interval <= 0:
+            raise ValueError("scheduler intervals must be finite and positive")
+    relay = OutboxRelay(publisher, session_maker=session_maker, options=options)
     scheduler = AsyncIOScheduler()
+    active: set[asyncio.Task[RelayResult]] = set()
+    closing = False
+
+    def finished(task: asyncio.Task[RelayResult]) -> None:
+        active.discard(task)
+        if not task.cancelled() and (exc := task.exception()) is not None:
+            logger.error("Outbox relay job failed: %s", type(exc).__name__)
+
+    async def run(job: Callable[[], Coroutine[Any, Any, RelayResult]]) -> None:
+        if closing:
+            return
+        task = asyncio.create_task(job())
+        active.add(task)
+        task.add_done_callback(finished)
+        # APScheduler cancels its wrapper on shutdown; keep the owned job alive
+        # until our explicit grace period has elapsed.
+        await asyncio.shield(task)
+
     scheduler.add_job(
-        partial(process_outbox_events_job, publisher),
+        partial(run, relay.run_once),
         "interval",
         seconds=process_interval_seconds,
         id="process_outbox",
         max_instances=1,
+        coalesce=True,
     )
     scheduler.add_job(
-        resolve_zombie_events,
+        partial(run, relay.recover),
         "interval",
         seconds=zombie_interval_seconds,
         id="resolve_zombies",
         max_instances=1,
+        coalesce=True,
     )
     scheduler.start()
-    logger.info("Scheduler started.")
-    yield
-    scheduler.shutdown()
-    logger.info("Scheduler shut down.")
+    try:
+        yield
+    finally:
+        closing = True
+        relay.stop()
+        scheduler.shutdown(wait=False)
+        pending = set(active)
+        try:
+            if pending:
+                _, pending = await asyncio.wait(pending, timeout=relay.options.shutdown_timeout_seconds)
+        finally:
+            for task in pending:
+                task.cancel()
+            cancellation = None
+            for task in pending:
+                if interrupted := await _cancel_and_drain(task):
+                    cancellation = interrupted
+            if cancellation is not None:
+                raise cancellation

@@ -30,6 +30,14 @@ class VectorPoint:
     payload: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class PayloadUpdate:
+    """Replace the complete payload of one point while preserving its vector."""
+
+    id: PointId
+    payload: dict[str, Any]
+
+
 class CollectionMismatchError(ValueError):
     """An existing collection belongs to a different embedding space or schema."""
 
@@ -217,6 +225,25 @@ class QdrantVectorStore:
         if not await self.validate_collection():
             return
         await self.client.overwrite_payload(self.collection_name, payload=payload, points=selector, wait=True)
+
+    async def overwrite_payloads(self, updates: Sequence[PayloadUpdate], *, batch_size: int = 256) -> int:
+        """Batch distinct per-point payloads. Never create a missing collection."""
+        if batch_size <= 0:
+            raise ValueError("batch_size must be positive")
+        if not updates or not await self.validate_collection():
+            return 0
+        for start in range(0, len(updates), batch_size):
+            await self.client.batch_update_points(
+                self.collection_name,
+                update_operations=[
+                    models.OverwritePayloadOperation(
+                        overwrite_payload=models.SetPayload(payload=u.payload, points=[u.id])
+                    )
+                    for u in updates[start : start + batch_size]
+                ],
+                wait=True,
+            )
+        return len(updates)
 
     def _validate_vector(self, vector: list[float]) -> None:
         if len(vector) != self.dimension:

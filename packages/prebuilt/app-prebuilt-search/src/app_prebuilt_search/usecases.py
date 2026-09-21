@@ -3,19 +3,19 @@ import hashlib
 import json
 import math
 import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Hashable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC
+from types import MappingProxyType
 
-from app_layer_base.core.database.transaction import AsyncTransaction
-from app_vector_store import QdrantVectorStore, VectorPoint
+from app_vector_store import PayloadUpdate, QdrantVectorStore, VectorPoint
+from pydantic import ValidationError
 from qdrant_client import AsyncQdrantClient, models
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app_prebuilt_search.contracts import EmbeddingProvider, SearchSource
+from app_prebuilt_search.contracts import EmbeddingProvider, IndexKey, SearchRequest, SearchRuntime, SearchSource
 from app_prebuilt_search.errors import SearchConfigurationError, SearchInputError, SearchSourceError
 from app_prebuilt_search.filters import FilterDefinition, FilterPolicy, FilterValue
-from app_prebuilt_search.repos import SearchStateRepository, read_session
+from app_prebuilt_search.runtime import SQLAlchemySearchRuntime
 from app_prebuilt_search.schemas import IndexStatus, SearchHit, SearchItem, SearchResult, SearchResultItem, SyncResult
 
 
@@ -39,28 +39,25 @@ class SearchIndex:
             raise SearchConfigurationError("Batch sizes and candidate budget must be positive")
 
 
-class SearchService:
-    """Prebuilt orchestration with application-owned source, embeddings and connections.
+class SearchEngine:
+    """Vector reconciliation and retrieval over application-owned source scopes.
 
-    sync owns a long, serialized write transaction. search/status own short read-only
-    transactions. Do not wrap these methods in a caller-owned database transaction.
+    The runtime owns locks, snapshots, state and hydration. Source operations stay
+    in the caller task; external sync writes drain before the runtime lock exits.
     """
 
     def __init__(
         self,
         *,
-        session_maker: async_sessionmaker[AsyncSession],
+        runtime: SearchRuntime,
         vector_client: AsyncQdrantClient,
         embedder: EmbeddingProvider,
-        source: SearchSource,
         index: SearchIndex,
     ) -> None:
-        self.session_maker = session_maker
+        self.runtime = runtime
         self.embedder = embedder
-        self.source = source
         self.index = index
         self.policy = FilterPolicy(index.filters)
-        self.repo = SearchStateRepository()
         if not embedder.embedding_id.strip() or embedder.dimension <= 0:
             raise SearchConfigurationError("Embedding identity and positive dimension are required")
         self.profile_id = _hash(
@@ -95,92 +92,97 @@ class SearchService:
             "item_id": item.item_id,
             "fingerprint": _hash([self.profile_id, item.text]),
             "filters": item.filters,
+            **({"index_metadata": item.index_metadata} if item.index_metadata else {}),
         }
+
+    def _key(self, scope: str) -> IndexKey:
+        return IndexKey(self.index.name, scope, self.profile_id)
 
     async def status(self, *, scope: str) -> IndexStatus:
         self._scope(scope)
         exists = await self.store.validate_collection()
-        async with read_session(self.session_maker) as session:
-            state = await self.repo.get(session, self.index.name, scope, self.profile_id)
-            last = state.last_synced_at if state else None
-            if last is not None and last.tzinfo is None:
-                last = last.replace(tzinfo=UTC)
-            result = SyncResult.model_validate(state.last_result) if state and state.last_result else None
+        state = await self.runtime.read_state(self._key(scope))
         return IndexStatus(
             collection_name=self.collection_name,
             profile_id=self.profile_id,
             collection_exists=exists,
-            index_ready=exists and last is not None,
-            last_synced_at=last,
-            last_result=result,
+            index_ready=exists and state.last_synced_at is not None,
+            last_synced_at=state.last_synced_at,
+            last_result=state.last_result,
         )
 
     async def sync(self, *, scope: str) -> SyncResult:
         self._scope(scope)
-        # Keep the DB lock until in-flight external work finishes, even on cancellation.
-        task = asyncio.create_task(self._sync(scope))
-        try:
-            return await asyncio.shield(task)
-        except asyncio.CancelledError:
-            try:
-                await task
-            finally:
-                raise
-
-    async def _sync(self, scope: str) -> SyncResult:
-        async with AsyncTransaction(self.session_maker) as session:
-            state = await self.repo.lock(session, self.index.name, scope, self.profile_id)
+        cancelled: asyncio.CancelledError | None = None
+        async with self.runtime.sync(self._key(scope)) as source:
             items: dict[str, SearchItem] = {}
-            # Enumerate fully before mutation; partial iteration must never trigger deletion.
-            async for item in self.source.iter_items(session, scope):
+            # Complete and validate the snapshot before any vector mutations.
+            async for item in source.iter_items():
                 if not item.text.strip():
                     raise SearchSourceError("Search source yielded empty text")
                 self.policy.validate_payload(item.filters)
                 point_id = self._point_id(scope, item)
                 if point_id in items:
                     raise SearchSourceError("Duplicate (source_id, item_id) in source snapshot")
-                items[point_id] = item
-            await self.store.ensure_payload_indexes(self.policy.indexes())
-            existing = {
-                str(record.id): record.payload or {}
-                async for record in self.store.scroll(query_filter=self.policy.query(scope, {}))
-                if (record.payload or {}).get("scope_id") == scope
-            }
-            result = SyncResult(scanned=len(items))
-            changed: list[tuple[str, SearchItem, dict]] = []
-            for point_id, item in items.items():
-                payload = self._payload(scope, item)
-                old = existing.get(point_id)
-                if old is None or old.get("fingerprint") != payload["fingerprint"]:
-                    changed.append((point_id, item, payload))
-                elif old != payload:
-                    await self.store.overwrite_payload(payload, models.PointIdsList(points=[point_id]))
-                    result.refreshed += 1
-                else:
-                    result.skipped += 1
-            for start in range(0, len(changed), self.index.batch_size):
-                batch = changed[start : start + self.index.batch_size]
-                vectors = await self.embedder.embed_documents([item.text for _, item, _ in batch])
-                if len(vectors) != len(batch):
-                    raise SearchSourceError("Embedding provider returned the wrong number of vectors")
-                for vector in vectors:
-                    self._validate_vector(vector)
-                await self.store.upsert(
-                    [
-                        VectorPoint(point_id, vector, payload)
-                        for (point_id, _, payload), vector in zip(batch, vectors, strict=True)
-                    ],
-                    batch_size=self.index.batch_size,
-                )
-                result.embedded += len(batch)
-            stale = sorted(set(existing) - items.keys())
-            for start in range(0, len(stale), self.index.batch_size):
-                await self.store.delete(
-                    models.PointIdsList(points=[p for p in stale[start : start + self.index.batch_size]])
-                )
-            result.deleted = len(stale)
-            self.repo.record_success(state, result)
-            return result
+                items[point_id] = item.model_copy(deep=True)
+            # Only external I/O moves to another task. A caller-owned DB context
+            # must never be shared with the worker or released before it finishes.
+            task = asyncio.create_task(self._reconcile(scope, items))
+            while True:
+                try:
+                    result = await asyncio.shield(task)
+                    break
+                except asyncio.CancelledError as exc:
+                    if task.cancelled():
+                        raise
+                    cancelled = exc
+            await source.record_success(result)
+        if cancelled is not None:
+            raise cancelled
+        return result
+
+    async def _reconcile(self, scope: str, items: dict[str, SearchItem]) -> SyncResult:
+        await self.store.ensure_payload_indexes(self.policy.indexes())
+        existing = {
+            str(record.id): record.payload or {}
+            async for record in self.store.scroll(query_filter=self.policy.query(scope, {}))
+            if (record.payload or {}).get("scope_id") == scope
+        }
+        result = SyncResult(scanned=len(items))
+        changed: list[tuple[str, SearchItem, dict]] = []
+        refreshed: list[PayloadUpdate] = []
+        for point_id, item in items.items():
+            payload = self._payload(scope, item)
+            old = existing.get(point_id)
+            if old is None or old.get("fingerprint") != payload["fingerprint"]:
+                changed.append((point_id, item, payload))
+            elif old != payload:
+                refreshed.append(PayloadUpdate(point_id, payload))
+            else:
+                result.skipped += 1
+        result.refreshed = await self.store.overwrite_payloads(refreshed, batch_size=self.index.batch_size)
+        for start in range(0, len(changed), self.index.batch_size):
+            batch = changed[start : start + self.index.batch_size]
+            vectors = await self.embedder.embed_documents([item.text for _, item, _ in batch])
+            if len(vectors) != len(batch):
+                raise SearchSourceError("Embedding provider returned the wrong number of vectors")
+            for vector in vectors:
+                self._validate_vector(vector)
+            await self.store.upsert(
+                [
+                    VectorPoint(point_id, vector, payload)
+                    for (point_id, _, payload), vector in zip(batch, vectors, strict=True)
+                ],
+                batch_size=self.index.batch_size,
+            )
+            result.embedded += len(batch)
+        stale = sorted(set(existing) - items.keys())
+        for start in range(0, len(stale), self.index.batch_size):
+            await self.store.delete(
+                models.PointIdsList(points=[p for p in stale[start : start + self.index.batch_size]])
+            )
+        result.deleted = len(stale)
+        return result
 
     def _validate_vector(self, vector: list[float]) -> None:
         if len(vector) != self.store.dimension or not all(math.isfinite(value) for value in vector):
@@ -195,21 +197,41 @@ class SearchService:
         limit: int = 10,
         score_threshold: float | None = None,
         group_by_source: bool = False,
+        source_scope: str | None = None,
+        candidate_filters: Mapping[str, FilterValue] | None = None,
+        group_by: Callable[[SearchItem], Hashable] | None = None,
     ) -> SearchResult:
         self._scope(scope)
         if not query.strip() or len(query) > 4000 or not 1 <= limit <= 100:
             raise SearchInputError("query must contain 1..4000 characters and limit must be 1..100")
         if score_threshold is not None and (not math.isfinite(score_threshold) or not -1 <= score_threshold <= 1):
             raise SearchInputError("Cosine score_threshold must be between -1 and 1")
+        source_scope = scope if source_scope is None else source_scope
+        self._scope(source_scope)
+        if group_by_source and group_by is not None:
+            raise SearchInputError("Choose group_by_source or group_by, not both")
         requested = dict(filters or {})
-        query_filter = self.policy.query(scope, requested)
+        self.policy.validate_query(requested)
+        # For alternate source snapshots, default to scope-only candidates so
+        # stale index filters cannot hide current matches. Final checks still run.
+        candidates = dict(
+            candidate_filters if candidate_filters is not None else requested if source_scope == scope else {}
+        )
+        query_filter = self.policy.query(scope, candidates)
+        request = SearchRequest(
+            index_scope=scope,
+            source_scope=source_scope,
+            query=query,
+            filters=MappingProxyType(requested),
+            candidate_filters=MappingProxyType(candidates),
+        )
         status = await self.status(scope=scope)
         if not status.index_ready:
             return SearchResult(index_ready=False)
         query_vector = await self.embedder.embed_query(query)
         self._validate_vector(query_vector)
         result = SearchResult(index_ready=True)
-        seen: set[tuple[str, str] | str] = set()
+        seen: set[Hashable] = set()
         offset = 0
         while offset < self.index.candidate_budget and len(result.items) < limit:
             size = min(self.index.candidate_batch_size, self.index.candidate_budget - offset)
@@ -229,29 +251,67 @@ class SearchService:
                     continue
                 source_id, item_id = payload.get("source_id"), payload.get("item_id")
                 if isinstance(source_id, str) and isinstance(item_id, str):
-                    hits.append(SearchHit(source_id=source_id, item_id=item_id, score=point.score))
-            async with read_session(self.session_maker) as session:
-                current = await self.source.hydrate(session, scope, hits, requested)
-                by_id: dict[tuple[str, str], SearchItem] = {}
-                allowed = {(hit.source_id, hit.item_id) for hit in hits}
-                for item in current:
-                    key = (item.source_id, item.item_id)
-                    if key not in allowed or key in by_id:
-                        raise SearchSourceError("hydrate returned an unrequested or duplicate item")
-                    self.policy.validate_payload(item.filters)
-                    by_id[key] = item
-                for hit in hits:
-                    item = by_id.get((hit.source_id, hit.item_id))
-                    if item is None or not item.text.strip() or not self.policy.matches(item.filters, requested):
-                        continue
-                    group = item.source_id if group_by_source else (item.source_id, item.item_id)
-                    if group not in seen:
-                        result.items.append(SearchResultItem(**item.model_dump(), score=hit.score))
-                        seen.add(group)
-                        if len(result.items) == limit:
-                            break
+                    try:
+                        hits.append(
+                            SearchHit(
+                                source_id=source_id,
+                                item_id=item_id,
+                                score=point.score,
+                                index_metadata=payload.get("index_metadata", {}),
+                            )
+                        )
+                    except ValidationError as exc:
+                        raise SearchSourceError("Invalid indexed hit metadata") from exc
+            current = await self.runtime.hydrate(request, hits)
+            by_id: dict[tuple[str, str], SearchItem] = {}
+            allowed = {(hit.source_id, hit.item_id) for hit in hits}
+            for item in current:
+                key = (item.source_id, item.item_id)
+                if key not in allowed or key in by_id:
+                    raise SearchSourceError("hydrate returned an unrequested or duplicate item")
+                self.policy.validate_payload(item.filters)
+                by_id[key] = item
+            for hit in hits:
+                item = by_id.get((hit.source_id, hit.item_id))
+                if item is None or not item.text.strip() or not self.policy.matches(item.filters, requested):
+                    continue
+                group = (
+                    group_by(item)
+                    if group_by is not None
+                    else item.source_id
+                    if group_by_source
+                    else (item.source_id, item.item_id)
+                )
+                if group not in seen:
+                    result.items.append(SearchResultItem(**item.model_dump(), score=hit.score))
+                    seen.add(group)
+                    if len(result.items) == limit:
+                        break
             offset += len(points)
             if len(points) < size:
                 break
         result.candidate_limit_reached = offset >= self.index.candidate_budget and len(result.items) < limit
         return result
+
+
+class SearchService(SearchEngine):
+    """Compatible SQLAlchemy facade with owned sync/read transactions.
+
+    Do not wrap calls in a caller transaction. Use SearchEngine with a custom
+    SearchRuntime for application-owned repositories, scopes and source snapshots.
+    """
+
+    def __init__(
+        self,
+        *,
+        session_maker: async_sessionmaker[AsyncSession],
+        vector_client: AsyncQdrantClient,
+        embedder: EmbeddingProvider,
+        source: SearchSource,
+        index: SearchIndex,
+    ) -> None:
+        runtime = SQLAlchemySearchRuntime(session_maker, source)
+        super().__init__(runtime=runtime, vector_client=vector_client, embedder=embedder, index=index)
+        self.session_maker = session_maker
+        self.source = source
+        self.repo = runtime.repo

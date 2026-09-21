@@ -20,6 +20,11 @@ class KeywordArrayFilter:
 
 
 @dataclass(frozen=True)
+class BooleanFilter:
+    kind: Literal["boolean"] = "boolean"
+
+
+@dataclass(frozen=True)
 class NumericFilter:
     kind: Literal["number"] = "number"
 
@@ -35,8 +40,8 @@ class NumericRange:
         return {k: v for k in ("gt", "gte", "lt", "lte") if (v := getattr(self, k)) is not None}
 
 
-type FilterDefinition = KeywordFilter | KeywordArrayFilter | NumericFilter
-type FilterValue = str | float | int | NumericRange
+type FilterDefinition = KeywordFilter | KeywordArrayFilter | NumericFilter | BooleanFilter
+type FilterValue = str | float | int | bool | NumericRange
 
 
 def _number(value: Any) -> TypeGuard[int | float]:
@@ -48,7 +53,10 @@ class FilterPolicy:
         self.definitions = dict(definitions)
         if any(not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", name) for name in definitions):
             raise SearchConfigurationError("Filter names must be simple identifiers")
-        if any(not isinstance(d, (KeywordFilter, KeywordArrayFilter, NumericFilter)) for d in definitions.values()):
+        if any(
+            not isinstance(d, (KeywordFilter, KeywordArrayFilter, NumericFilter, BooleanFilter))
+            for d in definitions.values()
+        ):
             raise SearchConfigurationError("Unsupported filter definition")
 
     def validate_payload(self, values: Mapping[str, Any]) -> None:
@@ -58,6 +66,8 @@ class FilterPolicy:
                 valid = isinstance(value, str)
             elif isinstance(definition, KeywordArrayFilter):
                 valid = isinstance(value, list) and all(isinstance(v, str) for v in value)
+            elif isinstance(definition, BooleanFilter):
+                valid = type(value) is bool
             else:
                 valid = isinstance(definition, NumericFilter) and _number(value)
             if not valid:
@@ -69,6 +79,8 @@ class FilterPolicy:
             valid = False
             if isinstance(definition, (KeywordFilter, KeywordArrayFilter)):
                 valid = isinstance(value, str)
+            elif isinstance(definition, BooleanFilter):
+                valid = type(value) is bool
             elif isinstance(definition, NumericFilter):
                 valid = _number(value) or (
                     isinstance(value, NumericRange)
@@ -87,6 +99,8 @@ class FilterPolicy:
             field = f"filters.{key}"
             if isinstance(value, NumericRange):
                 conditions.append(models.FieldCondition(key=field, range=models.Range(**value.values())))
+            elif isinstance(value, bool):
+                conditions.append(models.FieldCondition(key=field, match=models.MatchValue(value=value)))
             elif isinstance(self.definitions[key], NumericFilter):
                 conditions.append(
                     models.FieldCondition(key=field, range=models.Range(gte=float(value), lte=float(value)))
@@ -110,6 +124,9 @@ class FilterPolicy:
             elif isinstance(definition, KeywordArrayFilter):
                 if not isinstance(actual, list) or value not in actual:
                     return False
+            elif isinstance(definition, BooleanFilter):
+                if type(actual) is not bool or actual != value:
+                    return False
             elif actual != value:
                 return False
         return True
@@ -122,6 +139,8 @@ class FilterPolicy:
             {
                 f"filters.{name}": models.PayloadSchemaType.FLOAT
                 if isinstance(d, NumericFilter)
+                else models.PayloadSchemaType.BOOL
+                if isinstance(d, BooleanFilter)
                 else models.PayloadSchemaType.KEYWORD
                 for name, d in self.definitions.items()
             }

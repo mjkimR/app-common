@@ -1,8 +1,9 @@
 """Exercises the outbox's ``SELECT ... FOR UPDATE SKIP LOCKED`` guarantee.
 
-The outbox exists so that an event is relayed exactly once even when several
-workers poll concurrently. That guarantee rests entirely on row locking in
-``OutboxRepository.get_and_lock_pending_events`` / ``get_zombie_events``.
+Row locking keeps simultaneous healthy workers from claiming the same event.
+Delivery is at-least-once: crashes after external publish can cause redelivery.
+These tests exercise the PostgreSQL locking path; the relay's atomic UPDATE
+claim path also has file-backed SQLite concurrency tests.
 
 SQLite parses ``FOR UPDATE SKIP LOCKED`` and then ignores it, so running these
 tests on SQLite would prove nothing -- they skip instead. A skip here means the
@@ -135,14 +136,14 @@ class TestSkipLocked:
             async with session_maker() as worker_b:
                 with pytest.raises(DBAPIError) as excinfo:
                     await worker_b.execute(nowait_stmt)
-                assert "LockNotAvailableError" in str(excinfo.value)
+                assert getattr(excinfo.value.orig, "sqlstate", None) == "55P03"
 
                 # Postgres aborts the transaction on error; unwind it before B closes.
                 await worker_b.rollback()
 
 
 class TestConcurrentRelayJobs:
-    async def test_two_relay_jobs_publish_each_event_exactly_once(self, session, session_maker):
+    async def test_two_healthy_relay_jobs_claim_disjoint_events(self, session, session_maker):
         """End-to-end: the real job function, run twice concurrently, must not double-publish."""
         await _seed(session, 6)
 
