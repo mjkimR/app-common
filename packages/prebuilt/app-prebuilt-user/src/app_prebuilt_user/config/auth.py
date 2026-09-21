@@ -22,10 +22,24 @@ class AuthSettings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=10, description="Lifetime of an access token in minutes")
 
-    # Optional: refresh token expiration (only used if you implement refresh flow in your app)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
-        default=14, description="Lifetime of a refresh token in days (only used if refresh flow is implemented)"
+        default=14,
+        description="Lifetime of a refresh token in days. Every refresh issues a new one, so this is how long a "
+        "session survives without being used",
     )
+
+    FIRST_USER_SYNC_PASSWORD: bool = Field(
+        default=False,
+        description="Keep the first superuser's password equal to FIRST_USER_PASSWORD on every startup, for "
+        "deployments whose secret store is the source of truth. Off: the password is only set at creation",
+    )
+
+    # Failed-login lockout, per caller and per process
+    LOGIN_MAX_FAILURES: int = Field(
+        default=5, ge=1, description="Failed logins within the window that lock a caller out"
+    )
+    LOGIN_FAILURE_WINDOW_SECONDS: int = Field(default=60, ge=1, description="Window in which failed logins are counted")
+    LOGIN_LOCKOUT_SECONDS: int = Field(default=300, ge=1, description="How long a locked-out caller is refused")
 
     model_config = SettingsConfigDict(
         extra="ignore",

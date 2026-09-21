@@ -111,3 +111,27 @@ def test_fastapi_advisory_exposure_uses_server_configuration(monkeypatch):
         assert response.json()["advisory"]["mode"] == "AUTO"
     finally:
         get_app_settings.cache_clear()
+
+
+def test_an_error_that_says_how_many_seconds_to_wait_sends_retry_after():
+    app = FastAPI()
+    set_exception_handler(app)
+
+    @app.get("/locked")
+    async def locked():
+        raise CustomException(message="Too many attempts", status_code=HTTPStatus.TOO_MANY_REQUESTS, retry_after="240")
+
+    @app.get("/later")
+    async def later():
+        raise CustomException(message="Quota resets later", retry_after="2026-09-22T00:00:00Z")
+
+    @app.get("/plain")
+    async def plain():
+        raise BadRequestException()
+
+    client = TestClient(app, raise_server_exceptions=False)
+
+    assert client.get("/locked").headers["Retry-After"] == "240"
+    # Only whole seconds make a valid header here; other forms stay in the advisory.
+    assert "Retry-After" not in client.get("/later").headers
+    assert "Retry-After" not in client.get("/plain").headers

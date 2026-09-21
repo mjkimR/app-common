@@ -33,7 +33,8 @@ class AsyncClientWithJson(AsyncClient):
     """AsyncClient with custom JSON serialization for Enums, Dates, UUIDs, and Pydantic models."""
 
     async def request(self, *args: Any, **kwargs: Any) -> Any:
-        if "json" in kwargs:
+        # httpx always passes `json`, as None when the caller sent a form, files, or raw content instead.
+        if kwargs.get("json") is not None:
             payload = kwargs.pop("json")
             kwargs["content"] = orjson.dumps(payload, default=default_json_serializer)
             headers = kwargs.get("headers")

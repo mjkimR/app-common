@@ -7,6 +7,14 @@ from pydantic import BaseModel, Field, model_validator
 class Token(BaseModel):
     access_token: str
     token_type: Literal["bearer"]
+    # Exchanged at `/login/refresh` for a new pair before it expires; each exchange extends the session.
+    refresh_token: str | None = None
+    # Seconds until the access token expires, so a client can refresh ahead of time.
+    expires_in: int | None = None
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 class TokenPayload(BaseModel):
@@ -22,6 +30,8 @@ class TokenPayload(BaseModel):
     nbf: int | None = None
     jti: str | None = None
     typ: str | None = Field(default=None, description="Token type, e.g. 'access' or 'refresh'")
+    # Refresh tokens only: ties the token to the password it was issued under.
+    pwd: str | None = None
 
     @model_validator(mode="before")
     @classmethod

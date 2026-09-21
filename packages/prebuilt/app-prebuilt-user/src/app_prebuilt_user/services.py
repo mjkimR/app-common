@@ -1,3 +1,5 @@
+import functools
+import hashlib
 from datetime import timedelta
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -11,7 +13,6 @@ from app_layer_base.base.services.base import (
 )
 from app_layer_base.utils.time_util import get_current_utc_time
 from fastapi import Depends
-from passlib.context import CryptContext
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +20,15 @@ from app_prebuilt_user.config import AuthSettings, get_auth_settings
 
 from .exceptions import UserAlreadyExistsException
 from .models import User
+from .passwords import PasswordHasher
 from .repos import UserRepository
 from .schemas import UserCreate, UserDbCreate, UserDbUpdate, UserUpdate
+
+
+@functools.lru_cache
+def _password_hasher() -> PasswordHasher:
+    # One per process: building it hashes a dummy password, which is deliberately slow.
+    return PasswordHasher()
 
 
 class UserService(
@@ -38,7 +46,7 @@ class UserService(
         self.settings: AuthSettings = settings
         self._repo = repo
 
-        self.context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        self.passwords = _password_hasher()
 
     @property
     def repo(self) -> UserRepository:
@@ -93,21 +101,61 @@ class UserService(
 
     async def authenticate(self, session: AsyncSession, email: str, password: str) -> User | None:
         user = await self.repo.get_by_email(session, email=email)
-        if user is None:
-            self.context.dummy_verify()
+        if user is None or user.hashed_password is None or not user.is_active:
+            self.passwords.dummy_verify()
             return None
 
-        if user.hashed_password is None:
-            self.context.dummy_verify()
+        if not self.is_valid_password(password, user.hashed_password):
             return None
-
-        if self.is_valid_password(password, user.hashed_password):
-            return user
-        return None
+        if self.passwords.needs_rehash(user.hashed_password):
+            # The only moment the plain password is known: move an older hash to the current scheme.
+            user.hashed_password = self.get_password_hash(password)
+            await session.flush()
+        return user
 
     def create_access_token(self, user: User) -> str:
+        return self._create_token(user, "access", timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+
+    def create_refresh_token(self, user: User) -> str:
+        return self._create_token(
+            user,
+            "refresh",
+            timedelta(days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS),
+            pwd=self.password_fingerprint(user),
+        )
+
+    @staticmethod
+    def password_fingerprint(user: User) -> str:
+        """Changes with the stored hash, so a refresh token dies with the password it was issued under.
+
+        It is a digest of a salted hash, not of the password, and reveals nothing about either.
+        """
+        return hashlib.sha256((user.hashed_password or "").encode()).hexdigest()[:16]
+
+    async def refresh_user(self, session: AsyncSession, refresh_token: str) -> User | None:
+        """The active user a valid refresh token belongs to, or None."""
+        try:
+            payload = jwt.decode(
+                refresh_token,
+                self.settings.SECRET_KEY.get_secret_value(),
+                algorithms=[self.jwt_algorithm],
+                issuer=self.settings.JWT_ISSUER,
+                audience=self.settings.JWT_AUDIENCE,
+                leeway=self.settings.JWT_LEEWAY_SECONDS,
+                options={"require": ["exp", "iat", "nbf", "iss", "aud", "sub", "typ"]},
+            )
+            if payload.get("typ") != "refresh":
+                return None
+            user = await self.get(session, obj_pk=UUID(str(payload["sub"])))
+        except (jwt.PyJWTError, ValueError):
+            return None
+        if user is None or not user.is_active or payload.get("pwd") != self.password_fingerprint(user):
+            return None
+        return user
+
+    def _create_token(self, user: User, typ: str, lifetime: timedelta, **claims: str) -> str:
         now = get_current_utc_time()
-        expire = now + timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = now + lifetime
 
         payload = {
             # Standard JWT claims
@@ -118,10 +166,10 @@ class UserService(
             "nbf": int(now.timestamp()),
             "exp": expire,
             "jti": str(uuid4()),
-            # Token type (useful when adding refresh token later)
-            "typ": "access",
+            "typ": typ,
             # Backward-compat for existing code paths
             "user_id": str(user.id),
+            **claims,
         }
 
         return jwt.encode(
@@ -131,7 +179,38 @@ class UserService(
         )
 
     def is_valid_password(self, plain_password: str, hashed_password: str) -> bool:
-        return self.context.verify(plain_password, hashed_password)
+        return self.passwords.verify(plain_password, hashed_password)
 
     def get_password_hash(self, password: str) -> str:
-        return self.context.hash(password)
+        return self.passwords.hash(password)
+
+    async def ensure_first_user(self, session: AsyncSession) -> User:
+        """Create the configured first superuser when it is missing; call once at startup.
+
+        With ``FIRST_USER_SYNC_PASSWORD`` the account's password also follows ``FIRST_USER_PASSWORD``, for
+        deployments that manage it in a secret store: changing the secret and restarting changes the password,
+        which also ends the sessions issued under the old one.
+        """
+        email = str(self.settings.FIRST_USER_EMAIL)
+        password = self.settings.FIRST_USER_PASSWORD.get_secret_value()
+        user = await self.repo.get_by_email(session, email=email)
+        if user is None:
+            # Built directly: the operator chose this password in the deployment's settings, so the sign-up
+            # rules of `UserCreate` do not apply to it.
+            user = User(
+                firstname="Admin",
+                email=email,
+                hashed_password=self.get_password_hash(password),
+                is_active=True,
+                is_verified=True,
+                is_superadmin=True,
+            )
+            session.add(user)
+            await session.flush()
+            return user
+        if self.settings.FIRST_USER_SYNC_PASSWORD and not (
+            user.hashed_password and self.is_valid_password(password, user.hashed_password)
+        ):
+            user.hashed_password = self.get_password_hash(password)
+            await session.flush()
+        return user

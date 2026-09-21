@@ -95,7 +95,20 @@ def _process_custom_exception(request: Request, exc: CustomException):
     return JSONResponse(
         status_code=exc.status_code,
         content=content,
+        headers=_retry_after_header(exc),
     )
+
+
+def _retry_after_header(exc: CustomException) -> dict[str, str] | None:
+    """`Retry-After` for an error that says in whole seconds how long to wait.
+
+    The advisory is only exposed by configuration, but a client that was told to wait needs to know for how long.
+    Other forms of ``retry_after`` (a timestamp, a description) stay in the advisory.
+    """
+    retry_after = getattr(exc, "retry_after", None)
+    if isinstance(retry_after, str) and retry_after.isdigit():
+        return {"Retry-After": retry_after}
+    return None
 
 
 def _process_general_exception(request: Request, exc: Exception):

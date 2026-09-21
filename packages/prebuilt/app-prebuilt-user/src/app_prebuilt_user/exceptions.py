@@ -1,3 +1,6 @@
+from http import HTTPStatus
+
+from app_layer_base.base.exceptions.base import CustomException
 from app_layer_base.base.exceptions.basic import (
     BadRequestException,
     ConflictException,
@@ -11,8 +14,25 @@ class IncorrectEmailOrPasswordException(BadRequestException):
     trace = False
 
 
-class InvalidCredentialsException(ForbiddenException):
+class InvalidCredentialsException(CustomException):
+    """The token is missing, malformed, expired, or no longer valid.
+
+    401, not 403: a client refreshes or signs in again on this, and must be able to tell it from a request it is
+    simply not allowed to make (`PermissionDeniedException`).
+    """
+
+    status_code = HTTPStatus.UNAUTHORIZED
+    code = "INVALID_CREDENTIALS"
+    title = "Unauthorized"
     message = "Could not validate credentials"
+    trace = False
+
+
+class TooManyLoginAttemptsException(CustomException):
+    status_code = HTTPStatus.TOO_MANY_REQUESTS
+    code = "TOO_MANY_LOGIN_ATTEMPTS"
+    title = "Too Many Requests"
+    message = "Too many failed login attempts; try again later"
     trace = False
 
 
