@@ -67,7 +67,7 @@ class ApiKeyService:
                 machine_id=machine_id,
                 label=data.label,
                 secret_hash=digest(raw),
-                expires_at=data.expires_at,
+                expires_at=utc(data.expires_at) if data.expires_at is not None else None,
             ),
         )
         return KeyIssued.model_validate(

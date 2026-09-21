@@ -60,6 +60,9 @@ just build-ui
 
 `just test-pg` verifies PostgreSQL locking; `just test-docker` runs container-backed
 contracts. Both need Docker. `just test-eslint` verifies the shared frontend preset.
+SQLite package suites run in separate processes, up to four at a time. Use
+`TEST_JOBS=1 just test` for serial execution; PostgreSQL, Docker, and coverage runs
+remain serial. All selected packages finish before a failing exit status is returned.
 Check output includes a `log:` path with complete diagnostics. Contribution rules
 and test selection are in [AGENTS.md](AGENTS.md).
 

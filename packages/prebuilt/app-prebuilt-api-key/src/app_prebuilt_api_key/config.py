@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ApiKeySettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="APP_API_KEY_", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="APP_API_KEY_", extra="ignore", hide_input_in_errors=True)
     root_key: SecretStr | None = None
 
     @field_validator("root_key")

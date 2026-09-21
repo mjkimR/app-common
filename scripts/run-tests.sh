@@ -31,6 +31,16 @@ fi
 # runs would rot. Marked with `docker`; see app-file-storage/tests/integrate/conftest.py.
 DOCKER="${DOCKER:-0}"
 
+# Independent SQLite packages can run together without sharing imports or DBs.
+# Keep container and coverage runs serial; TEST_JOBS=1 also restores serial output.
+TEST_JOBS="${TEST_JOBS:-4}"
+case "$TEST_JOBS" in
+    ''|*[!0-9]*|0) echo "TEST_JOBS must be a positive integer" >&2; exit 2 ;;
+esac
+if [ "$DB_TYPE" != "sqlite" ] || [ "$DOCKER" != "0" ] || [ "$COVERAGE" != "0" ]; then
+    TEST_JOBS=1
+fi
+
 run_pytest() {
     local module=$1
     shift
@@ -98,16 +108,45 @@ run_pytest() {
 }
 
 status=0
+pids=()
+pending_modules=()
+test_logs=""
+if [ "$TEST_JOBS" -gt 1 ]; then
+    test_logs=$(mktemp -d "${TMPDIR:-/tmp}/app-common-tests.XXXXXX")
+    trap 'rm -rf -- "$test_logs"' EXIT
+fi
+
+wait_batch() {
+    local index=0 result=0
+    for pid in ${pids[@]+"${pids[@]}"}; do
+        result=0
+        wait "$pid" || result=$?
+        cat "$test_logs/${pending_modules[$index]}.log"
+        if [ "$result" -ne 0 ]; then
+            status=$result
+        fi
+        index=$((index + 1))
+    done
+    pids=()
+    pending_modules=()
+}
+
 for m in app-error app-prebuilt-user app-prebuilt-api-key app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp; do
     if should_run "$MODULE" "$m"; then
         echo "Testing $m..."
-        if [ "${#PATHS[@]}" -eq 0 ]; then
-            run_pytest "$m" || status=$?
+        if [ "$TEST_JOBS" -gt 1 ]; then
+            run_pytest "$m" ${PATHS[@]+"${PATHS[@]}"} >"$test_logs/$m.log" 2>&1 &
+            pids+=("$!")
+            pending_modules+=("$m")
+            if [ "${#pids[@]}" -ge "$TEST_JOBS" ]; then
+                wait_batch
+            fi
         else
-            run_pytest "$m" "${PATHS[@]}" || status=$?
+            run_pytest "$m" ${PATHS[@]+"${PATHS[@]}"} || status=$?
         fi
     fi
 done
+wait_batch
 
 if [ "$COVERAGE" = "1" ]; then
     unset COVERAGE_FILE

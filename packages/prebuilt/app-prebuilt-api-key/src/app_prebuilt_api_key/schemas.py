@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 
 class MachineCreate(BaseModel):
@@ -36,6 +36,14 @@ class KeyRead(BaseModel):
     created_at: datetime
     expires_at: datetime | None
     revoked_at: datetime | None
+
+    @field_validator("created_at", "expires_at", "revoked_at")
+    @classmethod
+    def utc_timestamp(cls, value: datetime | None) -> datetime | None:
+        # SQLite drops timezone information; persisted key timestamps are always UTC.
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 class KeyIssued(KeyRead):

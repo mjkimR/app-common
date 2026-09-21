@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Annotated
 
 import pytest
@@ -114,3 +114,49 @@ def test_weak_root_configuration_is_rejected():
     with pytest.raises(ValueError, match="32 characters"):
         ApiKeySettings(root_key="short")
     assert ApiKeySettings(root_key="").root_key is None
+
+
+@pytest.mark.parametrize("offset", [9, -5])
+async def test_expiry_keeps_the_same_instant_after_database_roundtrip(http, monkeypatch, offset):
+    from app_prebuilt_api_key import services
+
+    client, _ = http
+    now = datetime(2030, 1, 1, 12, tzinfo=UTC)
+    monkeypatch.setattr(services, "get_current_utc_time", lambda: now)
+    machine, _ = await provision(client)
+    path = f"/api/v1/machines/{machine['id']}/keys"
+    expiry = now + timedelta(hours=1)
+    response = await client.post(
+        path,
+        headers=ADMIN,
+        json={"label": "offset", "expires_at": expiry.astimezone(timezone(timedelta(hours=offset))).isoformat()},
+    )
+    assert response.status_code == 201
+    issued = response.json()
+    headers = {"X-API-Key": issued["key"]}
+    assert (await client.get("/run", headers=headers)).status_code == 200
+    monkeypatch.setattr(services, "get_current_utc_time", lambda: expiry)
+    assert (await client.get("/run", headers=headers)).status_code == 401
+
+
+async def test_key_metadata_always_has_explicit_utc_timestamps(http):
+    client, _ = http
+    machine, first = await provision(client)
+    path = f"/api/v1/machines/{machine['id']}/keys"
+    expiry = get_current_utc_time() + timedelta(hours=1)
+    issued = (
+        await client.post(path, headers=ADMIN, json={"label": "expiring", "expires_at": expiry.isoformat()})
+    ).json()
+    revoked = (await client.delete(f"{path}/{first['id']}", headers=ADMIN)).json()
+    listing = (await client.get(path, headers=ADMIN)).json()
+    for key in [first, issued, revoked, *listing]:
+        for field in ("created_at", "expires_at", "revoked_at"):
+            if key[field]:
+                assert datetime.fromisoformat(key[field]).utcoffset() == timedelta(0)
+
+
+def test_invalid_root_configuration_does_not_print_the_secret():
+    secret = "invalid-but-still-sensitive"
+    with pytest.raises(ValueError) as error:
+        ApiKeySettings(root_key=secret)
+    assert secret not in str(error.value)

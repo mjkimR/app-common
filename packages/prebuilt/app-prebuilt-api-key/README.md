@@ -59,6 +59,8 @@ Issuance returns the secret in `key` exactly once, with `Cache-Control: no-store
 The DB holds only its SHA-256 hash. Keys contain 32 random bytes plus a public lookup
 ID. List/revoke responses contain neither the secret nor its hash. No API retrieves
 an existing secret. Expired/revoked keys and inactive machines fail authentication.
+Expiry inputs accept any explicit UTC offset; storage and metadata responses use UTC
+on both SQLite and PostgreSQL. Metadata timestamps always include their UTC offset.
 Re-enabling a machine does not clear key revocations. Authentication is read-only;
 this first version does not track last-use timestamps or implement project ACLs.
 
