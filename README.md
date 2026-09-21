@@ -1,99 +1,79 @@
 # app-common
 
-A personal monorepo containing highly modularized packages and developer CLI tools designed to accelerate, standardize, and scale application development across FastAPI-based backend systems.
+Independent Python foundation packages, adapters, prebuilt services, a Svelte UI
+library, and developer tools. Python packages share a `uv` workspace; the UI and
+ESLint tooling have their own npm lifecycle.
 
----
+## Packages
 
-## Workspace Core Packages
+Each package README covers its installation, public API, and usage.
 
-This repository is built as a `uv workspace` divided into focused, standalone packages. You can import only what you need, avoiding heavy third-party dependency bloat.
+| Category | Package | Purpose |
+| --- | --- | --- |
+| Base | [app-error](packages/base/app-error/README.md) | Dependency-free errors and agent advisories. |
+| Base | [app-layer-base](packages/base/app-layer-base/README.md) | CRUD hooks, command/transaction contracts, database and FastAPI infrastructure. |
+| Base | [app-testing-base](packages/base/app-testing-base/README.md) | Pytest plugins, DB/HTTP fixtures, and contract assertions. |
+| Adapter | [app-file-storage](packages/adapters/app-file-storage/README.md) | Local and S3 object storage. |
+| Adapter | [app-vector-store](packages/adapters/app-vector-store/README.md) | Qdrant storage and filtering with caller-supplied embeddings. |
+| Adapter | [app-http-client](packages/adapters/app-http-client/README.md) | Async HTTP clients based on httpx. |
+| Adapter | [app-ai-catalog](packages/adapters/app-ai-catalog/README.md) | Embedding/LLM factories and LiteLLM/LangChain clients. |
+| Prebuilt | [app-prebuilt-user](packages/prebuilt/app-prebuilt-user/README.md) | Authentication, sessions, and user management. |
+| Prebuilt | [app-prebuilt-outbox](packages/prebuilt/app-prebuilt-outbox/README.md) | Transactional event capture and delivery. |
+| Prebuilt | [app-prebuilt-search](packages/prebuilt/app-prebuilt-search/README.md) | Semantic search and explicit incremental indexing. |
+| Transport | [app-mcp](packages/transports/app-mcp/README.md) | MCP tool registry, authorization, and error translation. |
+| UI | [app-ui-base](packages/ui/app-ui-base/README.md) | Svelte 5 components, state, and Tailwind tokens. |
+| Tooling | [app-tools](tools/app-tools/README.md) | Check runner, scaffolding, local linking, updates, and guides. |
+| Tooling | [@app-common/eslint-config](agents/skills/app-common/references/ui/structure.md) | Shared frontend size policy, distributed by the root npm package. |
 
-### 1. Foundation Packages
-- **[app-error](./packages/base/app-error/README.md)**: Zero-dependency structured exception protocols, agent advisory payloads (`Actor`, `Retry`, `ActionMode`, `Advisory`), and CLI error formatting.
-- **[app-layer-base](./packages/base/app-layer-base/README.md)**: Foundational domain layer with generic CRUD repository base classes, transaction-aware usecases, mixin-based service hooks, database traceback filters, loguru configuration, time/type helper utilities, and base application settings.
-- **[app-testing-base](./packages/base/app-testing-base/README.md)**: Standard testing foundation for FastAPI, SQLAlchemy, and Pytest. Pytest plugin providing database engines, session fixtures, DI resolver (`resolve_dependency`), HTTP client (`AsyncClientWithJson`), base test classes (`UnitTest`, `IntegrationTest`, `E2ETest`), and assertion utilities.
+## Installation
 
-### 2. Standalone Adapters
-Each adapter isolates a specific technology stack and can be imported independently:
-- **[app-file-storage](./packages/adapters/app-file-storage/README.md)**: Support for Local and AWS S3 object storage clients.
-- **[app-vector-store](./packages/adapters/app-vector-store/README.md)**: Async Qdrant storage and filtering with externally supplied embeddings and explicit local/remote locations.
-- **[app-http-client](./packages/adapters/app-http-client/README.md)**: Lightweight asynchronous HTTP client wrapper based on `httpx`.
-
-### 3. Standalone AI & Prebuilt Services
-- **[app-ai-catalog](./packages/adapters/app-ai-catalog/README.md)**: AI embedding/LLM factory clients leveraging LiteLLM and LangChain.
-- **[app-prebuilt-user](./packages/prebuilt/app-prebuilt-user/README.md)**: Fully scaffolding-ready user authentication, JWT login flow, and user profile management.
-- **[app-prebuilt-outbox](./packages/prebuilt/app-prebuilt-outbox/README.md)**: A production-ready Transactional Outbox pattern engine for guaranteed message delivery.
-- **[app-prebuilt-search](./packages/prebuilt/app-prebuilt-search/README.md)**: DB-backed semantic search, explicit incremental indexing, independent embeddings, and scoped filters.
-
-### 4. Inbound Transports
-- **[app-mcp](./packages/transports/app-mcp/README.md)**: Protocol-neutral MCP tool registry, trusted invocation context, scope checks, and structured error translation.
-
-### 5. UI Library & Developer Productivity
-- **[app-ui-base](./packages/ui/app-ui-base/README.md)**: Agent-First Svelte 5 foundational UI library (`@app-common/ui-base`) providing layout shell (`AppShell`), atomic UI primitives (`Button`, `Card`, `Input`), reactive state stores (`sessionStore`, `themeStore`), and Tailwind design tokens.
-- **[app-tools](./tools/app-tools/README.md)**: Developer CLI tool to automatically generate layered CRUD code (backend features and Svelte 5 web features) and manage local development symlinks (`app-tools dev`).
-- **[@app-common/eslint-config](./agents/skills/app-common/references/ui/structure.md)**: Shared Svelte/TypeScript file-size errors with documented, bounded per-file exceptions. The root npm manifest packages the implementation under `packages/tooling/eslint-config/` so consumers can install a pinned Git ref independently of the UI library.
-
-`app-ui-base` has an independent npm/Svelte lifecycle. It is intentionally not a
-member of the Python `uv` workspace. Run `just init-ui` to install root lint tooling
-and UI dependencies, then `just check-ui` (size lint and type checks) and
-`just build-ui`. `just test-eslint` verifies the shared preset. The frontend CI
-workflow runs these checks too.
-
-After initializing dependencies, lint, type checks, tests, and UI checks/builds use
-`app-tools run` for compact results and complete temporary logs. Failures retain
-their exit status and show diagnostics; open the printed `log:` path for full output.
-`just test-cov` keeps coverage tables visible. The existing database and Docker test
-selection still belongs to `just` and `scripts/run-tests.sh`.
-
----
-
-## Layered Architecture Overview
-
-Projects built with these modules strictly adhere to a decoupled layered architecture pattern:
-
-- **API / Router**: Manages HTTP request/response payloads, validates input via Pydantic Schemas, injects dependencies, and delegates orchestration to UseCases.
-- **UseCase**: Coordinates multiple services, handles domain boundaries, and controls database transactions.
-- **Service**: Executes the core business logic. Built using mixin-based hooks (`BaseService`) for a clean, extensible flow (e.g., custom hooks for uniqueness or user auditing).
-- **Repository**: Generic, high-performance data access layers mapping queries to SQLAlchemy models.
-
----
-
-## Dynamic Settings Composition
-
-Rather than importing a monolithic setting block, configurations are decentralized across individual adapters (e.g., `FileStorageSettings` lives inside `app-file-storage`). 
-Our lazy-loading config composition engine compiles these configurations dynamically when imported, guaranteeing zero compilation and dependency overhead when packages are used stand-alone.
-
----
-
-## Quick Installation
-
-You can easily install any standalone package directly from this repository using `uv`:
+Install Python packages directly from Git, pinned to a release tag or pushed commit:
 
 ```bash
-# Add only the layer base
-uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/base/app-layer-base"
-
-# Add only the File Storage adapter
-uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-file-storage"
-
-# Add the developer CLI tool
-uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=tools/app-tools" --dev
+uv add "git+https://github.com/mjkimR/app-common.git@<ref>#subdirectory=packages/base/app-layer-base"
+uv add --dev "git+https://github.com/mjkimR/app-common.git@<ref>#subdirectory=tools/app-tools"
 ```
 
----
+## Architecture
 
-## Developer Skills & Agent Assets
+The CRUD stack follows `Router → UseCase → Service → Repository`: usecases own
+transactions, and services compose ordered hook objects. Non-CRUD applications can
+use typed commands and caller-owned transactions without adopting the CRUD stack.
+Each package owns its settings; the application composes the settings it needs.
+See [backend guides](agents/skills/app-common/references/backend/index.md).
 
-Two agent-neutral skills are available under [`agents/`](./agents/README.md):
+## Development
 
-- **[`app-common`](./agents/skills/app-common/SKILL.md)**: One consumer entry point for package use, testing, UI, scaffolding, local linking, and updates. Read only the topic needed using `app-tools guide show <topic>` or the bundled references.
-- **[`app-common-contributor`](./agents/dev-skills/app-common-contributor/SKILL.md)**: Package boundaries, multi-tier testing, and release conventions for contributors.
+Install `just` with `scripts/install-just.sh` (macOS/Linux) or
+`scripts/install-just.bat` (Windows). [justfile](justfile) defines available commands
+and arguments; start with `just init` or `just init-dev` for optional dependencies.
 
 ```bash
-# Declare apm.yml as described in agents/README.md, then:
-apm install
+just lint
+just check
+just test            # SQLite; no Docker required
+just init-ui
+just check-ui
+just build-ui
 ```
 
-### AI Agent Onboarding
-To bootstrap a new FastAPI project from scratch with an AI agent, give the agent this GitHub link:
-> `https://github.com/mjkimR/app-common/blob/main/agents/onboard/SKILL.md`
+`just test-pg` verifies PostgreSQL locking; `just test-docker` runs container-backed
+contracts. Both need Docker. `just test-eslint` verifies the shared frontend preset.
+Check output includes a `log:` path with complete diagnostics. Contribution rules
+and test selection are in [AGENTS.md](AGENTS.md).
+
+## Releases
+
+Packages are Git dependencies, not PyPI releases. Use one repository version across
+all package `pyproject.toml` files, root/UI npm manifests and locks, and the guide
+catalog/APM manifest. After updating versions, tag and push `vX.Y.Z`; CI creates the
+GitHub Release only after lint, type checks, and all three Python test legs pass.
+Consumers should pin a tag or commit rather than `main`.
+
+## Agent guidance
+
+[agents/README.md](agents/README.md) covers APM installation and canonical guide
+sources. Consumers use the `app-common` skill; contributors additionally read
+`app-common-contributor`. `app-tools guide` recommends topics for the current project;
+`app-tools guide show <topic>` opens one. The [onboarding guide](agents/onboard/SKILL.md)
+covers a new FastAPI project.

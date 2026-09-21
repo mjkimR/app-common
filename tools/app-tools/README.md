@@ -163,19 +163,16 @@ Preview the latest upgrade first if desired:
 app-tools update --dry-run
 ```
 
-`--no-sync` skips `.venv` installation. Skills are managed separately through APM; update the skill ref in `apm.yml` and follow the [APM installation workflow](../../../agents/README.md). Package updates do not download, install, or change skills.
-
----
-*More commands will be added as the project evolves.*
+`--no-sync` skips `.venv` installation. Skills are managed separately through APM; update the skill ref in `apm.yml` and follow the [APM installation workflow](../../agents/README.md). Package updates do not download, install, or change skills.
 
 ## Documentation
 
 For a complete list of commands, usage examples, and details on how code generation and local linking work, please refer to the developer guides:
 
-- **[Local Development Guide](../../../agents/skills/app-common/references/local-dev/index.md)**: Details on local symlinking (`app-tools dev`), backup mechanics, and options.
-- **[Package Update Guide](../../../agents/skills/app-common/references/update/index.md)**: Updates downstream projects to a released `app-common` version.
-- **[Backend Guide](../../../agents/skills/app-common/references/backend/index.md)**: FastAPI feature code scaffolding (`app-tools create-code feature`).
-- **[Svelte UI Guide](../../../agents/skills/app-common/references/ui/index.md)**: Svelte 5 web feature scaffolding (`app-tools create-code web-feature`).
+- **[Local Development Guide](../../agents/skills/app-common/references/local-dev/index.md)**: Details on local symlinking (`app-tools dev`), backup mechanics, and options.
+- **[Package Update Guide](../../agents/skills/app-common/references/update/index.md)**: Updates downstream projects to a released `app-common` version.
+- **[Backend Guide](../../agents/skills/app-common/references/backend/index.md)**: FastAPI feature code scaffolding (`app-tools create-code feature`).
+- **[Svelte UI Guide](../../agents/skills/app-common/references/ui/index.md)**: Svelte 5 web feature scaffolding (`app-tools create-code web-feature`).
 
 ## Offline package guidance
 
