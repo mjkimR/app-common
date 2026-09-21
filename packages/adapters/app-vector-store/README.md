@@ -24,7 +24,7 @@ async def example():
         ...
 ```
 
-`open_qdrant` closes the client even when the body raises. For a server, keep this context open for its application lifespan and inject the client into request handlers. A store borrows the client and never closes it. `create_qdrant_client(settings)` is also available when the caller handles `await client.close()` itself. Share one client per local path; embedded storage is not a multi-process server. Use remote Qdrant for shared deployments.
+`open_qdrant` closes the client even when the body raises. In local/memory mode, construction, async storage operations and close run on one dedicated worker thread so embedded Qdrant does not block the event loop. Cancellation drains submitted work before releasing the storage lock; a worker failure during that drain does not replace cancellation. Remote clients keep their native async behavior. For a server, keep this context open for its application lifespan and inject the client into request handlers. A store borrows the client and never closes it. `create_qdrant_client(settings)` returns the native client when the caller handles execution and `await client.close()` itself; its local async facade still performs synchronous work, so prefer `open_qdrant` in async applications. Share one client per local path; embedded storage is not a multi-process server. Use remote Qdrant for shared deployments.
 
 `QdrantSettings()` reads environment variables. Explicit constructor fields take precedence for the same field; contradictory fields from the environment are rejected rather than silently selecting another location.
 

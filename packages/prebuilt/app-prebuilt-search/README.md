@@ -13,7 +13,7 @@ uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=
 
 The package exposes the `fastembed` extra for local model inference. An injected embedding provider needs no extra. Keep app-common Git dependencies on the same pushed ref.
 
-For `SearchService`, import `app_prebuilt_search.models` in your Alembic `env.py` before reading the shared `app_layer_base.base.models.mixin.Base.metadata`, then generate/review/apply a migration. The one new table is `search_index_states`, keyed by `(index_name, scope_id, profile_id)`; it stores the last successful sync time and counts and acts as the synchronization lock. No runtime `create_all` is performed. Source content stays in your existing tables. Qdrant stores identifiers, fingerprint, declared filter fields and explicitly supplied `index_metadata`. A custom runtime owns its state storage and does not require this table.
+For `SearchService`, import `app_prebuilt_search.models` in your Alembic `env.py` before reading the shared `app_layer_base.base.models.mixin.Base.metadata`, then generate/review/apply a migration. The one new table is `search_index_states`, keyed by `(index_name, scope_id, profile_id)`; it stores the last successful sync time and counts and acts as the synchronization lock. No runtime `create_all` is performed. Source content stays in your existing tables. Qdrant stores identifiers, fingerprint, declared filter fields and explicitly supplied `index_metadata`. A custom runtime owns its state storage and does not require this table. The engine also stores one vectorless sync marker per scope/profile in Qdrant; it contains only the scope and a random generation, is excluded from search candidates, and is not source content.
 
 ## Implement a source
 
@@ -125,7 +125,7 @@ For FastAPI, hold `open_qdrant` in the app lifespan, store shared clients/provid
 - By default, matching runs in Qdrant before ranking and again against current source values. Set `candidate_filters={}` to retrieve scope-only candidates while retaining final `filters` checks. Stale indexes can still omit new items until sync.
 - `SearchResult.items` contains current content/metadata and similarity scores. `total` is the returned count, not a global match count. `group_by_source=True` returns at most one item per source, choosing the first valid ranked hit. Alternatively, `group_by=lambda item: (item.source_id, item.metadata["target_id"])` groups chunks into logical targets using current hydrated data; the callback must return a hashable key. Do not combine both grouping options.
 - Candidate batches continue past stale/unauthorized/duplicate hits. `candidate_limit_reached` reports hitting the configured bound before filling `limit`. Defaults: embedding batches 64, candidate batches 64, candidate budget 2000.
-- `index_ready` means the selected collection exists and this scope/profile has successfully synced at least once. `last_synced_at` is historical, not proof that the index matches current DB content. `status` also exposes collection presence separately. Missing indexes return `index_ready=False` without embedding or creating a collection.
+- `index_ready` means this scope/profile has a successful runtime record whose generation matches its marker in the selected collection. A collection recreated by another scope does not make this scope ready. `last_synced_at` is historical, not proof that the index matches current DB content. `status` also exposes collection presence separately. Missing indexes return `index_ready=False` without embedding or creating a collection.
 
 ## Synchronization and transaction policy
 
@@ -181,7 +181,7 @@ The runtime implements three operations (public types are exported at package ro
 
 | Operation | Responsibility |
 |---|---|
-| `sync(IndexKey) -> AsyncContextManager[SearchSyncSession]` | Acquire the index lock **before** reading the source; yield a session with `iter_items()` and async `record_success(result)`; retain the lock until writes and success recording finish. Reject sync for read-only snapshots. |
+| `sync(IndexKey) -> AsyncContextManager[SearchSyncSession]` | Acquire the index lock **before** reading the source; yield a session with `iter_items()` and async `record_success(result)` that persists the complete result including `generation`; retain the lock until writes and success recording finish. Reject sync for read-only snapshots. |
 | `read_state(IndexKey) -> SyncState` | Return last successful sync state from a short read scope. Readiness belongs to the vector namespace, not the hydrated snapshot. |
 | `hydrate(SearchRequest, hits) -> Sequence[SearchItem]` | Load only requested, currently authorized identities from `request.source_scope` in a short read-only scope. The request carries the query and final/candidate filters. |
 
@@ -243,6 +243,15 @@ APIs alone; old hits have empty indexed metadata until sync refreshes them. Chan
 separate vector implementation may require a new collection and full reindex because
 its identity/payload/vector schema can differ. This package extension does not migrate
 consumer indexes or install a worker, tokenizer, BM25 retriever or branch policy.
+
+Readiness generations live in the existing `last_result` JSON, so no additional DB
+migration is needed. After upgrading, run one sync per scope/profile: legacy state
+without a generation is reported as not ready. Unchanged items reuse their vectors.
+Raw unfiltered collection scrolls include sync markers; use the mandatory `scope_id`
+filter when enumerating searchable points. A marker confirms a completed sync, not
+current source freshness or a checksum of every point. Selective external point
+deletions still require reconciliation. If vector publication succeeds but recording
+state fails, the generation mismatch reports not ready until the next successful sync.
 
 ## Validation
 

@@ -98,15 +98,35 @@ class SearchEngine:
     def _key(self, scope: str) -> IndexKey:
         return IndexKey(self.index.name, scope, self.profile_id)
 
+    def _marker_id(self, scope: str) -> str:
+        return str(uuid.uuid5(uuid.NAMESPACE_OID, json.dumps([self.index.name, self.profile_id, scope])))
+
     async def status(self, *, scope: str) -> IndexStatus:
         self._scope(scope)
         exists = await self.store.validate_collection()
         state = await self.runtime.read_state(self._key(scope))
+        generation = state.last_result.generation if state.last_result else None
+        markers = (
+            await self.store.client.retrieve(
+                self.collection_name,
+                [self._marker_id(scope)],
+                with_payload=True,
+                with_vectors=False,
+            )
+            if exists and generation
+            else []
+        )
+        ready = bool(
+            state.last_synced_at
+            and generation
+            and markers
+            and markers[0].payload == {"search_sync_scope": scope, "generation": generation}
+        )
         return IndexStatus(
             collection_name=self.collection_name,
             profile_id=self.profile_id,
             collection_exists=exists,
-            index_ready=exists and state.last_synced_at is not None,
+            index_ready=ready,
             last_synced_at=state.last_synced_at,
             last_result=state.last_result,
         )
@@ -182,6 +202,21 @@ class SearchEngine:
                 models.PointIdsList(points=[p for p in stale[start : start + self.index.batch_size]])
             )
         result.deleted = len(stale)
+        # This vectorless scope marker disappears with its collection. A token
+        # is recorded in runtime state only after all writes and the marker succeed.
+        # It has no scope_id, so candidate retrieval and reconciliation exclude it.
+        result.generation = str(uuid.uuid4())
+        await self.store.client.upsert(
+            self.collection_name,
+            points=[
+                models.PointStruct(
+                    id=self._marker_id(scope),
+                    vector={},
+                    payload={"search_sync_scope": scope, "generation": result.generation},
+                )
+            ],
+            wait=True,
+        )
         return result
 
     def _validate_vector(self, vector: list[float]) -> None:

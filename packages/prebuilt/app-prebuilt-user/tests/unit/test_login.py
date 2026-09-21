@@ -14,6 +14,7 @@ from app_prebuilt_user.schemas import UserCreate, UserUpdate
 from app_prebuilt_user.services import UserService
 from app_prebuilt_user.throttle import FailedLoginThrottle
 from app_prebuilt_user.token_schemas import RefreshRequest
+from app_prebuilt_user.usecases.login import AuthenticateUserUseCase
 
 SECRET = "test-secret-key-not-for-production"
 
@@ -48,7 +49,7 @@ async def sign_in(session, service, email, password, throttle=None, caller="203.
 
     return await login(
         Form(email, password),  # type: ignore[arg-type]
-        session,
+        AuthenticateUserUseCase(service),
         service,
         throttle or FailedLoginThrottle(5, 60, 300),
         caller,

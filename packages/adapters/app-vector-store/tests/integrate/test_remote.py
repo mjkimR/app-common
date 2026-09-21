@@ -64,3 +64,24 @@ async def test_remote_collection_indexes_filters_and_payloads(endpoint):
         wrong = QdrantVectorStore(client, "contract", dimension=2, embedding_id="different-model")
         with pytest.raises(CollectionMismatchError):
             await wrong.search([1.0, 0.0])
+
+
+async def test_remote_vectorless_marker_is_retrievable_but_not_searchable(endpoint):
+    async with open_qdrant(QdrantSettings(mode="remote", url=endpoint)) as client:
+        store = QdrantVectorStore(client, "markers", dimension=2, embedding_id="model-v1")
+        await store.upsert([VectorPoint(1, [1.0, 0.0], {"scope_id": "a"})])
+        await client.upsert(
+            "markers",
+            points=[
+                models.PointStruct(
+                    id=2,
+                    vector={},
+                    payload={"search_sync_scope": "a", "generation": "sync-1"},
+                )
+            ],
+            wait=True,
+        )
+        markers = await client.retrieve("markers", [2], with_payload=True, with_vectors=True)
+        assert markers[0].payload == {"search_sync_scope": "a", "generation": "sync-1"}
+        assert markers[0].vector == {}
+        assert [hit.id for hit in await store.search([1.0, 0.0])] == [1]

@@ -42,6 +42,8 @@ class SearchResult(BaseModel):
 
 
 class SyncResult(BaseModel):
+    # Stored in last_result by every runtime; matched to the marker in Qdrant.
+    generation: str | None = None
     scanned: int = 0
     embedded: int = 0
     refreshed: int = 0

@@ -47,7 +47,7 @@ class UserDbUpdate(UserUpdateAdmin):
 
 class UserRead(UUIDSchemaMixin, TimestampSchemaMixin, BaseModel):
     firstname: str = Field(..., description="The user's first name.")
-    lastname: str = Field(..., description="The user's last name.")
+    lastname: str | None = Field(..., description="The user's last name.")
     email: EmailStr = Field(..., description="The user's email address.")
     profile_image_url: str | None = Field(default=None, description="URL of the user's profile image.")
     phone_number: str | None = Field(default=None, description="The user's phone number.")

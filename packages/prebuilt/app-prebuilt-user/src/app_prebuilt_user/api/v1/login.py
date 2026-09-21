@@ -21,6 +21,7 @@ from app_prebuilt_user.models import User
 from app_prebuilt_user.services import UserService
 from app_prebuilt_user.throttle import FailedLoginThrottle
 from app_prebuilt_user.token_schemas import RefreshRequest, Token
+from app_prebuilt_user.usecases.login import AuthenticateUserUseCase
 
 router = APIRouter(tags=["Login"])
 
@@ -37,7 +38,7 @@ def _token_pair(service: UserService, user: User) -> Token:
 @router.post("/login/", response_model=Token)
 async def login(
     data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: Annotated[AsyncSession, Depends(get_session)],
+    use_case: Annotated[AuthenticateUserUseCase, Depends()],
     service: Annotated[UserService, Depends()],
     throttle: Annotated[FailedLoginThrottle, Depends(get_login_throttle)],
     caller: Annotated[str, Depends(get_login_caller)],
@@ -48,7 +49,7 @@ async def login(
     if retry_after is not None:
         # Refused before the password is looked at: a locked-out caller learns nothing, right password or not.
         raise TooManyLoginAttemptsException(retry_after=str(retry_after))
-    user = await service.authenticate(session, email=data.username, password=data.password)
+    user = await use_case.execute(email=data.username, password=data.password)
     if user is None:
         if throttle.record_failure(caller, now):
             await on_lockout(caller)

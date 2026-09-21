@@ -66,11 +66,13 @@ the access token expires (`expires_in` seconds) or when a request answers 401. E
 so it ends only after `REFRESH_TOKEN_EXPIRE_DAYS` without use. A refresh token stops working when its user is
 deactivated or its password changes. An invalid or expired token answers **401**; 403 is kept for a request the
 user is not allowed to make.
+Deactivation also rejects existing access tokens on protected endpoints immediately.
 
 ### Passwords
 
 New hashes are Argon2id. A bcrypt hash written by an earlier version still verifies and is replaced by an Argon2id
-hash the next time its user logs in.
+hash the next time its user logs in. The login use case commits this change before issuing the token pair,
+so the refresh token refers to the persisted password hash.
 
 ### The first superuser
 

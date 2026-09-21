@@ -178,7 +178,7 @@ async def test_metadata_refresh_and_shrinking_chunks_preserve_vectors(engine, mo
     r = engine.runtime
     r.sources["main"] = [chunk(number=i) for i in range(5)]
     await engine.sync(scope="main")
-    ids = [point.id async for point in engine.store.scroll()]
+    ids = [point.id async for point in engine.store.scroll(query_filter=engine.policy.query("main", {}))]
     before = await engine.store.client.retrieve(engine.collection_name, ids, with_vectors=True)
     for item in r.sources["main"]:
         item.index_metadata["source_hash"] = "changed metadata only"
@@ -241,11 +241,15 @@ async def test_partial_snapshot_and_state_failure_are_reconcilable(engine):
     r.partial = True
     with pytest.raises(RuntimeError, match="partial"):
         await engine.sync(scope="main")
-    assert [p.payload["source_id"] async for p in engine.store.scroll()] == ["doc"]
+    assert [
+        p.payload["source_id"] async for p in engine.store.scroll(query_filter=engine.policy.query("main", {}))
+    ] == ["doc"]
     r.partial, r.fail_record = False, True
     with pytest.raises(RuntimeError, match="persistence"):
         await engine.sync(scope="main")
-    assert (await engine.status(scope="main")).last_synced_at == before.last_synced_at
+    after = await engine.status(scope="main")
+    assert after.last_synced_at == before.last_synced_at
+    assert not after.index_ready
     r.fail_record = False
     assert (await engine.sync(scope="main")).skipped == 1
     assert (await engine.search(scope="main", query="q")).items[0].source_id == "new"
@@ -291,3 +295,27 @@ async def test_boolean_payload_is_strict_and_no_vector_write_on_invalid_snapshot
     with pytest.raises(SearchSourceError):
         await engine.sync(scope="main")
     assert not await engine.store.collection_exists()
+
+
+async def test_scope_marker_detects_collection_recreation_and_repairs_empty_scope(engine):
+    r = engine.runtime
+    await engine.sync(scope="main")
+    assert (await engine.status(scope="main")).index_ready
+    # A different application's runtime can publish another scope in the same collection.
+    other = SearchEngine(
+        runtime=SnapshotRuntime(), vector_client=engine.store.client, embedder=engine.embedder, index=engine.index
+    )
+    r.sources["main"] = [chunk()]
+    await engine.sync(scope="main")
+    await engine.store.client.delete_collection(engine.collection_name)
+    await engine.store.ensure_collection()
+    status = await engine.status(scope="main")
+    assert status.collection_exists and not status.index_ready
+    assert not (await engine.search(scope="main", query="q")).index_ready
+    # Even an old successful timestamp must not authorize a recreated collection.
+    old = r.states[engine._key("main")]
+    old.last_result.generation = None
+    assert not (await engine.status(scope="main")).index_ready
+    await engine.sync(scope="main")
+    assert (await engine.status(scope="main")).index_ready
+    assert not (await other.status(scope="main")).index_ready

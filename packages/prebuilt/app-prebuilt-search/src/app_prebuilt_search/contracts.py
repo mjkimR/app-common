@@ -67,7 +67,7 @@ class SearchSyncSession(Protocol):
         ...
 
     async def record_success(self, result: SyncResult) -> None:
-        """Record success under the same lock, after all vector writes finish."""
+        """Persist the complete result, including generation, under the sync lock."""
         ...
 
 

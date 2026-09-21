@@ -19,7 +19,7 @@ from .services import UserService
 from .throttle import FailedLoginThrottle
 from .token_schemas import TokenPayload
 
-oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login/")
 
 
 @functools.lru_cache
@@ -90,6 +90,8 @@ async def get_current_user(
     user = await user_service.get(session, obj_pk=token.user_id)
     if user is None:
         raise UserNotFoundException()
+    if not user.is_active:
+        raise InvalidCredentialsException()
     return user
 
 

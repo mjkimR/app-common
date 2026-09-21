@@ -30,7 +30,9 @@ async def test_sync_incremental_changes_and_isolated_deletion(harness):
     assert (await h.service.search(scope="b", query="query")).total == 1
     status = await h.service.status(scope="a")
     assert status.index_ready and status.last_synced_at and status.last_result.deleted == 1
-    assert all(["text" not in r.payload async for r in h.service.store.scroll()])
+    assert all(
+        ["text" not in r.payload async for r in h.service.store.scroll(query_filter=h.service.policy.query("a", {}))]
+    )
 
 
 async def test_unsynced_search_is_read_only_and_scope_specific(harness):
@@ -107,7 +109,9 @@ async def test_failed_enumeration_never_prunes_or_marks_success(harness):
     with pytest.raises(RuntimeError, match="incomplete"):
         await h.service.sync(scope="a")
     assert (await h.service.status(scope="a")).last_synced_at == before.last_synced_at
-    assert [r.payload["source_id"] async for r in h.service.store.scroll()] == ["old"]
+    assert [
+        r.payload["source_id"] async for r in h.service.store.scroll(query_filter=h.service.policy.query("a", {}))
+    ] == ["old"]
     h.source.fail_iteration = False
     result = await h.service.sync(scope="a")
     assert (result.embedded, result.deleted) == (1, 1)
@@ -247,7 +251,9 @@ async def test_partial_vector_failure_is_repaired_before_stale_deletion(harness)
     with pytest.raises(RuntimeError, match="remote unavailable"):
         await h.service.sync(scope="a")
     assert (await h.service.status(scope="a")).last_synced_at == before.last_synced_at
-    assert len([r async for r in h.service.store.scroll()]) == 3  # two new + old, not pruned
+    assert (
+        len([r async for r in h.service.store.scroll(query_filter=h.service.policy.query("a", {}))]) == 3
+    )  # two new + old, not pruned
     h.client.upsert = original
     retried = await h.service.sync(scope="a")
     assert (retried.embedded, retried.skipped, retried.deleted) == (3, 2, 1)
