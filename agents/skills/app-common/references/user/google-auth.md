@@ -1,7 +1,7 @@
 # Google OIDC login
 
-Install `app-prebuilt-google-auth` alongside `app-prebuilt-user` from the same published Git SHA.
-Mount `app_prebuilt_google_auth.api.router` under `/api/v1`. The provider is disabled by default.
+Google OIDC is included in the default `app-prebuilt-auth` installation.
+Call `install_auth(app)` from `app_prebuilt_auth` to mount the complete auth API. Google is disabled by default.
 The host owns the approval screen and the local bootstrap superadmin account.
 
 Set `GOOGLE_AUTH_ENABLED`, `GOOGLE_AUTH_CLIENT_ID`, `GOOGLE_AUTH_CLIENT_SECRET`,
@@ -9,7 +9,7 @@ Set `GOOGLE_AUTH_ENABLED`, `GOOGLE_AUTH_CLIENT_ID`, `GOOGLE_AUTH_CLIENT_SECRET`,
 HTTPS origin. For localhost HTTP only, set `GOOGLE_AUTH_COOKIE_SECURE=false` and use the frontend API proxy.
 Set shared `AuthSettings.REGISTRATION_REQUIRE_APPROVAL=true` to create pending external users.
 
-Import Google models before Alembic autogeneration: migrate shared user approval/version/audit fields,
+Import `app_prebuilt_auth` before Alembic autogeneration; all authentication models are registered: migrate shared user approval/version/audit fields,
 `user_external_identities`, and `google_login_flows`. Preserve existing users as approved, version 0.
 Retire all old workers before enabling registration. Override the shared user session/transaction dependencies
 for host-owned databases. Close `app_http_client.instance.close_http_client` at application shutdown.

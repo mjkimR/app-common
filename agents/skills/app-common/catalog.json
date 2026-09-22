@@ -95,13 +95,13 @@
     "user": {
       "path": "references/user/index.md",
       "packages": [
-        "app-prebuilt-user"
+        "app-prebuilt-auth"
       ]
     },
     "user/setup": {
       "path": "references/user/setup.md",
       "packages": [
-        "app-prebuilt-user"
+        "app-prebuilt-auth"
       ]
     },
     "outbox": {
@@ -193,6 +193,12 @@
       "path": "references/search/index.md",
       "packages": [
         "app-prebuilt-search"
+      ]
+    },
+    "auth": {
+      "path": "references/auth/index.md",
+      "packages": [
+        "app-prebuilt-auth"
       ]
     }
   }

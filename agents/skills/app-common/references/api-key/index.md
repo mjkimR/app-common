@@ -1,6 +1,6 @@
 # Machine API keys
 
-Use `app-prebuilt-api-key` for machine identity and key lifecycle. Mount
+Use `app-prebuilt-auth` for machine identity and key lifecycle. Mount
 `api_keys_router` under `/api/v1`, register the `Machine`/`MachineKey` models with
 host migrations, and supply a scope allowlist through `get_machine_scopes`.
 

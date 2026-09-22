@@ -11,13 +11,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-env-spec = ["app-layer-base", "app-file-storage", "app-prebuilt-user", "app-vector-store"]
+env-spec = ["app-layer-base", "app-file-storage", "app-prebuilt-auth", "app-vector-store"]
 
 [tool.uv.sources]
 app-error = { workspace = true }
 app-layer-base = { workspace = true }
 app-file-storage = { workspace = true }
-app-prebuilt-user = { workspace = true }
+app-prebuilt-auth = { workspace = true }
 app-vector-store = { workspace = true }
 
 [project.scripts]

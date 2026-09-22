@@ -1,10 +1,8 @@
-# app-prebuilt-user Setup & Configuration
+# app-prebuilt-auth Setup & Configuration
 
 ## Installation
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-user"
-# OAuth2 password form login requires python-multipart in the host app:
-uv add python-multipart
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-auth"
 ```
 
 ## Configuration (`AuthSettings`)

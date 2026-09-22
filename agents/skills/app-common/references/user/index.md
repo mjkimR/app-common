@@ -1,6 +1,6 @@
-# app-prebuilt-user
+# app-prebuilt-auth
 
-Drop-in user authentication and management module built on `app-layer-base`. Provides the `User` model, layered service/usecase stack, auth dependencies, and FastAPI routers.
+The user module of the unified authentication prebuilt, built on `app-layer-base`. All capabilities and tables are included by default. Provides the `User` model, layered service/usecase stack, auth dependencies, and FastAPI routers.
 
 > For package installation and `AuthSettings` environment variables, see [setup.md](./setup.md).
 
@@ -8,11 +8,11 @@ Drop-in user authentication and management module built on `app-layer-base`. Pro
 
 ```python
 from fastapi import FastAPI
-from app_prebuilt_user.api import v1_users_router
+from app_prebuilt_auth import install_auth
 
 app = FastAPI()
 # Mounts password login, current-user/profile reads, and administrator management
-app.include_router(v1_users_router, prefix="/api/v1")
+install_auth(app)
 ```
 
 ## Protecting Endpoints
@@ -22,8 +22,8 @@ Inject auth dependencies into your application routers:
 ```python
 from typing import Annotated
 from fastapi import APIRouter, Depends
-from app_prebuilt_user.deps import get_current_user, on_superuser
-from app_prebuilt_user.models import User
+from app_prebuilt_auth.user.deps import get_current_user, on_superuser
+from app_prebuilt_auth.user.models import User
 
 router = APIRouter()
 
@@ -54,7 +54,7 @@ async def delete_user(user_id: str, admin: SuperUser):
   platform wrote, not one the client chose, and `get_login_lockout_listener` to tell an operator.
 
 ```python
-from app_prebuilt_user.deps import get_login_caller
+from app_prebuilt_auth.user.deps import get_login_caller
 
 
 def cloud_run_caller(request: Request) -> str:

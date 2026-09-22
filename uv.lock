@@ -15,11 +15,9 @@ members = [
     "app-http-client",
     "app-layer-base",
     "app-mcp",
-    "app-prebuilt-api-key",
-    "app-prebuilt-google-auth",
+    "app-prebuilt-auth",
     "app-prebuilt-outbox",
     "app-prebuilt-search",
-    "app-prebuilt-user",
     "app-testing-base",
     "app-tools",
     "app-vector-store",
@@ -437,67 +435,46 @@ dev = [
 ]
 
 [[package]]
-name = "app-prebuilt-api-key"
+name = "app-prebuilt-auth"
 version = "0.1.0"
-source = { editable = "packages/prebuilt/app-prebuilt-api-key" }
+source = { editable = "packages/prebuilt/app-prebuilt-auth" }
 dependencies = [
+    { name = "app-http-client" },
     { name = "app-layer-base" },
+    { name = "argon2-cffi" },
+    { name = "bcrypt" },
+    { name = "fastapi" },
+    { name = "pydantic-settings" },
+    { name = "pyjwt", extra = ["crypto"] },
+    { name = "python-multipart" },
     { name = "sqlalchemy" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "app-testing-base" },
-    { name = "fastapi" },
     { name = "pytest-mock" },
     { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "app-http-client", editable = "packages/adapters/app-http-client" },
     { name = "app-layer-base", editable = "packages/base/app-layer-base" },
+    { name = "argon2-cffi", specifier = ">=23.1.0" },
+    { name = "bcrypt", specifier = ">=4.2.0" },
+    { name = "fastapi", specifier = ">=0.115.12" },
+    { name = "pydantic-settings", specifier = ">=2.0" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.10.1" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "sqlalchemy", specifier = ">=2.0.39" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "app-testing-base", editable = "packages/base/app-testing-base" },
-    { name = "fastapi", specifier = ">=0.115.12" },
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "ruff", specifier = ">=0.14.14" },
-]
-
-[[package]]
-name = "app-prebuilt-google-auth"
-version = "0.1.0"
-source = { editable = "packages/prebuilt/app-prebuilt-google-auth" }
-dependencies = [
-    { name = "app-http-client" },
-    { name = "app-layer-base" },
-    { name = "app-prebuilt-user" },
-    { name = "pyjwt", extra = ["crypto"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "app-testing-base" },
-    { name = "pytest-mock" },
-    { name = "python-multipart" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "app-http-client", editable = "packages/adapters/app-http-client" },
-    { name = "app-layer-base", editable = "packages/base/app-layer-base" },
-    { name = "app-prebuilt-user", editable = "packages/prebuilt/app-prebuilt-user" },
-    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.10.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "app-testing-base", editable = "packages/base/app-testing-base" },
-    { name = "pytest-mock", specifier = ">=3.15.0" },
-    { name = "python-multipart", specifier = ">=0.0.7" },
 ]
 
 [[package]]
@@ -578,45 +555,6 @@ dev = [
 ]
 
 [[package]]
-name = "app-prebuilt-user"
-version = "0.1.0"
-source = { editable = "packages/prebuilt/app-prebuilt-user" }
-dependencies = [
-    { name = "app-layer-base" },
-    { name = "argon2-cffi" },
-    { name = "bcrypt" },
-    { name = "pyjwt" },
-    { name = "sqlalchemy" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "app-testing-base" },
-    { name = "fastapi" },
-    { name = "pytest-mock" },
-    { name = "python-multipart" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "app-layer-base", editable = "packages/base/app-layer-base" },
-    { name = "argon2-cffi", specifier = ">=23.1.0" },
-    { name = "bcrypt", specifier = ">=4.2.0" },
-    { name = "pyjwt", specifier = ">=2.10.1" },
-    { name = "sqlalchemy", specifier = ">=2.0.39" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "app-testing-base", editable = "packages/base/app-testing-base" },
-    { name = "fastapi", specifier = ">=0.115.12" },
-    { name = "pytest-mock", specifier = ">=3.15.0" },
-    { name = "python-multipart", specifier = ">=0.0.7" },
-    { name = "ruff", specifier = ">=0.14.14" },
-]
-
-[[package]]
 name = "app-testing-base"
 version = "0.1.0"
 source = { editable = "packages/base/app-testing-base" }
@@ -659,7 +597,7 @@ dependencies = [
 env-spec = [
     { name = "app-file-storage" },
     { name = "app-layer-base" },
-    { name = "app-prebuilt-user" },
+    { name = "app-prebuilt-auth" },
     { name = "app-vector-store" },
 ]
 
@@ -676,7 +614,7 @@ requires-dist = [
     { name = "app-error", editable = "packages/base/app-error" },
     { name = "app-file-storage", marker = "extra == 'env-spec'", editable = "packages/adapters/app-file-storage" },
     { name = "app-layer-base", marker = "extra == 'env-spec'", editable = "packages/base/app-layer-base" },
-    { name = "app-prebuilt-user", marker = "extra == 'env-spec'", editable = "packages/prebuilt/app-prebuilt-user" },
+    { name = "app-prebuilt-auth", marker = "extra == 'env-spec'", editable = "packages/prebuilt/app-prebuilt-auth" },
     { name = "app-vector-store", marker = "extra == 'env-spec'", editable = "packages/adapters/app-vector-store" },
     { name = "click", specifier = ">=8.3.1" },
     { name = "questionary", specifier = ">=2.1.1" },

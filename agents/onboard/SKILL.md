@@ -22,7 +22,7 @@ Before writing code or running commands, ask the developer:
 3. **Vector Database / RAG**: Qdrant required?
 4. **AI Models**: LiteLLM model router & catalog (`catalog.yml`) required?
 5. **Prebuilt Modules**:
-   - User authentication & JWT login (`app-prebuilt-user`)?
+   - User authentication & JWT login (`app-prebuilt-auth`)?
    - Transactional Outbox pattern for domain events (`app-prebuilt-outbox`)?
    - Pooled HTTP client (`app-http-client`)?
 6. **Testing & Frontend**:
@@ -73,9 +73,8 @@ uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=
 # AI Model Catalog
 uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/adapters/app-ai-catalog"
 
-# User Management & JWT Authentication
-uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-user"
-uv add python-multipart
+# Unified Authentication (users, Google OIDC, and machine API keys)
+uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-auth"
 
 # Transactional Outbox Pattern
 uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=packages/prebuilt/app-prebuilt-outbox"
@@ -115,7 +114,7 @@ Create `.env.example` containing required database and selected adapter variable
 DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/mydb
 # or for SQLite: sqlite+aiosqlite:///./app.db
 
-# If app-prebuilt-user was selected:
+# If app-prebuilt-auth was selected:
 SECRET_KEY=change_this_to_a_random_hex_key
 FIRST_USER_EMAIL=admin@example.com
 FIRST_USER_PASSWORD=change_this_password

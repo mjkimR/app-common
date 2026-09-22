@@ -118,7 +118,7 @@ def get_env_spec(type: str):
     try:
         from app_file_storage.config import FileStorageSettings
         from app_layer_base.config import AppSettings
-        from app_prebuilt_user.config.auth import AuthSettings
+        from app_prebuilt_auth.user.config.auth import AuthSettings
         from app_vector_store.config import QdrantSettings
     except ImportError as e:
         from app_error import Actor, AppError, Retry

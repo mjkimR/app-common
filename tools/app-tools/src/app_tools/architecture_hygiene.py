@@ -111,7 +111,7 @@ class HygieneVisitor(ast.NodeVisitor):
             "app_vector_store",
             "app_ai_catalog",
             "app_mcp",
-            "app_prebuilt_user",
+            "app_prebuilt_auth",
             "app_prebuilt_outbox",
             "app_tools",
         }
