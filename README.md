@@ -81,3 +81,26 @@ sources. Consumers use the `app-common` skill; contributors additionally read
 `app-common-contributor`. `app-tools guide` recommends topics for the current project;
 `app-tools guide show <topic>` opens one. The [onboarding guide](agents/onboard/SKILL.md)
 covers a new FastAPI project.
+
+## Test tiers and source layout
+
+Each package owns `tests/unit/` and `tests/integration/`, mirroring its `src/<package>/`
+paths where the owner has subpackages. Flat source modules keep flat tests.
+Unit uses doubles at persistence, process, HTTP and vector-store boundaries;
+integration uses real implementations, including in-memory SQLite/Qdrant and
+in-process API clients. `tests/e2e/` is reserved for actual process-level user
+journeys; currently no package has an e2e suite. Shared builders belong in local
+`tests/support/`; never import another package's tests or add workspace test paths.
+
+`just test-unit [module]` selects unit; `just test-integration [module]` selects
+local integration. `just test` retains all local tests. Empty tiers are reported
+explicitly per package. `TEST_TIER` cannot be combined with explicit paths.
+Run unit plus relevant integration while iterating, and all tests before completion.
+Docker and PostgreSQL remain separate backend dimensions: `just test-docker` and
+`just test-pg` retain their real service/locking coverage. A local integration pass
+does not substitute for those contracts. `TEST_TIER=integration just test-pg` is
+available when testing only PostgreSQL integration.
+
+The shared ESLint policy follows the same tiers: `npm run test:unit` checks option
+validation; `npm run test:integration` runs actual ESLint and Svelte/TypeScript
+parsers. `just test-eslint` retains both.

@@ -8,7 +8,7 @@ Test structure:
     tests/
     ├── conftest.py   <- you are here
     ├── unit/         <- mocked, no database
-    └── integrate/    <- real database
+    └── integration/    <- real database
 """
 
 import logging

@@ -7,10 +7,14 @@
     ".": "./packages/tooling/eslint-config/structure.js",
     "./structure": "./packages/tooling/eslint-config/structure.js"
   },
-  "files": ["packages/tooling/eslint-config/structure.js"],
+  "files": [
+    "packages/tooling/eslint-config/structure.js"
+  ],
   "scripts": {
     "check": "tsc --noEmit --allowJs --checkJs --module nodenext --target es2022 --skipLibCheck packages/tooling/eslint-config/structure.js",
-    "test": "node --test packages/tooling/eslint-config/tests/*.test.js"
+    "test": "node --test packages/tooling/eslint-config/tests/*/*.test.js",
+    "test:unit": "node --test packages/tooling/eslint-config/tests/unit/*.test.js",
+    "test:integration": "node --test packages/tooling/eslint-config/tests/integration/*.test.js"
   },
   "dependencies": {
     "@typescript-eslint/parser": "^8.70.0",

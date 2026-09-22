@@ -9,6 +9,15 @@ shift 2 || true
 PATHS=("$@")
 
 validate_module "$MODULE"
+TEST_TIER="${TEST_TIER:-all}"
+case "$TEST_TIER" in
+    all|unit|integration|e2e) ;;
+    *) echo "TEST_TIER must be all, unit, integration, or e2e" >&2; exit 2 ;;
+esac
+if [ "$TEST_TIER" != "all" ] && [ "${#PATHS[@]}" -gt 0 ]; then
+    echo "Select a tier or explicit test paths, not both" >&2
+    exit 2
+fi
 
 DEFAULT_PYTEST_OPTIONS="-q --tb=short --disable-warnings --no-header"
 PYTEST_OPTIONS="${PYTEST_OPTIONS:-$DEFAULT_PYTEST_OPTIONS}"
@@ -28,7 +37,7 @@ fi
 # Container-backed tests (opt-in via DOCKER=1, normally through `just test-docker`).
 # They spin real backends up and cost seconds, so the default run deselects them and
 # stays fast and infra-free. CI runs them on every push -- if it did not, tests nobody
-# runs would rot. Marked with `docker`; see app-file-storage/tests/integrate/conftest.py.
+# runs would rot. Marked with `docker`; see app-file-storage/tests/integration/conftest.py.
 DOCKER="${DOCKER:-0}"
 
 # Independent SQLite packages can run together without sharing imports or DBs.
@@ -49,7 +58,13 @@ run_pytest() {
     path=$(resolve_module_path "$module")
 
     local updated_paths=()
-    if [ "$#" -eq 0 ]; then
+    if [ "$TEST_TIER" != "all" ]; then
+        if [ ! -d "$path/tests/$TEST_TIER" ] || ! find "$path/tests/$TEST_TIER" -name 'test_*.py' -type f -print -quit | grep -q .; then
+            echo "No $TEST_TIER tests in $module."
+            return 0
+        fi
+        updated_paths+=("tests/$TEST_TIER")
+    elif [ "$#" -eq 0 ]; then
         if [ -d "$path/src" ]; then
             updated_paths+=("src")
         fi

@@ -46,10 +46,8 @@ dev = [
 log_level = "INFO"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-# tests/unit carries the shared `test_layer_base.mock_models` package. `tests` itself is
-# deliberately absent: making it importable is what let one package's tests/ shadow
-# another's across the workspace.
-pythonpath = ["tests/unit", "src"]
+# Each package runs in its own pytest process; support is local to its tests package.
+pythonpath = ["src"]
 
 [tool.uv.sources]
 app-error = { workspace = true }

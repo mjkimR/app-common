@@ -7,7 +7,7 @@ class FileStorageClient(ABC):
     """Object storage seen as a flat key -> bytes map.
 
     Every provider must be swappable without changing caller behaviour, so the contract
-    below is binding for all of them (`tests/integrate/test_contract.py` enforces it
+    below is binding for all of them (`tests/integration/test_contract.py` enforces it
     against each implementation):
 
     - Keys are opaque strings, S3-style. `a/b.txt` is a key, not a directory, and a key

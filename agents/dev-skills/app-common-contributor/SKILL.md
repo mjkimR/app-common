@@ -28,7 +28,7 @@ Always run the appropriate test target before finalizing code changes:
 
 | Command | Backends / Environment | What it Verifies |
 |---|---|---|
-| `just test` | **SQLite (in-memory)** | Fast unit test cycle. Container-backed tests are automatically deselected. No Docker required. |
+| `just test` | **SQLite (in-memory)** | Full local unit and integration coverage. Container-backed tests are automatically deselected. No Docker required. |
 | `just test-pg` | **PostgreSQL (Testcontainers, Docker)** | Row-locking mechanics. `SELECT ... FOR UPDATE SKIP LOCKED` is a no-op on SQLite; this run verifies the Outbox concurrency guarantees. |
 | `just test-docker` | **MinIO / Real Containers (Docker)** | Multi-backend storage contract tests. Mocked tests hid real bugs in the past; contract tests against real MinIO prevent regressions. |
 | `just test-cov` | **All backends + Coverage** | Generates detailed coverage report in `htmlcov/`. |

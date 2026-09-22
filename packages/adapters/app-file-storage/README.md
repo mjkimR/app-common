@@ -54,7 +54,7 @@ async def save(data: bytes):
 
 `FileStorageClient` (async): `upload_file`, `download_file`, `download_file_stream`, `delete_file`, `list_files`, `file_exists`, `get_file_metadata`, `close`.
 
-Providers are swappable, so the contract holds for every one of them — `tests/integrate/test_contract.py` runs the same assertions against Local and a real S3:
+Providers are swappable, so the contract holds for every one of them — `tests/integration/test_contract.py` runs the same assertions against Local and a real S3:
 
 - **Keys are opaque strings, S3-style.** `a/b.txt` is a key, not a directory, and a key can never address anything outside the bucket/root — `../` raises `ValueError`.
 - **`list_files(prefix)` matches on the string prefix of the key**, so `list_files("doc")` yields both `doc.txt` and `docs/a.txt`.

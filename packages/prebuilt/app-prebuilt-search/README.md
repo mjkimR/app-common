@@ -210,7 +210,7 @@ expose arbitrary `source_scope` values as an authorization mechanism. Construct 
 instances with request-specific credentials when needed. Source selection, main/branch
 write policy, hierarchy interpretation and hybrid fallback remain application concerns.
 
-See [the executable snapshot runtime tests](tests/unit/test_runtime.py) for an example
+See [the executable snapshot runtime tests](tests/integration/test_runtime.py) for an example
 that uses no SQLAlchemy sessions and covers alternate snapshots, forbidden publication,
 stale metadata, grouping, partial enumeration and cancellation under a shared lock.
 

@@ -29,16 +29,24 @@ path above. Load it in top-level `tests/conftest.py`.
 
 | Scope | Directory | Use for |
 | --- | --- | --- |
-| Integration (default) | `tests/integrate/` | UseCase, Service, Repository behavior and DB queries |
-| API E2E | `tests/e2e/` | Routing, serialization, status codes, authentication |
-| Unit | `tests/unit/` | Pure calculations/parsers without DB or HTTP |
+| Integration (default) | `tests/integration/` | UseCase, Service, Repository behavior and DB queries |
+| In-process API integration | `tests/integration/` | Routing, serialization, status codes, authentication |
+| Unit | `tests/unit/` | Pure calculations/parsers with external boundaries doubled |
+| E2E | `tests/e2e/` | Running process or browser user journeys |
 
 - With `asyncio_mode = "auto"`, omit redundant `@pytest.mark.asyncio`.
 - Resolve nested services/usecases with `resolve_dependency(..., state={"db": session})`.
   Use `mocker` for external-service isolation in unit tests.
-- Mark DB-backed API E2E tests `e2e` and `real_commit`: requests can commit.
-  `E2ETest` applies both markers and provides `client`, `session`, `url()`, `refresh()`.
-  `IntegrationTest` applies `integrate` and provides `session`, `resolve()`, `refresh()`.
+- Keep DB-backed API tests in integration and preserve `real_commit`: requests can commit.
+  Legacy `E2ETest` still applies `e2e`/`real_commit` and provides `client`, `session`,
+  `url()`, `refresh()`. `IntegrationTest` still applies `integrate` and provides
+  `session`, `resolve()`, `refresh()`. These compatibility names do not change the
+  directory's boundary classification. Prefer explicit fixtures for new suites.
+- Mirror source ownership below each tier and keep shared builders in local
+  `tests/support/`. A small temporary input file does not make a parser integration;
+  real DB, Git, filesystem-adapter, local vector-store and app-lifespan contracts do.
+- Use unit plus relevant integration while iterating; preserve full checks before
+  completion. Docker/PostgreSQL selection is independent of the test tier.
 - After API/worker writes, use `await refresh_get(session, Model, id)` (or the base
   class's `refresh`) to avoid stale identity-map reads.
 - Prefer `assert_status_code`, `assert_json_contains`, `assert_paginated_response`,

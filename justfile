@@ -106,6 +106,14 @@ hooks-run:
 test +paths="":
     @bash ./scripts/run-tests.sh sqlite all {{ paths }}
 
+# Run isolated unit tests, keeping one pytest process per package
+test-unit module="all":
+    @TEST_TIER=unit bash ./scripts/run-tests.sh sqlite {{quote(module)}}
+
+# Run local DB, filesystem, subprocess, and vector-store integration tests
+test-integration module="all":
+    @TEST_TIER=integration bash ./scripts/run-tests.sh sqlite {{quote(module)}}
+
 # Run tests with PostgreSQL (needs Docker: testcontainers)
 test-pg +paths="":
     @bash ./scripts/run-tests.sh postgres all {{ paths }}
