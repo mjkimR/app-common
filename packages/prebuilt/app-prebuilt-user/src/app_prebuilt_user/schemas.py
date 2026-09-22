@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Literal
+from uuid import UUID
 
 from app_layer_base.base.schemas.mixin import TimestampSchemaMixin, UUIDSchemaMixin
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
@@ -58,6 +60,8 @@ class UserRead(UUIDSchemaMixin, TimestampSchemaMixin, BaseModel):
 
 
 class UserReadAdmin(UserRead):
+    approval_status: Literal["pending", "approved", "rejected"] = "approved"
+    auth_version: int = 0
     is_active: bool = Field(..., description="Whether the user account is active.")
     is_verified: bool = Field(..., description="Whether the user's email has been verified.")
     is_superadmin: bool = Field(..., description="Whether the user has superadmin privileges.")
@@ -65,3 +69,18 @@ class UserReadAdmin(UserRead):
     extra: dict | None = Field(default=None, description="Additional user metadata.")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserAccessChange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: Literal["approve", "reject", "suspend", "activate", "promote", "demote"]
+    expected_version: int = Field(ge=0)
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class UserAccessEventRead(UUIDSchemaMixin, TimestampSchemaMixin, BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    user_id: UUID | None
+    actor_id: UUID | None
+    action: str
+    reason: str | None

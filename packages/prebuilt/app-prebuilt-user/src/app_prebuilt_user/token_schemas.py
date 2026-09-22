@@ -18,6 +18,7 @@ class RefreshRequest(BaseModel):
 
 
 class TokenPayload(BaseModel):
+    ver: int = 0
     # Backward/compat field name used in this project
     user_id: uuid.UUID | None = None
 

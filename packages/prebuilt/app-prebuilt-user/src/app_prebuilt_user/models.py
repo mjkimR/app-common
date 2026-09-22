@@ -1,7 +1,8 @@
 from datetime import datetime
+from uuid import UUID
 
 from app_layer_base.base.models.mixin import Base, TimestampMixin, UUIDMixin
-from sqlalchemy import JSON, String
+from sqlalchemy import JSON, ForeignKey, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -15,6 +16,9 @@ class User(Base, UUIDMixin, TimestampMixin):
         String(255), nullable=True, comment="Hashed password for traditional login (optional for social logins)."
     )
     extra: Mapped[dict | None] = mapped_column(JSON, nullable=True, comment="Additional user metadata in JSON format.")
+
+    approval_status: Mapped[str] = mapped_column(String(16), default="approved", server_default="approved")
+    auth_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
 
     is_active: Mapped[bool] = mapped_column(default=True, comment="Whether the user account is active.")
     is_verified: Mapped[bool] = mapped_column(
@@ -36,3 +40,13 @@ class User(Base, UUIDMixin, TimestampMixin):
     timezone: Mapped[str | None] = mapped_column(
         String(100), nullable=True, comment="The user's preferred timezone (e.g., 'Asia/Seoul')."
     )
+
+
+class UserAccessEvent(Base, UUIDMixin, TimestampMixin):
+    """Administrative access changes; preserved after account removal."""
+
+    __tablename__ = "user_access_events"
+    user_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    actor_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    action: Mapped[str] = mapped_column(String(32))
+    reason: Mapped[str | None] = mapped_column(String(500))

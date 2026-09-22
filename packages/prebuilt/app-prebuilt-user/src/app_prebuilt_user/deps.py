@@ -90,7 +90,7 @@ async def get_current_user(
     user = await user_service.get(session, obj_pk=token.user_id)
     if user is None:
         raise UserNotFoundException()
-    if not user.is_active:
+    if not user.is_active or user.approval_status != "approved" or token.ver != user.auth_version:
         raise InvalidCredentialsException()
     return user
 

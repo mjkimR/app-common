@@ -91,7 +91,7 @@ def concurrency(records):
 def test_parallel_packages_are_bounded_and_all_finish_after_a_failure(runner):
     result, records = runner(TEST_JOBS="3", FAIL_MODULE="app-prebuilt-user", EMPTY_MODULE="app-mcp")
     assert result.returncode == 7, result.stdout + result.stderr
-    assert len([r for r in records if r["phase"] == "end"]) == 13
+    assert len([r for r in records if r["phase"] == "end"]) == 14
     assert 1 < concurrency(records) <= 3
     assert "No tests collected for app-mcp" in result.stdout
     assert result.stdout.index("finished app-error") < result.stdout.index("finished app-prebuilt-user")
@@ -104,7 +104,7 @@ def test_parallel_packages_are_bounded_and_all_finish_after_a_failure(runner):
 def test_infrastructure_coverage_and_explicit_serial_runs_stay_serial(runner, db, settings):
     result, records = runner(db=db, **settings)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert len(records) == 26
+    assert len(records) == 28
     assert concurrency(records) == 1
 
 
@@ -127,7 +127,7 @@ def test_invalid_concurrency_fails_before_starting_tests(runner, jobs):
 def test_unit_selection_runs_every_package_with_only_unit_paths(runner):
     result, records = runner(TEST_TIER="unit")
     assert result.returncode == 0, result.stdout + result.stderr
-    assert len(records) == 26
+    assert len(records) == 28
     assert all(record["args"][-1] == "tests/unit" for record in records)
 
 

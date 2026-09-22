@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_prebuilt_user.config import AuthSettings, get_auth_settings
 
-from .exceptions import UserAlreadyExistsException
+from .exceptions import PermissionDeniedException, UserAlreadyExistsException
 from .models import User
 from .passwords import PasswordHasher
 from .repos import UserRepository
@@ -90,6 +90,14 @@ class UserService(
         Only fields explicitly provided by the caller are applied (partial update);
         unset fields are left untouched rather than overwritten with ``None``.
         """
+        existing = await self.repo.get_by_pk(session, user_id)
+        if (
+            existing is not None
+            and existing.email == str(self.settings.FIRST_USER_EMAIL)
+            and obj_data.email is not None
+            and str(obj_data.email) != existing.email
+        ):
+            raise PermissionDeniedException(message="The bootstrap account email is managed by deployment settings")
         user_data = UserDbUpdate(**obj_data.model_dump(exclude={"password"}, exclude_unset=True))
         if obj_data.password:
             user_data.hashed_password = self.get_password_hash(obj_data.password.get_secret_value())
@@ -101,7 +109,7 @@ class UserService(
 
     async def authenticate(self, session: AsyncSession, email: str, password: str) -> User | None:
         user = await self.repo.get_by_email(session, email=email)
-        if user is None or user.hashed_password is None or not user.is_active:
+        if user is None or user.hashed_password is None or not user.is_active or user.approval_status != "approved":
             self.passwords.dummy_verify()
             return None
 
@@ -149,11 +157,19 @@ class UserService(
             user = await self.get(session, obj_pk=UUID(str(payload["sub"])))
         except (jwt.PyJWTError, ValueError):
             return None
-        if user is None or not user.is_active or payload.get("pwd") != self.password_fingerprint(user):
+        if (
+            user is None
+            or not user.is_active
+            or user.approval_status != "approved"
+            or payload.get("ver", 0) != user.auth_version
+            or payload.get("pwd") != self.password_fingerprint(user)
+        ):
             return None
         return user
 
     def _create_token(self, user: User, typ: str, lifetime: timedelta, **claims: str) -> str:
+        if not user.is_active or user.approval_status != "approved":
+            raise PermissionDeniedException()
         now = get_current_utc_time()
         expire = now + lifetime
 
@@ -166,6 +182,7 @@ class UserService(
             "nbf": int(now.timestamp()),
             "exp": expire,
             "jti": str(uuid4()),
+            "ver": user.auth_version,
             "typ": typ,
             # Backward-compat for existing code paths
             "user_id": str(user.id),

@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from app_prebuilt_user.api import v1_users_router
 
 app = FastAPI()
-# Mounts /users/login, /users/register, /users/me, and admin management CRUD
+# Mounts password login, current-user/profile reads, and administrator management
 app.include_router(v1_users_router, prefix="/api/v1")
 ```
 
@@ -64,3 +64,16 @@ def cloud_run_caller(request: Request) -> str:
 
 app.dependency_overrides[get_login_caller] = cloud_run_caller
 ```
+
+
+## External login and approval
+
+Use [Google login](google-auth.md) to add optional Google OIDC beside local login.
+Set `REGISTRATION_REQUIRE_APPROVAL=true` for manual approval. Existing/local administrator-created
+users remain approved; there is no public password signup route or built-in whitelist.
+
+The host owns migrations and its admin UI. Add `approval_status` and `auth_version` to users, plus
+`UserAccessEvent` metadata, before adopting this package revision. Protect business endpoints with
+`get_current_user`; it rejects pending, rejected, suspended and version-revoked sessions.
+Superadmins manage access through `POST /users/admin/{user_id}/access` with
+`{action, expected_version, reason?}` and inspect `/access-events`. Avoid direct DB flag updates for revocation.

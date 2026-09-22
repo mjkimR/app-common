@@ -7,9 +7,10 @@ from app_layer_base.base.schemas.delete_resp import DeleteResponse
 from app_layer_base.base.schemas.paginated import PaginatedList
 from fastapi import APIRouter, Depends, status
 
+from app_prebuilt_user.access import AccessUseCase
 from app_prebuilt_user.deps import get_current_user, on_superuser
 from app_prebuilt_user.models import User
-from app_prebuilt_user.schemas import UserCreate, UserRead
+from app_prebuilt_user.schemas import UserAccessChange, UserAccessEventRead, UserCreate, UserRead, UserReadAdmin
 from app_prebuilt_user.usecases.admin import (
     CreateAdminUseCase,
     CreateUserUseCase,
@@ -40,7 +41,7 @@ async def create_admin(
     return user
 
 
-@router.get("/", response_model=PaginatedList[UserRead])
+@router.get("/", response_model=PaginatedList[UserReadAdmin])
 async def read_users(
     pagination: PaginationParam,
     use_case: Annotated[GetMultiUserUseCase, Depends()],
@@ -58,3 +59,18 @@ async def delete_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await use_case.execute(user_id, current_user)
+
+
+@router.post("/{user_id}/access", response_model=UserReadAdmin)
+async def change_access(
+    user_id: uuid.UUID,
+    data: UserAccessChange,
+    current_user: Annotated[User, Depends(on_superuser)],
+    use_case: Annotated[AccessUseCase, Depends()],
+):
+    return await use_case.change(user_id, data, current_user.id)
+
+
+@router.get("/{user_id}/access-events", response_model=list[UserAccessEventRead])
+async def access_events(user_id: uuid.UUID, use_case: Annotated[AccessUseCase, Depends()]):
+    return await use_case.events(user_id)

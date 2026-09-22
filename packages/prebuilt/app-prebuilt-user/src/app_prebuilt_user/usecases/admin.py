@@ -12,8 +12,9 @@ from app_layer_base.core.database.transaction import AsyncTransaction
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..access_repo import AccessRepository
 from ..database import UserTransaction, get_user_transaction
-from ..exceptions import UserCantDeleteItselfException
+from ..exceptions import PermissionDeniedException, UserCantDeleteItselfException
 from ..models import User
 from ..schemas import UserCreate
 from ..services import UserService
@@ -52,6 +53,19 @@ class DeleteUserUseCase(UserUseCase):
         if current_user.id == user_id:
             raise UserCantDeleteItselfException()
         async with self.transaction() as session:
+            repo = AccessRepository()
+            admins = await repo.lock_admins(session)
+            actor = next((user for user in admins if user.id == current_user.id), None)
+            if actor is None or not actor.is_active or actor.approval_status != "approved":
+                raise PermissionDeniedException()
+            target = await repo.lock_user(session, user_id)
+            # Administrator accounts are retained for recovery and audit. Demote first.
+            if target is not None and (
+                target.is_superadmin or target.email == str(self.service.settings.FIRST_USER_EMAIL)
+            ):
+                raise PermissionDeniedException(message="Administrator accounts must be retained")
+            if target is not None:
+                await repo.record(session, target.id, actor.id, "delete", None)
             return await self.service.delete(session, user_id, context=context)
 
 

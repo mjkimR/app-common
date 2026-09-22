@@ -95,7 +95,7 @@ class TestUpdateUser:
 
 class TestAccessToken:
     def test_roundtrip_encodes_expected_claims(self, service):
-        user = User(id=uuid.uuid4())
+        user = User(id=uuid.uuid4(), is_active=True, approval_status="approved", auth_version=0)
         token = service.create_access_token(user)
 
         decoded = jwt.decode(

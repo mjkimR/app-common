@@ -21,6 +21,7 @@ ALL_PACKAGES = (
     "app-http-client",
     "app-ai-catalog",
     "app-prebuilt-user",
+    "app-prebuilt-google-auth",
     "app-prebuilt-outbox",
     "app-prebuilt-search",
     "app-ui-base",

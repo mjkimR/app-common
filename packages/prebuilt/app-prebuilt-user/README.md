@@ -1,6 +1,6 @@
 # app-prebuilt-user
 
-A drop-in user-management and JWT authentication feature built on [`app-layer-base`](../../base/app-layer-base/README.md). Provides the `User` model, layered service/usecase stack, auth dependencies, and ready-to-mount routers for signup, login and admin management.
+A drop-in user-management and JWT authentication feature built on [`app-layer-base`](../../base/app-layer-base/README.md). Provides the `User` model, layered service/usecase stack, auth dependencies, and ready-to-mount routers for login and administrator-managed account creation.
 
 ## Installation
 
@@ -110,3 +110,36 @@ to the host's DB. Also override `app_layer_base.core.database.deps.get_session`
 for token refresh and current-user lookup. Close authentication reads before
 starting a separate SQLite write transaction; hosts can override `get_current_user`
 with a short-lived lookup that delegates validation to the original function.
+
+
+## Approval and access administration
+
+Local administrator-created accounts and existing users default to `approval_status='approved'`.
+External registration providers use `AuthSettings.REGISTRATION_REQUIRE_APPROVAL` (default false);
+[Google OIDC login](../app-prebuilt-google-auth/README.md) is an optional separate prebuilt.
+Identity verification (`is_verified`), admission (`approval_status`), suspension (`is_active`),
+and administrator privileges (`is_superadmin`) are independent.
+
+- `GET /users/me` returns the caller's profile and access state.
+- `GET /users/admin/` lists access state with existing offset/limit pagination.
+- `POST /users/admin/{user_id}/access` accepts `action`, `expected_version`, and optional `reason`.
+  Actions: `approve`, `reject`, `suspend`, `activate`, `promote`, `demote`.
+- `GET /users/admin/{user_id}/access-events` returns the latest 50 access changes.
+
+All administrator routes require an active approved superadmin. Mutations lock administrators in a
+consistent order, recheck the actor, reject stale account versions (409), and append an audit event.
+Approval does not lift a separate suspension. Activation and promotion require approval first.
+Changes increment `auth_version`, invalidating existing access/refresh tokens even after reactivation.
+Already-running requests are not cancelled. Self-removal and reductions of the configured bootstrap
+account are refused. Administrator accounts cannot be deleted until demoted; the bootstrap email
+cannot be changed through profile updates. Keep the local bootstrap credentials in the host secret store.
+No whitelist or administrator UI is bundled; hosts own their approval screens and business permissions.
+
+**Migration required for every existing consumer:** add `users.approval_status` (non-null String(16),
+server default `approved`), `users.auth_version` (non-null integer, server default 0), and
+`user_access_events` from this package's model metadata. Existing tokens without a version are version 0.
+Upgrade the schema before the package pin; deploy all workers before enabling external registration.
+Audit actor/subject FKs use `SET NULL` on account removal; access events remain in the database.
+Use the access service for revocation, not a direct `is_active` toggle, which does not change the version.
+
+The optional `app_prebuilt_user.identities.ExternalIdentity` model stores provider-neutral issuer/subject links. Import and migrate it when composing an external login provider; Google-specific flow state stays in the Google prebuilt. Other providers can reuse the identity model without depending on Google.

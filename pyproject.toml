@@ -42,6 +42,7 @@ venv = ".venv"
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
 extraPaths = [
+    "./packages/prebuilt/app-prebuilt-google-auth/src",
     "./packages/prebuilt/app-prebuilt-user/src",
     "./packages/prebuilt/app-prebuilt-api-key/src",
     "./packages/prebuilt/app-prebuilt-outbox/src",

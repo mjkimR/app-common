@@ -10,6 +10,10 @@ class AuthSettings(BaseSettings):
 
     SECRET_KEY: SecretStr = Field(description="Secret key used for signing tokens. Generate with: openssl rand -hex 64")
 
+    REGISTRATION_REQUIRE_APPROVAL: bool = Field(
+        default=False, description="New external identities require administrator approval"
+    )
+
     # JWT
     JWT_ALGORITHM: str = Field(default="HS256", description="Algorithm used for JWT signing (e.g. HS256, RS256)")
     JWT_ISSUER: str = Field(default="app-base", description="Identifies the principal that issued the JWT (iss claim)")

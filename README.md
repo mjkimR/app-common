@@ -18,6 +18,7 @@ Each package README covers its installation, public API, and usage.
 | Adapter | [app-http-client](packages/adapters/app-http-client/README.md) | Async HTTP clients based on httpx. |
 | Adapter | [app-ai-catalog](packages/adapters/app-ai-catalog/README.md) | Embedding/LLM factories and LiteLLM/LangChain clients. |
 | Prebuilt | [app-prebuilt-api-key](packages/prebuilt/app-prebuilt-api-key/README.md) | Machine identities, deployment root credentials, and API key management. |
+| Prebuilt | [app-prebuilt-google-auth](packages/prebuilt/app-prebuilt-google-auth/README.md) | Google OIDC login with optional account approval. |
 | Prebuilt | [app-prebuilt-user](packages/prebuilt/app-prebuilt-user/README.md) | Authentication, sessions, and user management. |
 | Prebuilt | [app-prebuilt-outbox](packages/prebuilt/app-prebuilt-outbox/README.md) | Transactional event capture and delivery. |
 | Prebuilt | [app-prebuilt-search](packages/prebuilt/app-prebuilt-search/README.md) | Semantic search and explicit incremental indexing. |
