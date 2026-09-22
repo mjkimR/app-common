@@ -115,7 +115,7 @@ with a short-lived lookup that delegates validation to the original function.
 ## Approval and access administration
 
 Local administrator-created accounts and existing users default to `approval_status='approved'`.
-External registration providers use `AuthSettings.REGISTRATION_REQUIRE_APPROVAL` (default false);
+External registration providers use `AuthSettings.REGISTRATION_REQUIRE_APPROVAL` (default true);
 [Google OIDC login](google.md) is included in this package and enabled through settings.
 Identity verification (`is_verified`), admission (`approval_status`), suspension (`is_active`),
 and administrator privileges (`is_superadmin`) are independent.

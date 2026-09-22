@@ -69,8 +69,9 @@ app.dependency_overrides[get_login_caller] = cloud_run_caller
 ## External login and approval
 
 Use [Google login](google-auth.md) to add optional Google OIDC beside local login.
-Set `REGISTRATION_REQUIRE_APPROVAL=true` for manual approval. Existing/local administrator-created
-users remain approved; there is no public password signup route or built-in whitelist.
+External registrations require manual approval by default. Set `REGISTRATION_REQUIRE_APPROVAL=false`
+only when immediate admission is intentional. Existing/local administrator-created users remain
+approved; there is no public password signup route or built-in whitelist.
 
 The host owns migrations and its admin UI. Add `approval_status` and `auth_version` to users, plus
 `UserAccessEvent` metadata, before adopting this package revision. Protect business endpoints with

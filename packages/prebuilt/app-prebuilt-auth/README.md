@@ -15,13 +15,12 @@ from app_prebuilt_auth.user.config import AuthSettings
 app = FastAPI()
 set_exception_handler(app)
 settings = AuthSettings(**{})  # Environment-backed, including required signing/bootstrap secrets.
-settings = settings.model_copy(update={"REGISTRATION_REQUIRE_APPROVAL": True})
 install_auth(app, user_settings=settings)
 ```
 
 `install_auth` mounts all routes at `/api/v1` and accepts optional `user_settings`, `google_settings`, and `api_key_settings`. Omitted settings use their normal environment-backed dependencies. `create_auth_router()` is available for hosts composing nested routers themselves. Existing dependency overrides for DB ownership, human machine-key administrators, machine scopes and login lockout remain available.
 
-The package includes all capabilities; settings control activation. Google login defaults to disabled (`GOOGLE_AUTH_ENABLED=false`). API-key management rejects access without a configured root key or a host-provided administrator dependency. Default registration does not require approval; set `REGISTRATION_REQUIRE_APPROVAL=true` when the host needs it. Local login continues to require valid signing/bootstrap settings.
+The package includes all capabilities; settings control activation. Google login defaults to disabled (`GOOGLE_AUTH_ENABLED=false`). API-key management rejects access without a configured root key or a host-provided administrator dependency. External registration requires administrator approval by default; set `REGISTRATION_REQUIRE_APPROVAL=false` only when the host intentionally allows immediate admission. Local login continues to require valid signing/bootstrap settings.
 
 ## Complete schema
 

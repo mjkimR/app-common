@@ -25,7 +25,7 @@ Use the shared user settings and DB. `get_user_transaction` and `get_session` re
 | `GOOGLE_AUTH_FRONTEND_URL` | empty | Fixed post-login page, e.g. `https://hub.example/`; no query or fragment. |
 | `GOOGLE_AUTH_COOKIE_SECURE` | `true` | Disable only for localhost HTTP development. |
 | `GOOGLE_AUTH_COOKIE_PATH` | `/api/v1/auth/google` | Must cover the mounted callback and exchange routes. |
-| `REGISTRATION_REQUIRE_APPROVAL` | `false` | Shared `AuthSettings` policy: external registrations start pending when true. |
+| `REGISTRATION_REQUIRE_APPROVAL` | `true` | Shared `AuthSettings` policy: external registrations start pending unless explicitly disabled. |
 
 Callback and frontend must share an origin. For Vite development, use the frontend's `/api` proxy and register a localhost callback on that frontend port. An alternate API mount also requires updating `COOKIE_PATH` and the callback URI.
 

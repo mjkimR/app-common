@@ -7,7 +7,8 @@ The host owns the approval screen and the local bootstrap superadmin account.
 Set `GOOGLE_AUTH_ENABLED`, `GOOGLE_AUTH_CLIENT_ID`, `GOOGLE_AUTH_CLIENT_SECRET`,
 `GOOGLE_AUTH_REDIRECT_URI`, and `GOOGLE_AUTH_FRONTEND_URL`. Callback and frontend must use the same
 HTTPS origin. For localhost HTTP only, set `GOOGLE_AUTH_COOKIE_SECURE=false` and use the frontend API proxy.
-Set shared `AuthSettings.REGISTRATION_REQUIRE_APPROVAL=true` to create pending external users.
+Shared `AuthSettings.REGISTRATION_REQUIRE_APPROVAL` defaults to true, so external users start pending.
+Set it to false only when the host intentionally allows immediate admission.
 
 Import `app_prebuilt_auth` before Alembic autogeneration; all authentication models are registered: migrate shared user approval/version/audit fields,
 `user_external_identities`, and `google_login_flows`. Preserve existing users as approved, version 0.
