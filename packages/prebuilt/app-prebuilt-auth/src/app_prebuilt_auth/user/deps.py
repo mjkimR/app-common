@@ -3,12 +3,12 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated
 
 import jwt
-from app_layer_base.core.database.deps import get_session
+from app_layer_base.core.database.transaction import AsyncTransaction
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_auth_settings
+from .database import UserTransaction, get_user_transaction
 from .exceptions import (
     InvalidCredentialsException,
     PermissionDeniedException,
@@ -82,12 +82,19 @@ def get_token_data(
 
 async def get_current_user(
     token: Annotated[TokenPayload, Depends(get_token_data)],
-    session: Annotated[AsyncSession, Depends(get_session)],
     user_service: Annotated[UserService, Depends()],
+    transaction: Annotated[UserTransaction, Depends(get_user_transaction)] = AsyncTransaction,
 ) -> User:
+    """The signed-in user, loaded in a transaction of its own that is closed before the request's work starts.
+
+    Sharing the request's session would hold its connection for the whole request while use cases open their
+    own transactions, so each request would need two pooled connections at once and a small pool deadlocks.
+    The returned user is detached: read its columns, and load it again to change it.
+    """
     if token.user_id is None:
         raise InvalidCredentialsException()
-    user = await user_service.get(session, obj_pk=token.user_id)
+    async with transaction() as session:
+        user = await user_service.get(session, obj_pk=token.user_id)
     if user is None:
         raise UserNotFoundException()
     if not user.is_active or user.approval_status != "approved" or token.ver != user.auth_version:

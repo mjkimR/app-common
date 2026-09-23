@@ -7,13 +7,15 @@ from app_layer_base.core.database.deps import get_session
 from app_prebuilt_auth.user.api import v1_users_router
 from app_prebuilt_auth.user.config import get_auth_settings
 from app_prebuilt_auth.user.config.auth import AuthSettings
-from app_prebuilt_auth.user.deps import get_login_throttle
+from app_prebuilt_auth.user.deps import get_current_user, get_login_throttle
 from app_prebuilt_auth.user.models import User
 from app_prebuilt_auth.user.repos import UserRepository
 from app_prebuilt_auth.user.services import UserService
 from app_prebuilt_auth.user.throttle import FailedLoginThrottle
+from app_prebuilt_auth.user.token_schemas import TokenPayload
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import inspect
 
 pytestmark = pytest.mark.real_commit
 LOGIN = "/api/v1/users/login/"
@@ -21,13 +23,17 @@ REFRESH = "/api/v1/users/login/refresh"
 CREDENTIALS = {"username": "admin@example.com", "password": "test-password"}
 
 
-@pytest.fixture
-async def auth_http(session, session_maker):
-    settings = AuthSettings(
+def auth_settings() -> AuthSettings:
+    return AuthSettings(
         FIRST_USER_EMAIL=CREDENTIALS["username"],
         FIRST_USER_PASSWORD=CREDENTIALS["password"],
         SECRET_KEY="test-signing-key-not-for-production",
     )
+
+
+@pytest.fixture
+async def auth_http(session, session_maker):
+    settings = auth_settings()
     service = UserService(settings, UserRepository())
     user = await service.ensure_first_user(session)
     await session.commit()
@@ -113,3 +119,15 @@ async def test_host_transaction_factory_is_used_for_login_and_admin_reads(auth_h
     assert signed_in.status_code == 200
     headers = {"Authorization": f"Bearer {signed_in.json()['access_token']}"}
     assert (await client.get("/api/v1/users/admin/", headers=headers)).status_code == 200
+
+
+async def test_current_user_is_loaded_in_a_session_it_closes(session):
+    # The request's own session stays free, so a request never needs two pooled connections at once.
+    service = UserService(auth_settings(), UserRepository())
+    user = await service.ensure_first_user(session)
+    await session.commit()
+
+    current = await get_current_user(TokenPayload(user_id=user.id, ver=user.auth_version), service)
+
+    assert inspect(current).detached
+    assert (current.id, current.email) == (user.id, CREDENTIALS["username"])
