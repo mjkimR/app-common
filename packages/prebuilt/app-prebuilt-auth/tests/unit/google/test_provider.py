@@ -84,8 +84,37 @@ async def exercise(settings, monkeypatch, overrides, accepted):
         {"cookie_path": "/other"},
         {"redirect_uri": "http://public.example/api/v1/auth/google/callback"},
         {"client_secret": ""},
+        {"response_mode": "fragment"},
+        {"response_mode": "form_post"},
+        {
+            "response_mode": "form_post",
+            "redirect_uri": "https://localhost/api/v1/auth/google/callback",
+            "frontend_url": "https://localhost/",
+        },
     ],
 )
 def test_invalid_configuration_is_rejected(google_settings, overrides):
     with pytest.raises(ValueError):
         GoogleAuthSettings(**(google_settings.model_dump() | overrides))
+
+
+def test_response_mode_defaults_to_query(monkeypatch, google_settings):
+    monkeypatch.delenv("GOOGLE_AUTH_RESPONSE_MODE", raising=False)
+    values = google_settings.model_dump(exclude={"response_mode"})
+    assert GoogleAuthSettings(**values).response_mode == "query"
+
+
+@pytest.mark.parametrize("mode", ["query", "form_post"])
+def test_response_mode_can_be_configured_from_environment(monkeypatch, google_settings, mode):
+    monkeypatch.setenv("GOOGLE_AUTH_RESPONSE_MODE", mode)
+    settings = GoogleAuthSettings(
+        **(
+            google_settings.model_dump(exclude={"response_mode"})
+            | {
+                "cookie_secure": True,
+                "redirect_uri": "https://localhost/api/v1/auth/google/callback",
+                "frontend_url": "https://localhost/",
+            }
+        )
+    )
+    assert settings.response_mode == mode

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import SecretStr, model_validator
@@ -12,6 +13,7 @@ class GoogleAuthSettings(BaseSettings):
     client_secret: SecretStr = SecretStr("")
     redirect_uri: str = ""
     frontend_url: str = ""
+    response_mode: Literal["query", "form_post"] = "query"
     cookie_secure: bool = True
     cookie_path: str = "/api/v1/auth/google"
 
@@ -29,6 +31,8 @@ class GoogleAuthSettings(BaseSettings):
             if url.scheme != "https" and not (url.scheme == "http" and local and not self.cookie_secure):
                 raise ValueError("OAuth URLs require HTTPS (HTTP is allowed only for local development)")
         callback, frontend = urlsplit(self.redirect_uri), urlsplit(self.frontend_url)
+        if self.response_mode == "form_post" and (not self.cookie_secure or callback.scheme != "https"):
+            raise ValueError("form_post requires HTTPS and secure cookies")
         if (callback.scheme, callback.netloc) != (frontend.scheme, frontend.netloc):
             raise ValueError("Callback and frontend must share an origin; use the frontend API proxy locally")
         if not self.cookie_path.startswith("/") or not callback.path.startswith(self.cookie_path + "/"):

@@ -7,6 +7,11 @@ The host owns the approval screen and the local bootstrap superadmin account.
 Set `GOOGLE_AUTH_ENABLED`, `GOOGLE_AUTH_CLIENT_ID`, `GOOGLE_AUTH_CLIENT_SECRET`,
 `GOOGLE_AUTH_REDIRECT_URI`, and `GOOGLE_AUTH_FRONTEND_URL`. Callback and frontend must use the same
 HTTPS origin. For localhost HTTP only, set `GOOGLE_AUTH_COOKIE_SECURE=false` and use the frontend API proxy.
+`GOOGLE_AUTH_RESPONSE_MODE` defaults to `query` (GET callback), including production.
+Opt in to `form_post` only after live browser verification: it requires HTTPS and secure cookies,
+accepts a POST form callback, and uses `SameSite=None; Secure` for the browser-binding cookie.
+The exchange cookie remains `SameSite=Lax`; the frontend completion/exchange flow is unchanged.
+Only the configured callback method is accepted. Regenerate the host's OpenAPI client when upgrading.
 Shared `AuthSettings.REGISTRATION_REQUIRE_APPROVAL` defaults to true, so external users start pending.
 Set it to false only when the host intentionally allows immediate admission.
 
@@ -18,7 +23,7 @@ for host-owned databases. Close `app_http_client.instance.close_http_client` at 
 Frontend: read `GET /auth/google/options`; navigate to `/start`; handle `?google=complete` by removing
 it and POSTing `/exchange` from the configured origin. The HttpOnly cookie holds the one-time handoff;
 only approved active users receive app tokens. Pending users sign in again after approval.
-Never log callback query strings or tokens. Do not infer account linking or roles from email.
+Never log callback query strings, form bodies, or tokens. Do not infer account linking or roles from email.
 An existing-email collision requires the existing login; explicit linking is not provided.
 
 Google login is not remote MCP OAuth authorization. Add a separate authorization server/token contract

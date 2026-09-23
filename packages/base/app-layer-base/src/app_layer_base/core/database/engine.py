@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Any
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -7,12 +8,21 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app_layer_base.config import get_app_settings
+from app_layer_base.config import AppSettings, get_app_settings
+
+
+def engine_options(settings: AppSettings) -> dict[str, Any]:
+    """Pool limits bound each process's connections; SQLite uses a pool that takes no size."""
+    options: dict[str, Any] = {"pool_pre_ping": True}
+    if not settings.DATABASE_URL.startswith("sqlite"):
+        options.update(pool_size=settings.DB_POOL_SIZE, max_overflow=settings.DB_MAX_OVERFLOW)
+    return options
 
 
 @lru_cache
 def get_async_engine() -> AsyncEngine:
-    return create_async_engine(str(get_app_settings().DATABASE_URL), pool_pre_ping=True)
+    settings = get_app_settings()
+    return create_async_engine(str(settings.DATABASE_URL), **engine_options(settings))
 
 
 @lru_cache

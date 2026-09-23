@@ -22,8 +22,10 @@ pytestmark = pytest.mark.real_commit
 BASE = "/api/v1/auth/google"
 
 
-@pytest.fixture
-async def login_http(session, session_maker):
+@pytest.fixture(params=["query", "form_post"])
+async def login_http(session, session_maker, request):
+    mode = request.param
+    origin = "https://localhost" if mode == "form_post" else "http://localhost"
     settings = AuthSettings(
         FIRST_USER_EMAIL="admin@example.com",
         FIRST_USER_PASSWORD="test-password",
@@ -34,9 +36,10 @@ async def login_http(session, session_maker):
         enabled=True,
         client_id="client",
         client_secret="secret",
-        cookie_secure=False,
-        redirect_uri="http://localhost/api/v1/auth/google/callback",
-        frontend_url="http://localhost/",
+        response_mode=mode,
+        cookie_secure=mode == "form_post",
+        redirect_uri=origin + BASE + "/callback",
+        frontend_url=origin + "/",
     )
     service = UserService(settings, UserRepository())
     admin = await service.ensure_first_user(session)
@@ -58,7 +61,7 @@ async def login_http(session, session_maker):
     app.dependency_overrides[get_auth_settings] = lambda: settings
     app.dependency_overrides[get_google_auth_settings] = lambda: google
     app.dependency_overrides[GoogleProvider] = lambda: provider
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=origin) as client:
         yield client, provider, service.create_access_token(admin)
 
 
@@ -67,16 +70,31 @@ async def start(client):
     assert response.status_code == 303
     query = parse_qs(urlsplit(response.headers["location"]).query)
     assert query["code_challenge_method"] == ["S256"]
-    assert "httponly" in response.headers["set-cookie"].lower()
+    mode = "form_post" if client.base_url.scheme == "https" else "query"
+    assert query["response_mode"] == [mode]
+    cookie = response.headers["set-cookie"].lower()
+    assert "httponly" in cookie
+    assert ("secure" in cookie) == (mode == "form_post")
+    assert f"samesite={'none' if mode == 'form_post' else 'lax'}" in cookie
     return query["state"][0]
+
+
+async def callback(client, params):
+    if client.base_url.scheme == "https":
+        return await client.post(BASE + "/callback", data=params)
+    return await client.get(BASE + "/callback", params=params)
 
 
 async def sign_in(client):
     state = await start(client)
-    response = await client.get(BASE + "/callback", params={"state": state, "code": "valid-code"})
+    response = await callback(client, {"state": state, "code": "valid-code"})
     assert response.status_code == 303
-    assert response.headers["location"] == "http://localhost/?google=complete"
-    return await client.post(BASE + "/exchange", headers={"Origin": "http://localhost"})
+    assert response.headers["location"] == str(client.base_url).rstrip("/") + "/?google=complete"
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["Referrer-Policy"] == "no-referrer"
+    cookies = response.headers.get_list("set-cookie")
+    assert any("app_google_exchange=" in cookie and "SameSite=lax" in cookie for cookie in cookies)
+    return await client.post(BASE + "/exchange", headers={"Origin": str(client.base_url).rstrip("/")})
 
 
 async def test_pending_approval_then_login_and_revocation(login_http, session_maker):
@@ -121,26 +139,30 @@ async def test_state_is_bound_to_browser_and_consumed_once(login_http):
     state = await start(client)
     browser = client.cookies.get(BROWSER_COOKIE)
     client.cookies.clear()
-    wrong = await client.get(BASE + "/callback", params={"state": state, "code": "valid"})
+    wrong = await callback(client, {"state": state, "code": "valid"})
     assert "google=failed" in wrong.headers["location"]
     provider.exchange.assert_not_called()
     client.cookies.set(BROWSER_COOKIE, browser, domain="localhost.local", path=BASE)
-    success = await client.get(BASE + "/callback", params={"state": state, "code": "valid"})
+    success = await callback(client, {"state": state, "code": "valid"})
     assert "google=complete" in success.headers["location"]
     client.cookies.set(BROWSER_COOKIE, browser, domain="localhost.local", path=BASE)
-    replay = await client.get(BASE + "/callback", params={"state": state, "code": "valid"})
+    replay = await callback(client, {"state": state, "code": "valid"})
     assert "google=failed" in replay.headers["location"]
     assert provider.exchange.await_count == 1
     assert (await client.post(BASE + "/exchange", headers={"Origin": "https://evil.example"})).status_code == 401
-    assert (await client.post(BASE + "/exchange", headers={"Origin": "http://localhost"})).status_code == 200
-    assert (await client.post(BASE + "/exchange", headers={"Origin": "http://localhost"})).status_code == 401
+    assert (
+        await client.post(BASE + "/exchange", headers={"Origin": str(client.base_url).rstrip("/")})
+    ).status_code == 200
+    assert (
+        await client.post(BASE + "/exchange", headers={"Origin": str(client.base_url).rstrip("/")})
+    ).status_code == 401
 
 
 async def test_existing_email_never_links_to_admin(login_http, session_maker):
     client, provider, _ = login_http
     provider.exchange.return_value = GoogleIdentity(subject="unlinked", email="admin@example.com", name="Admin")
     state = await start(client)
-    result = await client.get(BASE + "/callback", params={"state": state, "code": "valid"})
+    result = await callback(client, {"state": state, "code": "valid"})
     assert "google=existing_account" in result.headers["location"]
     async with session_maker() as db:
         assert await db.scalar(select(func.count()).select_from(ExternalIdentity)) == 0
@@ -157,7 +179,7 @@ async def test_expired_state_is_not_accepted(login_http, session_maker):
     async with session_maker() as db:
         await db.execute(update(GoogleLoginFlow).values(expires_at=get_current_utc_time() - timedelta(seconds=1)))
         await db.commit()
-    result = await client.get(BASE + "/callback", params={"state": state, "code": "valid"})
+    result = await callback(client, {"state": state, "code": "valid"})
     assert "google=failed" in result.headers["location"]
     provider.exchange.assert_not_called()
 
@@ -223,3 +245,56 @@ async def test_rejected_registration_gets_no_tokens(login_http, session_maker):
     rejected = (await sign_in(client)).json()
     assert rejected["status"] == "rejected"
     assert rejected["tokens"] is None
+
+
+async def test_callback_rejects_the_unconfigured_method_without_consuming_state(login_http):
+    client, provider, _ = login_http
+    state = await start(client)
+    params = {"state": state, "code": "valid"}
+    if client.base_url.scheme == "https":
+        response = await client.get(BASE + "/callback", params=params)
+        assert response.headers["allow"] == "POST"
+    else:
+        response = await client.post(BASE + "/callback", data=params)
+        assert response.headers["allow"] == "GET"
+    assert response.status_code == 405
+    assert "set-cookie" not in response.headers
+    provider.exchange.assert_not_called()
+    assert "google=complete" in (await callback(client, params)).headers["location"]
+
+
+@pytest.mark.parametrize("params", [{"code": ""}, {"state": ""}, {"error": "access_denied"}])
+async def test_callback_handles_missing_code_state_and_provider_cancellation(login_http, params):
+    client, provider, _ = login_http
+    state = await start(client)
+    values = {"state": state, "code": "valid"} | params
+    response = await callback(client, values)
+    assert response.status_code == 303
+    assert response.headers["location"] == str(client.base_url).rstrip("/") + "/?google=failed"
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert client.cookies.get(BROWSER_COOKIE) is None
+    provider.exchange.assert_not_called()
+
+
+async def test_callback_provider_failure_consumes_state(login_http):
+    client, provider, _ = login_http
+    state = await start(client)
+    browser = client.cookies.get(BROWSER_COOKIE)
+    provider.exchange.side_effect = ValueError("Provider response must not be exposed")
+    response = await callback(client, {"state": state, "code": "valid"})
+    assert response.headers["location"] == str(client.base_url).rstrip("/") + "/?google=failed"
+    client.cookies.set(BROWSER_COOKIE, browser, domain="localhost.local", path=BASE)
+    await callback(client, {"state": state, "code": "valid"})
+    assert provider.exchange.await_count == 1
+
+
+async def test_post_callback_does_not_accept_query_parameters(login_http):
+    client, provider, _ = login_http
+    state = await start(client)
+    response = await client.post(BASE + "/callback", params={"state": state, "code": "valid"})
+    if client.base_url.scheme == "https":
+        assert response.headers["location"] == str(client.base_url).rstrip("/") + "/?google=failed"
+    else:
+        assert response.status_code == 405
+    provider.exchange.assert_not_called()

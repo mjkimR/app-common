@@ -1,7 +1,7 @@
 from typing import Annotated
 from urllib.parse import urlsplit
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 
 from app_prebuilt_auth.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException
@@ -28,7 +28,7 @@ def cookie(response: Response, name: str, value: str, settings: GoogleAuthSettin
         max_age=max_age,
         httponly=True,
         secure=settings.cookie_secure,
-        samesite="lax",
+        samesite="none" if name == BROWSER_COOKIE and settings.response_mode == "form_post" else "lax",
         path=settings.cookie_path,
     )
 
@@ -57,6 +57,37 @@ async def callback(
     state: Annotated[str, Query(max_length=256)] = "",
     code: Annotated[str, Query(max_length=4096)] = "",
     error: Annotated[str, Query(max_length=256)] = "",
+) -> Response:
+    if settings.response_mode != "query":
+        return Response(
+            status_code=405, headers={"Allow": "POST", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"}
+        )
+    return await complete_callback(request, settings, use_case, state, code, error)
+
+
+@router.post("/callback")
+async def callback_form_post(
+    request: Request,
+    settings: Annotated[GoogleAuthSettings, Depends(enabled)],
+    use_case: Annotated[GoogleAuthUseCase, Depends()],
+    state: Annotated[str, Form(max_length=256)] = "",
+    code: Annotated[str, Form(max_length=4096)] = "",
+    error: Annotated[str, Form(max_length=256)] = "",
+) -> Response:
+    if settings.response_mode != "form_post":
+        return Response(
+            status_code=405, headers={"Allow": "GET", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"}
+        )
+    return await complete_callback(request, settings, use_case, state, code, error)
+
+
+async def complete_callback(
+    request: Request,
+    settings: GoogleAuthSettings,
+    use_case: GoogleAuthUseCase,
+    state: str,
+    code: str,
+    error: str,
 ) -> RedirectResponse:
     outcome, exchange = "failed", None
     try:

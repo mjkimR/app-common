@@ -76,9 +76,13 @@ async def test_default_composition_keeps_all_tables_and_existing_routes(session)
         assert (await client.get("/api/v1/users/admin/", headers=headers)).status_code == 200
         assert (await client.get("/api/v1/auth/google/options")).json() == {"enabled": False}
         assert (await client.get("/api/v1/auth/google/start")).status_code == 404
+        assert (await client.post("/api/v1/auth/google/callback", data={"code": "unused"})).status_code == 404
         assert (await client.get("/api/v1/machines")).status_code == 401
         schema = (await client.get("/openapi.json")).json()
         assert {"/api/v1/users/login/", "/api/v1/auth/google/callback", "/api/v1/machines"} <= schema["paths"].keys()
+        callback_schema = schema["paths"]["/api/v1/auth/google/callback"]
+        assert {"get", "post"} <= callback_schema.keys()
+        assert "application/x-www-form-urlencoded" in callback_schema["post"]["requestBody"]["content"]
     assert (await session.scalar(select(User).where(User.email == "admin@example.com"))).is_superadmin
 
 

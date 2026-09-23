@@ -26,6 +26,13 @@ class AppSettings(BaseSettings):
         description="SQLAlchemy async database connection URL (defaults to in-memory SQLite)",
     )
 
+    DB_POOL_SIZE: int = Field(
+        default=5, ge=1, description="Connections each process keeps pooled (server databases; SQLite ignores it)"
+    )
+    DB_MAX_OVERFLOW: int = Field(
+        default=10, ge=0, description="Extra connections each process may open beyond the pool under load"
+    )
+
     LOG_PATH: str | None = Field(
         default=None,
         description="Absolute path to the log file. If None or empty, file logging is disabled.",

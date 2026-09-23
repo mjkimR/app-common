@@ -28,5 +28,5 @@ uv run app-tools get-env-spec --type database_sqlalchemy
 |---|---|---|
 | `DATABASE_URL` | — | SQLAlchemy async database connection string (e.g. `postgresql+psycopg://...` or `sqlite+aiosqlite://...`) |
 | `DB_ECHO` | `false` | Enable SQL query echo logging |
-| `DB_POOL_SIZE` | `5` | Connection pool size |
-| `DB_MAX_OVERFLOW` | `10` | Max pool overflow connections |
+| `DB_POOL_SIZE` | `5` | Connections each process keeps pooled (server databases; SQLite ignores it). Multiply by workers and instances against the server's connection limit |
+| `DB_MAX_OVERFLOW` | `10` | Extra connections each process may open under load |

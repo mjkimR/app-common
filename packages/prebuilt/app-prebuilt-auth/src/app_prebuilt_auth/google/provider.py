@@ -27,6 +27,7 @@ class GoogleProvider:
                 "client_id": self.settings.client_id,
                 "redirect_uri": self.settings.redirect_uri,
                 "response_type": "code",
+                "response_mode": self.settings.response_mode,
                 "scope": "openid email profile",
                 "state": state,
                 "nonce": nonce,
