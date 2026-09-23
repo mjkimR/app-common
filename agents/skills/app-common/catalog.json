@@ -200,6 +200,12 @@
       "packages": [
         "app-prebuilt-auth"
       ]
+    },
+    "document": {
+      "path": "references/document/index.md",
+      "packages": [
+        "app-document-store"
+      ]
     }
   }
 }

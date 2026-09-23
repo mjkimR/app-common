@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[5]
+MANIFESTS = [*ROOT.glob("packages/*/*/pyproject.toml"), *ROOT.glob("tools/*/pyproject.toml")]
+MODULES = {manifest.parent.name for manifest in MANIFESTS}
 STUB = r"""#!/bin/bash
 previous=""
 module=""
@@ -28,7 +30,7 @@ exit 0
 
 @pytest.fixture
 def runner(tmp_path):
-    for manifest in [*ROOT.glob("packages/*/*/pyproject.toml"), *ROOT.glob("tools/*/pyproject.toml")]:
+    for manifest in MANIFESTS:
         suite = tmp_path / manifest.parent.relative_to(ROOT) / "tests"
         (suite / "unit").mkdir(parents=True)
         (suite / "unit/test_sample.py").touch()
@@ -91,7 +93,7 @@ def concurrency(records):
 def test_parallel_packages_are_bounded_and_all_finish_after_a_failure(runner):
     result, records = runner(TEST_JOBS="3", FAIL_MODULE="app-prebuilt-auth", EMPTY_MODULE="app-mcp")
     assert result.returncode == 7, result.stdout + result.stderr
-    assert len([r for r in records if r["phase"] == "end"]) == 12
+    assert {r["module"] for r in records if r["phase"] == "end"} == MODULES
     assert 1 < concurrency(records) <= 3
     assert "No tests collected for app-mcp" in result.stdout
     assert result.stdout.index("finished app-error") < result.stdout.index("finished app-prebuilt-auth")
@@ -104,7 +106,8 @@ def test_parallel_packages_are_bounded_and_all_finish_after_a_failure(runner):
 def test_infrastructure_coverage_and_explicit_serial_runs_stay_serial(runner, db, settings):
     result, records = runner(db=db, **settings)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert len(records) == 24
+    assert len(records) == 2 * len(MODULES)
+    assert {r["module"] for r in records} == MODULES
     assert concurrency(records) == 1
 
 
@@ -127,7 +130,8 @@ def test_invalid_concurrency_fails_before_starting_tests(runner, jobs):
 def test_unit_selection_runs_every_package_with_only_unit_paths(runner):
     result, records = runner(TEST_TIER="unit")
     assert result.returncode == 0, result.stdout + result.stderr
-    assert len(records) == 24
+    assert len(records) == 2 * len(MODULES)
+    assert {r["module"] for r in records} == MODULES
     assert all(record["args"][-1] == "tests/unit" for record in records)
 
 

@@ -50,6 +50,7 @@ extraPaths = [
     "./packages/base/app-layer-base/src",
     "./packages/base/app-testing-base/src",
     "./packages/adapters/app-file-storage/src",
+    "./packages/adapters/app-document-store/src",
     "./packages/adapters/app-vector-store/src",
     "./packages/adapters/app-http-client/src",
     "./packages/adapters/app-ai-catalog/src",

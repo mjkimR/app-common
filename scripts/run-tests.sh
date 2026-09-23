@@ -146,7 +146,7 @@ wait_batch() {
     pending_modules=()
 }
 
-for m in app-error app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-vector-store app-http-client app-ai-catalog app-mcp; do
+for m in app-error app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
     if should_run "$MODULE" "$m"; then
         echo "Testing $m..."
         if [ "$TEST_JOBS" -gt 1 ]; then

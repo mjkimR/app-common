@@ -17,6 +17,7 @@ ALL_PACKAGES = (
     "app-testing-base",
     "app-mcp",
     "app-file-storage",
+    "app-document-store",
     "app-vector-store",
     "app-http-client",
     "app-ai-catalog",

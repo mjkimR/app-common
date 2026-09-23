@@ -14,6 +14,7 @@ Each package README covers its installation, public API, and usage.
 | Base | [app-layer-base](packages/base/app-layer-base/README.md) | CRUD hooks, command/transaction contracts, database and FastAPI infrastructure. |
 | Base | [app-testing-base](packages/base/app-testing-base/README.md) | Pytest plugins, DB/HTTP fixtures, and contract assertions. |
 | Adapter | [app-file-storage](packages/adapters/app-file-storage/README.md) | Local and S3 object storage. |
+| Adapter | [app-document-store](packages/adapters/app-document-store/README.md) | Async Firestore documents with version-checked writes. |
 | Adapter | [app-vector-store](packages/adapters/app-vector-store/README.md) | Qdrant storage and filtering with caller-supplied embeddings. |
 | Adapter | [app-http-client](packages/adapters/app-http-client/README.md) | Async HTTP clients based on httpx. |
 | Adapter | [app-ai-catalog](packages/adapters/app-ai-catalog/README.md) | Embedding/LLM factories and LiteLLM/LangChain clients. |

@@ -34,6 +34,7 @@ development use `guide --source <checkout>`. The relative references work withou
 | Database and backend installation | [backend/setup](references/backend/setup.md) |
 | Tests, fixtures, deterministic seeders | [testing](references/testing/index.md) |
 | Object storage | [storage](references/storage/index.md); [storage/setup](references/storage/setup.md) |
+| Document storage and Firestore | [document](references/document/index.md) |
 | Vector search | [vector](references/vector/index.md); [vector/setup](references/vector/setup.md) |
 | Pooled HTTP client | [http](references/http/index.md); [http/setup](references/http/setup.md) |
 | DB-backed semantic search | [search](references/search/index.md) |
