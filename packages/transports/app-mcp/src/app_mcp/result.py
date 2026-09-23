@@ -16,7 +16,9 @@ class ToolResult:
 
     @classmethod
     def success(cls, content: BaseModel | dict[str, Any]) -> "ToolResult":
-        return cls(content=content.model_dump(mode="json") if isinstance(content, BaseModel) else content)
+        return cls(
+            content=content.model_dump(mode="json", by_alias=False) if isinstance(content, BaseModel) else content
+        )
 
     @classmethod
     def from_app_error(cls, error: AppError) -> "ToolResult":

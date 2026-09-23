@@ -35,7 +35,9 @@ class ToolDefinition:
             "name": self.name,
             "description": self.description,
             "input_schema": self.input_model.model_json_schema(),
-            "output_schema": self.output_model.model_json_schema() if self.output_model else None,
+            "output_schema": self.output_model.model_json_schema(mode="serialization", by_alias=False)
+            if self.output_model
+            else None,
             "required_scopes": sorted(self.required_scopes),
             "risk": self.risk.value,
             "requires_confirmation": self.requires_confirmation,
@@ -109,11 +111,21 @@ class ToolRegistry:
                 )
             )
         try:
-            validated = tool.input_model.model_validate(arguments)
+            try:
+                validated = tool.input_model.model_validate(arguments)
+            except ValidationError:
+                return ToolResult.from_app_error(
+                    AppError(
+                        "Tool arguments do not match its schema.",
+                        code="MCP_INVALID_ARGUMENTS",
+                        actor=Actor.USER,
+                        retry=Retry.AFTER_FIX,
+                    )
+                )
             await self._audit("started", tool, context)
             result = await tool.handler(context, validated)
-            if result.content is not None and tool.output_model is not None:
-                result = ToolResult.success(tool.output_model.model_validate(result.content))
+            if not result.is_error and result.content is not None and tool.output_model is not None:
+                result = ToolResult.success(tool.output_model.model_validate(result.content, by_name=True))
             await self._audit(
                 "succeeded" if not result.is_error else "failed",
                 tool,
@@ -121,16 +133,6 @@ class ToolRegistry:
                 code=result.error and result.error.get("code"),
             )
             return result
-        except ValidationError as error:
-            return ToolResult.from_app_error(
-                AppError(
-                    "Tool arguments do not match its schema.",
-                    code="MCP_INVALID_ARGUMENTS",
-                    actor=Actor.USER,
-                    retry=Retry.AFTER_FIX,
-                    details=[str(error)],
-                )
-            )
         except AppError as error:
             return ToolResult.from_app_error(error)
         except Exception:

@@ -1,41 +1,61 @@
 # app-mcp
 
-`app-mcp` is the FastMCP-based MCP package for app-common FastAPI applications.
-It provides schema-aware tools, policy enforcement, and an ASGI app ready to
-mount in FastAPI.
-
-## Responsibilities
-
-- Register stable tool names, descriptions, handlers, and required scopes.
-- Require a trusted `ToolContext` supplied by the authenticated transport.
-- Convert `AppError` into structured tool failures.
-- Never execute an advisory `fix`; the server or client owns that policy.
-
-`create_mcp()` registers the policy-aware registry with FastMCP. Mount the
-result while passing its lifespan to FastAPI:
+FastMCP transport and policy boundary for explicitly registered application tools.
+Requires Python 3.12+ and FastMCP 4.x (at least 4.0.3).
 
 ```python
-mcp = create_mcp("my-service", registry, authenticated_context)
-mcp_app = create_http_app(mcp)
-app = FastAPI(lifespan=mcp_app.lifespan)
-app.mount("/", mcp_app)
-```
+from pydantic import BaseModel, Field
+from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult, create_mcp, create_http_app
 
-`authenticated_context` must derive identity and scopes from trusted FastAPI
-authentication, never from MCP tool arguments.
 
-## Usage
+class StatusArguments(BaseModel):
+    name: str = Field(min_length=1, description="Resource name")
 
-```python
-from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult
+
+class StatusResult(BaseModel):
+    name: str
+    status: str
+
+
+async def get_status(context: ToolContext, arguments: StatusArguments) -> ToolResult:
+    return ToolResult.success(StatusResult(name=arguments.name, status="ok"))
+
 
 registry = ToolRegistry()
-
-
-async def get_status(context: ToolContext, _: dict[str, object]) -> ToolResult:
-    return ToolResult.success({"subject": context.subject, "status": "ok"})
-
-
-registry.register(ToolDefinition("status.get", "Return service status", get_status, frozenset({"status:read"})))
-result = await registry.invoke("status.get", ToolContext("agent-1", frozenset({"status:read"})), {})
+registry.register(
+    ToolDefinition(
+        name="status.get",
+        description="Read resource status",
+        handler=get_status,
+        input_model=StatusArguments,
+        output_model=StatusResult,
+        required_scopes=frozenset({"status:read"}),
+    )
+)
+# authenticated_context is an application-owned async callable returning ToolContext.
+mcp = create_mcp("my-service", registry, authenticated_context)
+mcp_app = create_http_app(mcp, path="/", stateless_http=True)
 ```
+
+Mount `mcp_app` at `/mcp` **before** any SPA catch-all route. Compose
+`mcp_app.lifespan(app)` with the host's existing lifespan; mounting alone does not
+start the MCP session manager. `mcp.http_app(...)` remains available for additional
+FastMCP transport options.
+
+The host must authenticate every HTTP request, including initialization and tool
+listing. FastAPI router dependencies do not protect mounted ASGI applications.
+Derive `ToolContext` identity and scopes from trusted request state, never tool
+arguments. The registry enforces scopes before invoking a handler; it does not
+filter tool discovery by caller or implement resource-level authorization.
+
+Input models retain aliases, constraints, field descriptions and default factories.
+Tools return `{ok, result, error}` as structured content, with a matching output
+schema. Output keys use model field names, including when output models declare
+aliases; input aliases retain their normal validation behavior. Failures also set the MCP `isError` flag. Expected `AppError` advisories are
+returned without executing their suggested fixes; unexpected failures are sanitized.
+Output validation failures are server errors, not invalid caller arguments.
+
+Set `risk=ToolRisk.WRITE` or `DESTRUCTIVE` for mutation tools. Annotations are hints,
+not authorization. Confirmation and idempotency requirements are optional; the host
+owns trusted confirmation, deduplication persistence and audit storage. A required
+idempotency key only checks presence, and does not prevent repeated execution.

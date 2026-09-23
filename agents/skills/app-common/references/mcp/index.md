@@ -1,27 +1,23 @@
 # app-mcp
 
-Use `app-mcp` for MCP tools. It is protocol-neutral: do not import FastAPI or a
-particular MCP SDK into domain handlers.
+Use `app-mcp` to register explicit MCP tool contracts. Domain handlers receive a
+Pydantic input model and a trusted `ToolContext`; keep transport dependencies out
+of business logic.
 
-1. The transport authenticates the caller and constructs `ToolContext`; never
-   accept `subject` or `scopes` from tool arguments.
-2. Register a `ToolDefinition` with the smallest required scope set.
-3. Return `ToolResult.success(...)` from handlers and raise `AppError` for
-   expected failures. `ToolRegistry` translates it into a structured result.
-4. Never automatically execute `AppError.fix`. Confirmation and execution policy
-   belong to the MCP client or server.
-5. Put stdio, Streamable HTTP, or FastAPI mounting code in a separate integration
-   package or application layer, not in `app-mcp`.
+1. Authenticate every HTTP request at the transport boundary, including discovery.
+   Mounted ASGI apps do not inherit FastAPI router dependencies.
+2. Register `ToolDefinition` with `input_model`, optional `output_model`, and the
+   smallest required scope set. See the package README for a complete example.
+3. Return `ToolResult.success(...)` or raise `AppError`. The transport preserves
+   structured advisories and sets MCP `isError` on failure. Never execute a `fix`.
+4. Set mutation risk explicitly. Scope checks run before handlers, but listing is
+   not filtered. Resource-level access checks belong to the application.
+5. Compose the ASGI lifespan with the host's existing startup/shutdown work. Mount
+   `create_http_app(mcp, path="/", stateless_http=True)` at `/mcp` before SPA routes.
+   FastMCP's `mcp.http_app(...)` exposes further transport options.
+6. Confirmation and idempotency key checks are optional. Trusted confirmations,
+   actual deduplication and audit persistence belong to the application.
 
-```python
-from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult
-
-registry = ToolRegistry()
-
-
-async def read_status(context: ToolContext, _: dict[str, object]) -> ToolResult:
-    return ToolResult.success({"subject": context.subject, "status": "ok"})
-
-
-registry.register(ToolDefinition("status.get", "Read status", read_status, frozenset({"status:read"})))
-```
+The supported transport dependency is FastMCP `>=4.0.3,<5`. Model schemas retain
+field constraints, descriptions, aliases and default factories. The public output
+is an `{ok, result, error}` envelope around the declared output model.

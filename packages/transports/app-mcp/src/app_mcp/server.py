@@ -1,56 +1,72 @@
-"""FastMCP server factory backed by app-mcp policy enforcement."""
+"""FastMCP transport backed by the registry's model and policy contracts."""
 
 from collections.abc import Awaitable, Callable
-from inspect import Parameter, Signature
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.tools import Tool
+from fastmcp.tools import ToolResult as FastMCPToolResult
+from mcp.types import ToolAnnotations
+from pydantic import BaseModel, PrivateAttr
 
 from app_mcp.context import ToolContext
-from app_mcp.registry import ToolRegistry
+from app_mcp.policy import ToolRisk
+from app_mcp.registry import ToolDefinition, ToolRegistry
 
 ContextProvider = Callable[[], Awaitable[ToolContext]]
 
 
-def _tool_signature(model: type[Any]) -> Signature:
-    """Expose Pydantic fields as FastMCP's keyword-only tool arguments."""
-    parameters = [
-        Parameter(
-            name,
-            Parameter.KEYWORD_ONLY,
-            default=Parameter.empty if field.is_required() else field.default,
-            annotation=field.annotation,
+class _Response[T](BaseModel):
+    ok: bool
+    result: T | None
+    error: dict[str, Any] | None
+
+
+class _RegistryTool(Tool):
+    _registry: ToolRegistry = PrivateAttr()
+    _context_provider: ContextProvider = PrivateAttr()
+
+    async def run(self, arguments: dict[str, Any]) -> FastMCPToolResult:
+        result = await self._registry.invoke(self.name, await self._context_provider(), arguments)
+        return FastMCPToolResult(
+            structured_content={"ok": not result.is_error, "result": result.content, "error": result.error},
+            is_error=result.is_error,
         )
-        for name, field in model.model_fields.items()
-    ]
-    return Signature(parameters, return_annotation=dict[str, Any])
+
+
+def _create_tool(
+    definition: ToolDefinition, registry: ToolRegistry, context_provider: ContextProvider
+) -> _RegistryTool:
+    # Publish the model itself, rather than reconstructing a function signature:
+    # aliases, constraints, nested definitions and default factories retain their semantics.
+    response_type = _Response[definition.output_model or dict[str, Any]]
+    tool = _RegistryTool(
+        name=definition.name,
+        description=definition.description,
+        parameters=definition.input_model.model_json_schema(),
+        output_schema=response_type.model_json_schema(mode="serialization", by_alias=False),
+        annotations=ToolAnnotations(
+            read_only_hint=definition.risk == ToolRisk.READ,
+            destructive_hint=definition.risk == ToolRisk.DESTRUCTIVE,
+        ),
+    )
+    tool._registry = registry
+    tool._context_provider = context_provider
+    return tool
 
 
 def create_mcp(name: str, registry: ToolRegistry, context_provider: ContextProvider) -> FastMCP:
-    """Create a FastMCP server that invokes every tool through ``registry``.
+    """Register explicit tools; the host authenticates every transport request.
 
-    ``context_provider`` is the FastAPI authentication boundary: it must derive
-    identity, scopes, confirmations, and idempotency metadata from trusted
-    request state, never from MCP tool arguments.
+    ``context_provider`` derives identity and scopes from trusted request state,
+    never from tool arguments. FastAPI router dependencies do not protect mounts.
     """
     mcp = FastMCP(name)
-
     for definition in registry.definitions():
-
-        async def invoke_tool(_tool_name: str = definition.name, **arguments: Any) -> dict[str, Any]:
-            result = await registry.invoke(_tool_name, await context_provider(), arguments)
-            return {"ok": not result.is_error, "result": result.content, "error": result.error}
-
-        invoke_tool.__name__ = definition.name.replace(".", "_").replace("-", "_")
-        invoke_tool.__signature__ = _tool_signature(definition.input_model)
-        invoke_tool.__annotations__ = {
-            name: field.annotation for name, field in definition.input_model.model_fields.items()
-        } | {"return": dict[str, Any]}
-        mcp.tool(name=definition.name, description=definition.description)(invoke_tool)
-
+        mcp.add_tool(_create_tool(definition, registry, context_provider))
     return mcp
 
 
-def create_http_app(mcp: FastMCP, path: str = "/mcp") -> Any:
-    """Return the ASGI app to mount in FastAPI, including FastMCP lifespan."""
-    return mcp.http_app(path=path)
+def create_http_app(mcp: FastMCP, path: str = "/mcp", *, stateless_http: bool = False) -> Any:
+    """Return an ASGI app whose lifespan must be composed with the host lifespan."""
+    return mcp.http_app(path=path, stateless_http=stateless_http)
