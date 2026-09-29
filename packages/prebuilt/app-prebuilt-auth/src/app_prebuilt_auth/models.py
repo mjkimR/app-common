@@ -5,8 +5,9 @@ The host still applies schema changes through its migration process.
 """
 
 from .api_key.models import Machine, MachineKey
+from .browser.models import BrowserSession
 from .google.models import GoogleLoginFlow
 from .user.identities import ExternalIdentity
 from .user.models import User, UserAccessEvent
 
-__all__ = ["ExternalIdentity", "GoogleLoginFlow", "Machine", "MachineKey", "User", "UserAccessEvent"]
+__all__ = ["BrowserSession", "ExternalIdentity", "GoogleLoginFlow", "Machine", "MachineKey", "User", "UserAccessEvent"]

@@ -4,6 +4,7 @@ from fastapi import APIRouter, FastAPI
 
 from .api_key.api import api_keys_router
 from .api_key.config import ApiKeySettings, get_api_key_settings
+from .browser.api import router as browser_router
 from .google.api import router as google_router
 from .google.config import GoogleAuthSettings, get_google_auth_settings
 from .user.api import v1_users_router
@@ -17,6 +18,7 @@ def create_auth_router() -> APIRouter:
     router = APIRouter()
     router.include_router(v1_users_router)
     router.include_router(google_router)
+    router.include_router(browser_router)
     router.include_router(api_keys_router)
     return router
 

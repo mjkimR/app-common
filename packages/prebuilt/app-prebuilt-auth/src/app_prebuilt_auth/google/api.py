@@ -4,6 +4,9 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 
+from app_prebuilt_auth.browser.api import establish, require_browser_request
+from app_prebuilt_auth.browser.config import BrowserAuthSettings, get_browser_auth_settings
+from app_prebuilt_auth.browser.usecases import BrowserSessionUseCase
 from app_prebuilt_auth.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException
 
 from .config import GoogleAuthSettings, get_google_auth_settings
@@ -114,11 +117,17 @@ async def exchange(
     response: Response,
     settings: Annotated[GoogleAuthSettings, Depends(enabled)],
     use_case: Annotated[GoogleAuthUseCase, Depends()],
+    browser_settings: Annotated[BrowserAuthSettings, Depends(get_browser_auth_settings)],
+    browser_sessions: Annotated[BrowserSessionUseCase, Depends()],
 ) -> GoogleLoginResult:
+    if request.headers.get("x-browser-session") == "1":
+        require_browser_request(request, browser_settings)
     origin = urlsplit(settings.frontend_url)
     if request.headers.get("origin") != f"{origin.scheme}://{origin.netloc}":
         raise InvalidCredentialsException()
     result = await use_case.finish(request.cookies.get(EXCHANGE_COOKIE, ""))
+    if request.headers.get("x-browser-session") == "1" and result.tokens:
+        result.tokens = await establish(request, response, result.tokens, browser_settings, browser_sessions)
     cookie(response, EXCHANGE_COOKIE, "", settings, 0)
     response.headers["Cache-Control"] = "no-store"
     return result

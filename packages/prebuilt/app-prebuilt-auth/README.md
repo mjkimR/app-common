@@ -24,12 +24,13 @@ The package includes all capabilities; settings control activation. Google login
 
 ## Complete schema
 
-Importing `app_prebuilt_auth` (including any submodule) registers all six tables on the shared SQLAlchemy metadata, even when Google login is disabled:
+Importing `app_prebuilt_auth` (including any submodule) registers all seven tables on the shared SQLAlchemy metadata, even when Google login is disabled:
 
 - `users`
 - `user_external_identities`
 - `user_access_events`
 - `google_login_flows`
+- `browser_sessions`
 - `api_key_machines`
 - `api_keys`
 
@@ -55,3 +56,38 @@ The host installs the shared exception handlers (shown above), or equivalent cus
 - [`app_prebuilt_auth.models`](src/app_prebuilt_auth/models.py): all auth ORM models in one import.
 
 This package is not an OAuth authorization server for remote MCP clients. Google login is an upstream identity provider; MCP client consent/scopes/resource tokens remain a separate capability.
+
+## Persistent browser sessions
+
+Use `POST /api/v1/auth/browser/login` with the password form for browser login.
+It returns only an access token and sets an opaque refresh credential in an HttpOnly,
+SameSite=Lax cookie. Keep the access token in memory. On page load and on an expired
+access token, call `POST /api/v1/auth/browser/refresh` with no body and
+`credentials: 'include'`. Google exchange opts into the same cookie transport with
+`X-Browser-Session: 1`; pending/unapproved accounts never receive a session cookie.
+The existing `/users/login/` and `/users/login/refresh` token APIs remain available
+for CLI clients.
+
+Every browser session endpoint requires `X-Browser-Session: 1` and an exact `Origin`
+match. By default this is the request origin; explicitly configure
+`BROWSER_AUTH_ALLOWED_ORIGINS` (a JSON array) for a separate, trusted frontend and
+configure credentialed CORS with exact origins in the host. Same-origin hosting,
+including a Vite proxy during development, needs no extra origin configuration.
+Cookies are Secure except on plain-HTTP loopback hosts. `BROWSER_AUTH_COOKIE_SECURE`
+can override this; production must use HTTPS. Hosts may override
+`get_browser_auth_settings` to choose distinct cookie names. Cookies are host-only
+and default to path `/api/v1/auth`.
+
+Apply the `browser_sessions` migration before deploying. The DB holds only hashes
+of random 256-bit refresh credentials, with the user's account version, password
+fingerprint and expiration. The refresh handle is stable within a browser session,
+so concurrent tabs do not invalidate each other's refresh credentials. Renewal
+atomically extends the DB expiry and cookie lifetime by `REFRESH_TOKEN_EXPIRE_DAYS`
+(default 14); account suspension, version changes and password changes prevent
+renewal. Expired records are pruned on subsequent browser logins.
+
+`POST /api/v1/auth/browser/logout` deletes the server record and expires the cookie.
+A concurrent or replayed refresh cannot recreate that record. Clients should report
+logout success only after this request succeeds, clear their in-memory access token,
+and notify other tabs. Already-issued access tokens retain their short lifetime;
+logout revokes this browser's ability to renew, not other devices' sessions.

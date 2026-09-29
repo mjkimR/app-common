@@ -22,6 +22,7 @@ TABLES = {
     "user_external_identities",
     "user_access_events",
     "google_login_flows",
+    "browser_sessions",
     "api_key_machines",
     "api_keys",
 }

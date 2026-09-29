@@ -85,7 +85,7 @@ async def callback(client, params):
     return await client.get(BASE + "/callback", params=params)
 
 
-async def sign_in(client):
+async def sign_in(client, browser=False):
     state = await start(client)
     response = await callback(client, {"state": state, "code": "valid-code"})
     assert response.status_code == 303
@@ -94,7 +94,10 @@ async def sign_in(client):
     assert response.headers["Referrer-Policy"] == "no-referrer"
     cookies = response.headers.get_list("set-cookie")
     assert any("app_google_exchange=" in cookie and "SameSite=lax" in cookie for cookie in cookies)
-    return await client.post(BASE + "/exchange", headers={"Origin": str(client.base_url).rstrip("/")})
+    return await client.post(
+        BASE + "/exchange",
+        headers={"Origin": str(client.base_url).rstrip("/"), **({"X-Browser-Session": "1"} if browser else {})},
+    )
 
 
 async def test_pending_approval_then_login_and_revocation(login_http, session_maker):
@@ -298,3 +301,25 @@ async def test_post_callback_does_not_accept_query_parameters(login_http):
     else:
         assert response.status_code == 405
     provider.exchange.assert_not_called()
+
+
+async def test_google_browser_login_sets_refresh_cookie_only_after_approval(login_http, session_maker):
+    client, _provider, admin_token = login_http
+    first = await sign_in(client, browser=True)
+    assert first.json()["tokens"] is None
+    assert client.cookies.get("app_refresh") is None
+    async with session_maker() as db:
+        user = await db.scalar(select(User).where(User.email == "new@example.com"))
+        user_id = str(user.id)
+    approved = await client.post(
+        "/api/v1/users/admin/" + user_id + "/access",
+        headers={"Authorization": "Bearer " + admin_token},
+        json={"action": "approve", "expected_version": 0},
+    )
+    assert approved.status_code == 200
+    signed_in = await sign_in(client, browser=True)
+    assert signed_in.status_code == 200
+    assert signed_in.json()["tokens"]["access_token"]
+    assert signed_in.json()["tokens"].get("refresh_token") is None
+    assert client.cookies.get("app_refresh")
+    assert any("app_refresh=" in value and "HttpOnly" in value for value in signed_in.headers.get_list("set-cookie"))
