@@ -1,7 +1,7 @@
 import pytest
 from app_error import Actor, AppError, Retry
 from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult, ToolRisk, create_http_app, create_mcp
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 
 class EchoArguments(BaseModel):
@@ -35,6 +35,56 @@ async def test_registry_enforces_scopes_before_invocation():
     assert denied.error is not None
     assert denied.error["code"] == "MCP_FORBIDDEN"
     assert allowed.content == {"value": "hello"}
+
+
+class Step(BaseModel):
+    key: str
+    after: list[str] = Field(default_factory=list)
+
+
+class PlanArguments(BaseModel):
+    token: str = Field(min_length=8)
+    steps: list[Step]
+
+    @model_validator(mode="after")
+    def _known_steps(self) -> "PlanArguments":
+        keys = {step.key for step in self.steps}
+        if any(parent not in keys for step in self.steps for parent in step.after):
+            raise ValueError("Dependency target does not exist in this scope")
+        return self
+
+
+async def test_invalid_arguments_name_each_problem_without_echoing_values():
+    registry = ToolRegistry()
+    registry.register(ToolDefinition("plan", "Plan", _echo, PlanArguments))
+    context = ToolContext(subject="user-1")
+
+    fields = await registry.invoke("plan", context, {"token": "secret", "steps": [{"after": []}]})
+    graph = await registry.invoke("plan", context, {"token": "long-secret", "steps": [{"key": "a", "after": ["b"]}]})
+
+    assert fields.error is not None and fields.error["code"] == "MCP_INVALID_ARGUMENTS"
+    assert fields.error["advisory"]["details"] == [
+        "token: String should have at least 8 characters",
+        "steps.0.key: Field required",
+    ]
+    assert fields.error["advisory"]["fix"]
+    assert "secret" not in str(fields.error)
+    assert graph.error is not None
+    assert graph.error["advisory"]["details"] == [
+        "(arguments): Value error, Dependency target does not exist in this scope"
+    ]
+
+
+async def test_invalid_argument_details_are_capped():
+    registry = ToolRegistry()
+    registry.register(ToolDefinition("plan", "Plan", _echo, PlanArguments))
+
+    result = await registry.invoke("plan", ToolContext(subject="user-1"), {"token": "12345678", "steps": [{}] * 25})
+
+    assert result.error is not None
+    details = result.error["advisory"]["details"]
+    assert len(details) == 21
+    assert details[-1] == "... and 5 more"
 
 
 async def test_registry_converts_app_errors_and_hides_unexpected_failures():

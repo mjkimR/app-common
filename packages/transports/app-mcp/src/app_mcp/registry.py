@@ -13,6 +13,20 @@ from app_mcp.result import ToolResult
 
 ToolHandler = Callable[[ToolContext, BaseModel], Awaitable[ToolResult]]
 
+MAX_VALIDATION_DETAILS = 20
+
+
+def _validation_details(error: ValidationError) -> list[str]:
+    """Name each invalid argument and its rule without echoing submitted values."""
+    problems = error.errors(include_url=False, include_input=False, include_context=False)
+    details = [
+        f"{'.'.join(str(part) for part in problem['loc']) or '(arguments)'}: {problem['msg']}"
+        for problem in problems[:MAX_VALIDATION_DETAILS]
+    ]
+    if len(problems) > MAX_VALIDATION_DETAILS:
+        details.append(f"... and {len(problems) - MAX_VALIDATION_DETAILS} more")
+    return details
+
 
 @dataclass(frozen=True, slots=True)
 class ToolDefinition:
@@ -113,13 +127,15 @@ class ToolRegistry:
         try:
             try:
                 validated = tool.input_model.model_validate(arguments)
-            except ValidationError:
+            except ValidationError as error:
                 return ToolResult.from_app_error(
                     AppError(
                         "Tool arguments do not match its schema.",
                         code="MCP_INVALID_ARGUMENTS",
                         actor=Actor.USER,
                         retry=Retry.AFTER_FIX,
+                        fix="Correct the arguments listed in details and call the tool again.",
+                        details=_validation_details(error),
                     )
                 )
             await self._audit("started", tool, context)
