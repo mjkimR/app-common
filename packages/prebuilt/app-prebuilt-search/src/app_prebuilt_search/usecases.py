@@ -7,7 +7,7 @@ from collections.abc import Callable, Hashable, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 
-from app_vector_store import PayloadUpdate, QdrantVectorStore, VectorPoint
+from app_vector_store import QdrantVectorStore
 from pydantic import ValidationError
 from qdrant_client import AsyncQdrantClient, models
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app_prebuilt_search.contracts import EmbeddingProvider, IndexKey, SearchRequest, SearchRuntime, SearchSource
 from app_prebuilt_search.errors import SearchConfigurationError, SearchInputError, SearchSourceError
 from app_prebuilt_search.filters import FilterDefinition, FilterPolicy, FilterValue
+from app_prebuilt_search.projection import ProjectionItem, sync_snapshot
 from app_prebuilt_search.runtime import SQLAlchemySearchRuntime
 from app_prebuilt_search.schemas import IndexStatus, SearchHit, SearchItem, SearchResult, SearchResultItem, SyncResult
 
@@ -168,40 +169,13 @@ class SearchEngine:
             async for record in self.store.scroll(query_filter=self.policy.query(scope, {}))
             if (record.payload or {}).get("scope_id") == scope
         }
-        result = SyncResult(scanned=len(items))
-        changed: list[tuple[str, SearchItem, dict]] = []
-        refreshed: list[PayloadUpdate] = []
-        for point_id, item in items.items():
-            payload = self._payload(scope, item)
-            old = existing.get(point_id)
-            if old is None or old.get("fingerprint") != payload["fingerprint"]:
-                changed.append((point_id, item, payload))
-            elif old != payload:
-                refreshed.append(PayloadUpdate(point_id, payload))
-            else:
-                result.skipped += 1
-        result.refreshed = await self.store.overwrite_payloads(refreshed, batch_size=self.index.batch_size)
-        for start in range(0, len(changed), self.index.batch_size):
-            batch = changed[start : start + self.index.batch_size]
-            vectors = await self.embedder.embed_documents([item.text for _, item, _ in batch])
-            if len(vectors) != len(batch):
-                raise SearchSourceError("Embedding provider returned the wrong number of vectors")
-            for vector in vectors:
-                self._validate_vector(vector)
-            await self.store.upsert(
-                [
-                    VectorPoint(point_id, vector, payload)
-                    for (point_id, _, payload), vector in zip(batch, vectors, strict=True)
-                ],
-                batch_size=self.index.batch_size,
-            )
-            result.embedded += len(batch)
-        stale = sorted(set(existing) - items.keys())
-        for start in range(0, len(stale), self.index.batch_size):
-            await self.store.delete(
-                models.PointIdsList(points=[p for p in stale[start : start + self.index.batch_size]])
-            )
-        result.deleted = len(stale)
+        result = await sync_snapshot(
+            self.store,
+            self.embedder,
+            [ProjectionItem(key, item.text, self._payload(scope, item)) for key, item in items.items()],
+            existing,
+            batch_size=self.index.batch_size,
+        )
         # This vectorless scope marker disappears with its collection. A token
         # is recorded in runtime state only after all writes and the marker succeed.
         # It has no scope_id, so candidate retrieval and reconciliation exclude it.

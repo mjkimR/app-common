@@ -64,6 +64,20 @@ Providers are swappable, so the contract holds for every one of them — `tests/
 
 Object versioning is S3-only (`version_id` on `download_file`); Local raises `NotImplementedError`. It also needs versioning enabled **on the bucket** — this package never turns it on, so without it `put_object` returns no version to ask for.
 
+## Atomic local file publication
+
+`app_file_storage.local_files` provides synchronous `atomic_write(path, data)`,
+`atomic_copy(source, target)`, `atomic_write_stream(path, chunks)`,
+`atomic_writer(path)` and streaming SHA-256 `file_hash(path)` helpers for applications
+that own canonical filesystem paths. Copying uses bounded chunks; streamed writes
+consume an iterable of byte chunks. A sibling temporary file is flushed and fsynced,
+then replaces the destination only after all writing succeeds. Failures remove the
+temporary file and preserve the old destination.
+
+Callers own path validation, writer locks and multi-file rollback. These primitives
+are separate from the provider key API and do not guarantee recovery across power
+loss. Async callers must keep their resource scope alive until thread work finishes.
+
 ## Testing
 
 ```bash
@@ -72,6 +86,9 @@ just test-docker   # ...plus the S3 half, against a real MinIO. Needs Docker.
 ```
 
 The S3 tests are marked `docker` and deselected by default, so the everyday run stays fast. **CI runs `just test-docker` on every push**, so they are still verified before anything merges — deselecting them locally is a convenience, not a gap.
+
+Set `APP_TEST_MINIO_IMAGE` to test another explicit MinIO version. Readiness is checked
+through `/minio/health/ready`, independently of version-specific startup log messages.
 
 Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on the default config, and denied credentials being reported as "file not found"), all while the code was 100% line-covered. That is what these run against a real backend for.
 

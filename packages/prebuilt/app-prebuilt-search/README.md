@@ -135,11 +135,11 @@ A profile hashes embedding identity, dimension, recipe version and filter declar
 
 1. Validate/enumerate items; reject duplicate identities.
 2. Ensure the collection and payload indexes and read existing scoped fingerprints.
-3. Re-embed changed text/profile; refresh filter or index-metadata changes without recomputing vectors.
+3. Stage all changed embeddings in bounded batches on temporary storage, then publish vectors and refresh metadata-only payload changes.
 4. Delete stale IDs only after enumeration and all updates have succeeded.
 5. Record success in the same DB transaction.
 
-Source snapshots/inventory are currently held in memory. Embedding, upserts, per-point payload replacements and deletes are batched. This first version targets bounded corpora and explicit sync, not a continuous high-volume indexing worker.
+Source snapshots/inventory are currently held in memory. Embedding, upserts, per-point payload replacements and deletes are batched. All embeddings must succeed before point mutation starts. This first version targets bounded corpora and explicit sync, not a continuous high-volume indexing worker.
 
 PostgreSQL locks the index/scope/profile row; SQLite uses `BEGIN IMMEDIATE`, serializing database writes. The lock is held across embedding and Qdrant I/O, so slow sync can delay writers (database-wide for SQLite). Default PostgreSQL READ COMMITTED is expected. These locks serialize sync calls, not arbitrary source writers on PostgreSQL; changes during/after enumeration are picked up by the next sync. Apps needing a fully consistent multi-query source snapshot must provide their own source locking/revision policy.
 
@@ -213,6 +213,27 @@ write policy, hierarchy interpretation and hybrid fallback remain application co
 See [the executable snapshot runtime tests](tests/integration/test_runtime.py) for an example
 that uses no SQLAlchemy sessions and covers alternate snapshots, forbidden publication,
 stale metadata, grouping, partial enumeration and cancellation under a shared lock.
+
+## Caller-owned projection publication
+
+Applications with their own point IDs, nested payload filters and generation policy
+can reuse `ProjectionItem` and `sync_snapshot` without adopting the engine's runtime
+state or payload schema. Pass the desired complete snapshot and an existing payload
+inventory filtered to the same namespace. Every item needs a string fingerprint
+under `fingerprint_key` (default `fingerprint`); it must cover text/model semantics.
+
+The caller holds the index lock from inventory capture through completion. The helper
+detaches mutable payloads, validates and spools all changed embeddings, then enters
+the optional async `publication` context in the caller task. This context can recheck
+source revisions and fence source writers until publication finishes. Failed inference,
+cancellation during inference, or failed context entry leaves existing points intact.
+Metadata-only changes replace payloads without inference; stale points are deleted last.
+
+The helper returns `SyncResult` and does not record success, publish generation
+pointers, hydrate query results, or implement source locks. Publication can be partial
+if vector I/O fails or is cancelled; a later sync reconciles it. Callers needing to
+drain external work before releasing their index lock must provide that cancellation
+policy. Unlike `SearchEngine`, this primitive does not create a drained worker task.
 
 ## Chunk metadata and adoption
 

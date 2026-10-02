@@ -2,6 +2,8 @@ import asyncio
 import importlib
 from typing import Any
 
+from app_layer_base.utils.async_util import run_blocking
+
 from app_prebuilt_search.errors import SearchConfigurationError
 
 
@@ -36,14 +38,7 @@ class FastEmbedProvider:
 
     async def _run(self, texts: list[str], *, query: bool) -> list[list[float]]:
         async with self._lock:
-            task = asyncio.create_task(asyncio.to_thread(self._embed, texts, query=query))
-            try:
-                return await asyncio.shield(task)
-            except asyncio.CancelledError:
-                try:
-                    await task
-                finally:
-                    raise
+            return await run_blocking(self._embed, texts, query=query)
 
     async def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return await self._run(texts, query=False) if texts else []

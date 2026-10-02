@@ -10,6 +10,7 @@ from app_prebuilt_search.embeddings import FastEmbedProvider
 from app_prebuilt_search.errors import SearchConfigurationError, SearchInputError, SearchSourceError
 from app_prebuilt_search.filters import BooleanFilter, KeywordArrayFilter, KeywordFilter, NumericFilter, NumericRange
 from app_prebuilt_search.models import SearchIndexState
+from app_prebuilt_search.projection import ProjectionItem, sync_snapshot
 from app_prebuilt_search.runtime import SQLAlchemySearchRuntime
 from app_prebuilt_search.schemas import (
     IndexStatus,
@@ -32,6 +33,7 @@ __all__ = [
     "KeywordFilter",
     "NumericFilter",
     "NumericRange",
+    "ProjectionItem",
     "SQLAlchemySearchRuntime",
     "SearchConfigurationError",
     "SearchEngine",
@@ -50,4 +52,5 @@ __all__ = [
     "SearchSyncSession",
     "SyncResult",
     "SyncState",
+    "sync_snapshot",
 ]

@@ -100,3 +100,12 @@ const { error } = await apiClient.DELETE('/api/v1/projects/{id}', {
   },
 });
 ```
+
+### Refresh cancellation and polling
+
+Use `LatestRequest` and `startPolling` from `@app-common/ui-base/async` for client
+refreshes. `LatestRequest.run(read, signal?)` aborts the previous request and discards
+late results; cancellation returns `undefined` and other errors propagate.
+`startPolling(read, interval)` waits for completion before scheduling the next read
+and returns cleanup that aborts the pending request. Handle errors in the poll
+callback and return cleanup from the owning effect. Neither helper owns UI state.

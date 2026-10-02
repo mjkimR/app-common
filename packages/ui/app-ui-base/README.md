@@ -56,6 +56,17 @@ pnpm add @app-common/ui-base
 
 ---
 
+## Async refresh and polling
+
+Import `LatestRequest` and `startPolling` from `@app-common/ui-base/async`. A
+`LatestRequest` cancels the previous read and suppresses late results; `run(read,
+signal?)` returns `undefined` when cancelled. Non-cancellation errors propagate.
+`startPolling(read, interval)` starts immediately, waits for each read before
+scheduling the next, and returns a cleanup function that aborts the pending read
+and clears its timer. Poll callbacks own error reporting and must handle failures.
+These helpers have no Svelte lifecycle dependency; call cleanup from the owning
+effect's teardown.
+
 ## Development & Building
 
 From the repository root:

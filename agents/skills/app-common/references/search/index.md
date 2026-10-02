@@ -40,3 +40,15 @@ app-prebuilt-search; add the fastembed extra only for local inference. AI catalo
 - `SearchItem.index_metadata` explicitly persists JSON facts such as source hash and chunk offsets. `SearchHit.index_metadata` is from the indexed snapshot; hydration must validate it before using offsets or claiming freshness. Current display metadata stays source-owned. Old payloads yield empty indexed metadata.
 - Use `group_by=lambda item: (item.source_id, item.metadata["target_id"])` for target-level chunk grouping, or existing `group_by_source=True` for documents. Only one grouping option at a time. Grouping uses current hydrated items and retains candidate ranking.
 - Source chunking, canonical/branch policy, stale-score annotations, hierarchy meaning and hybrid fallback remain application concerns. No consumer replacement, automatic migration or outbox coupling is required.
+
+## Existing projection schemas
+
+Use `ProjectionItem` and `sync_snapshot` when retaining application-owned point IDs,
+nested payload schemas and generation pointers. Supply a complete snapshot, a
+namespace-filtered existing inventory and a text/model fingerprint key. Hold the
+index lock from inventory capture through completion. Embeddings are validated and
+spooled before any point writes; an optional async `publication` context revalidates
+source revisions and fences writers in the caller task. Failed preparation leaves
+existing points intact; failed publication may be partial and requires another sync.
+Metadata-only changes reuse vectors. Success state, query hydration and cancellation
+draining remain caller-owned; this primitive does not add a background worker.

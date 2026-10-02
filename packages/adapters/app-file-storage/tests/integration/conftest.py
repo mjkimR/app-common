@@ -13,6 +13,7 @@ runs it, and so does CI on every push. The local-filesystem half always runs.
 """
 
 import itertools
+import os
 from collections.abc import AsyncIterator, Iterator
 
 import aiobotocore.session
@@ -21,7 +22,7 @@ import pytest_asyncio
 from app_file_storage.providers.local import LocalStorageProvider
 from app_file_storage.providers.s3 import S3StorageProvider
 
-MINIO_IMAGE = "quay.io/minio/minio:RELEASE.2024-01-16T16-07-38Z"
+MINIO_IMAGE = os.environ.get("APP_TEST_MINIO_IMAGE", "quay.io/minio/minio:RELEASE.2024-01-16T16-07-38Z")
 MINIO_ROOT_USER = "minioadmin"
 MINIO_ROOT_PASSWORD = "minioadmin"
 
@@ -51,7 +52,7 @@ def minio_endpoint() -> Iterator[str]:
     """Start MinIO once for the session and yield its endpoint URL."""
     docker = pytest.importorskip("docker", reason="Docker SDK is required for the S3 integration tests")
     from testcontainers.core.container import DockerContainer
-    from testcontainers.core.wait_strategies import LogMessageWaitStrategy
+    from testcontainers.core.wait_strategies import HttpWaitStrategy
 
     try:
         docker.from_env().ping()
@@ -64,8 +65,7 @@ def minio_endpoint() -> Iterator[str]:
         .with_exposed_ports(9000)
         .with_env("MINIO_ROOT_USER", MINIO_ROOT_USER)
         .with_env("MINIO_ROOT_PASSWORD", MINIO_ROOT_PASSWORD)
-        # MinIO prints this once the object store is actually serving.
-        .waiting_for(LogMessageWaitStrategy("1 Online").with_startup_timeout(90))
+        .waiting_for(HttpWaitStrategy(9000, "/minio/health/ready").for_status_code(200).with_startup_timeout(90))
     )
     with container as minio:
         yield f"http://{minio.get_container_host_ip()}:{minio.get_exposed_port(9000)}"

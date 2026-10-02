@@ -15,6 +15,10 @@
       "svelte": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./async": {
+      "types": "./dist/async.d.ts",
+      "default": "./dist/async.js"
+    },
     "./styles": "./dist/styles/tokens.css",
     "./package.json": "./package.json"
   },

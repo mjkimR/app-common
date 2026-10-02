@@ -20,6 +20,21 @@ uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=
 - **`config.py`** — `AppSettings` and the lazy env-file loader.
 - **`testing/`** — pytest fixtures and DI helpers for code built on this package. See below.
 
+## Blocking work in async scopes
+
+Use `app_layer_base.utils.async_util.run_blocking` for synchronous work that must
+finish before its async caller releases a lock or closes a resource. It runs the
+function in a thread and drains that thread even after repeated caller cancellation,
+then propagates cancellation. It does not stop the thread: callers must configure
+bounded I/O timeouts. Normal results and worker failures propagate unchanged.
+
+```python
+from app_layer_base.utils.async_util import run_blocking
+
+async with model_lock:
+    vectors = await run_blocking(model.embed, texts)
+```
+
 ## Testing against app-layer-base
 
 Anything built on this package needs the same things to test: a session wired to the

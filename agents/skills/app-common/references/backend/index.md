@@ -216,6 +216,14 @@ For advisory fields (`Actor`, `Retry`, `ActionMode`), remediation properties (`f
 
 ---
 
+## Blocking work and cancellation
+
+`app_layer_base.utils.async_util.run_blocking(function, *args, **kwargs)` executes
+synchronous work in a thread. Cancellation drains that worker, including repeated
+cancellation, before propagating to the caller. Use it inside async resource/lock
+scopes that must outlive file writes or model inference. It cannot stop a worker;
+configure bounded I/O timeouts in the underlying operation.
+
 ## 7. Modifying `app-common` Packages Locally (`app-local-dev`)
 
 To modify `app-common` packages while working in a consumer project without modifying `pyproject.toml` or `package.json`, see the **[local development](../local-dev/index.md)** skill (`uv run app-tools dev link / unlink / status`).

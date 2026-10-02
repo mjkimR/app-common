@@ -1,3 +1,4 @@
+import os
 from dataclasses import replace
 
 import pytest
@@ -12,7 +13,9 @@ def endpoint():
     from testcontainers.core.container import DockerContainer
     from testcontainers.core.wait_strategies import HttpWaitStrategy
 
-    container = DockerContainer("qdrant/qdrant:v1.16.2").with_exposed_ports(6333)
+    container = DockerContainer(os.environ.get("APP_TEST_QDRANT_IMAGE", "qdrant/qdrant:v1.16.2")).with_exposed_ports(
+        6333
+    )
     container.waiting_for(HttpWaitStrategy(6333, "/readyz").with_startup_timeout(60))
     with container as server:
         yield f"http://{server.get_container_host_ip()}:{server.get_exposed_port(6333)}"
