@@ -5,10 +5,15 @@ import { partition } from './domains.js';
 
 export const generatedHeader = '/** Generated from OpenAPI domain tags. Do not edit manually. */\n';
 
+export interface GenerateOptions {
+  /** Preserve openapi-typescript's default-field policy when migrating an existing client. */
+  defaultNonNullable?: boolean;
+}
+
 /** Generate declarations without writing files or fetching a backend schema. */
-export async function generateContract(document: OpenAPI3): Promise<Map<string, string>> {
+export async function generateContract(document: OpenAPI3, options: GenerateOptions = {}): Promise<Map<string, string>> {
   const { domains, shared } = partition(document);
-  const ast = await openapiTS(document, { defaultNonNullable: false });
+  const ast = await openapiTS(document, { defaultNonNullable: options.defaultNonNullable ?? false });
   const components = declaration(ast, 'components');
   const paths = declaration(ast, 'paths');
   const operations = declaration(ast, 'operations');
@@ -34,12 +39,13 @@ export async function generateContract(document: OpenAPI3): Promise<Map<string, 
     ];
     files.set(`${tag}.d.ts`, generatedHeader + 'import type { components as CommonComponents } from "./common";\n' + astToString(nodes));
   }
-  const imports = sorted.map(([tag], i) => `import type { paths as Paths${i}, components as Components${i} } from './${tag}';`);
+  const imports = sorted.map(([tag], i) => `import type { paths as Paths${i}, components as Components${i}, operations as Operations${i} } from './${tag}';`);
   files.set('index.d.ts', generatedHeader + [
     "import type { components as CommonComponents } from './common';",
     ...imports,
     `export type paths = ${sorted.map((_, i) => `Paths${i}`).join(' & ') || 'Record<string, never>'};`,
     `export type components = CommonComponents${sorted.map((_, i) => ` & Components${i}`).join('')};`,
+    `export type operations = ${sorted.map((_, i) => `Operations${i}`).join(' & ') || 'Record<string, never>'};`,
     ''
   ].join('\n'));
   return files;

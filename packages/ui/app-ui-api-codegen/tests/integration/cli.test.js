@@ -102,3 +102,20 @@ test('CLI accepts an HTTP schema and fails on HTTP errors', async (t) => {
   assert.ok(fs.existsSync(path.join(output, 'health.d.ts')));
   await assert.rejects(run(process.execPath, [cli, '--input', `${url}/error`, '--output', output]), /HTTP 503/);
 });
+
+test('CLI default-field flag preserves the previous openapi-typescript policy', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'app-common-api-defaults-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const input = path.join(root, 'openapi.json');
+  const schema = structuredClone(document);
+  schema.components = { schemas: { Health: { type: 'object', properties: { enabled: { type: 'boolean', default: true } } } } };
+  schema.paths['/health'].get.responses = { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Health' } } } } };
+  fs.writeFileSync(input, JSON.stringify(schema));
+  for (const [mode, args] of [['ordinary', []], ['legacy', ['--default-non-nullable']]]) {
+    const output = path.join(root, mode);
+    const result = spawnSync(process.execPath, [cli, '--input', input, '--output', output, ...args], { encoding: 'utf8' });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(fs.readFileSync(path.join(output, 'health.d.ts'), 'utf8'), mode === 'ordinary' ? /enabled\?: boolean/ : /enabled: boolean/);
+  }
+});

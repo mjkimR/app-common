@@ -40,13 +40,19 @@ export script, environment and temporary-file cleanup.
 Output consists of `<tag>.d.ts`, `common.d.ts` and `index.d.ts`. Shared schema
 dependencies (including recursive references) and unused schemas live in `common`;
 domain files contain their routes, operations and schema types. `index` exports
-aggregate `paths` and `components` for a single `openapi-fetch` client. Tags are
+aggregate `paths`, `components` and `operations` for a single `openapi-fetch` client. Tags are
 discovered from operations; no domain list or schema ownership table is maintained.
 
 `--check` fails for missing, changed or stale generated declarations and does not
 write files. CRLF is accepted. Generation removes stale declarations carrying the
 generator's header, preserves unrelated files and refuses to overwrite authored
 files or symlinks at generated filenames. Use a dedicated generated directory.
+
+When migrating a client previously generated with openapi-typescript's default
+settings, pass `--default-non-nullable` (JS API: `{ defaultNonNullable: true }`) to
+retain required properties with defaults. The package defaults to `false`, as in
+resource-indexer. Keep this policy explicit in the consumer's generation/check
+commands so file splitting does not change its existing type contract.
 
 ## Backend contract
 
@@ -76,7 +82,7 @@ the generated directory:
 
 ```ts
 // src/lib/api/schema.d.ts
-export type { paths, components } from './generated';
+export type { paths, components, operations } from './generated';
 ```
 
 New domain code can import `components` directly from `./generated/<tag>`. Do not

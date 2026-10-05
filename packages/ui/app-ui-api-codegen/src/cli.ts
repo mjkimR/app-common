@@ -6,10 +6,11 @@ import { generateContract, writeContract, type OpenAPI3 } from './index.js';
 try {
   const { values } = parseArgs({ options: {
     input: { type: 'string' }, output: { type: 'string' },
-    check: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h' }
+    check: { type: 'boolean', default: false }, help: { type: 'boolean', short: 'h' },
+    'default-non-nullable': { type: 'boolean', default: false }
   }});
   if (values.help) {
-    console.log('Usage: app-common-gen-api --input <openapi.json|URL> --output <generated-directory> [--check]');
+    console.log('Usage: app-common-gen-api --input <openapi.json|URL> --output <generated-directory> [--check] [--default-non-nullable]');
   } else {
     if (!values.input || !values.output) throw new Error('--input and --output are required. Use --help for usage.');
     let source: string;
@@ -20,7 +21,7 @@ try {
     } else {
       source = await fs.readFile(values.input, 'utf8');
     }
-    const files = await generateContract(JSON.parse(source) as OpenAPI3);
+    const files = await generateContract(JSON.parse(source) as OpenAPI3, { defaultNonNullable: values['default-non-nullable'] });
     writeContract(files, values.output, { check: values.check });
     console.log(values.check ? 'API contracts are up to date.' : `Generated ${files.size} API contract files from domain tags.`);
   }

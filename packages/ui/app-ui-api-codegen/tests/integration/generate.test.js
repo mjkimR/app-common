@@ -164,3 +164,20 @@ test('schemas referenced by inline non-schema components remain available in eve
   const files = await generateContract(document);
   checkTypes(files, `import type { components } from './index'; import type { components as Audio } from './audio'; const response: Audio['responses']['SharedResponse']['content']['application/json'] = { id: 'id' }; const shared: components['schemas']['Resource'] = response;`);
 });
+
+test('default-field policy is opt-in and aggregate operations preserve method response types', async () => {
+  const document = contract();
+  document.components.schemas.Resource.properties.enabled = { type: 'boolean', default: true };
+  const ordinary = await generateContract(document);
+  const legacy = await generateContract(document, { defaultNonNullable: true });
+  checkTypes(ordinary, `import type { components } from './index'; const item: components['schemas']['Resource'] = { id: 'id' };`);
+  checkTypes(legacy, `
+    import type { components, operations } from './index';
+    const item: components['schemas']['Resource'] = { id: 'id', enabled: true };
+    const response: operations['resources']['responses'][200]['content']['application/json'] = item;
+    // @ts-expect-error legacy default fields remain required
+    const missing: components['schemas']['Resource'] = { id: 'id' };
+    // @ts-expect-error aggregate operations still enforce the domain response shape
+    const invalid: operations['audio']['responses'][200]['content']['application/json'] = { id: 1 };
+  `);
+});

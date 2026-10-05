@@ -8,7 +8,7 @@ This architecture enforces **zero type hallucination**. Frontend types are direc
 
 Use the standalone frontend development package `@app-common/api-codegen`. It
 builds `openapi-typescript` declarations by operation tag, extracts shared schema
-references into `common.d.ts`, and exports aggregate `paths` and `components` from
+references into `common.d.ts`, and exports aggregate `paths`, `components` and `operations` from
 `generated/index.d.ts`. Keep schema export in the consumer project: its script
 knows how to compose the FastAPI application without starting a server.
 
@@ -41,7 +41,7 @@ with an authored re-export outside the generated directory:
 
 ```typescript
 // src/lib/api/schema.d.ts
-export type { paths, components } from './generated';
+export type { paths, components, operations } from './generated';
 ```
 
 Use the aggregate for one typed client. Feature code can import `components` from
@@ -59,8 +59,10 @@ writeContract(files, targetDir, { check: process.argv.includes('--check') });
 ```
 
 Connect generation and `--check` to the project's existing commands and CI.
-The generated aggregate intentionally exports `paths` and `components`; code
-needing operation declarations imports `operations` from its domain file.
+The aggregate also exports `operations`; domain files export their own subset.
+When migrating the default openapi-typescript policy, pass
+`--default-non-nullable` (JS: `{ defaultNonNullable: true }`) to retain required
+default-valued fields. This package otherwise defaults to `false`.
 
 ---
 
