@@ -1,0 +1,22 @@
+{
+  "name": "@app-common/api-codegen",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Tag-based OpenAPI TypeScript contracts for frontend development",
+  "engines": { "node": ">=22" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "bin": { "app-common-gen-api": "./dist/cli.js" },
+  "files": ["dist"],
+  "scripts": {
+    "lint": "eslint src",
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "test": "npm run build && node --test tests/unit/*.test.js tests/integration/*.test.js",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~5.9.0"
+  },
+  "devDependencies": { "@types/node": "^22.0.0" }
+}

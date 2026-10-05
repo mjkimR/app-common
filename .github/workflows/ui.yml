@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "packages/ui/app-ui-base/**"
+      - "packages/ui/app-ui-api-codegen/**"
       - "packages/tooling/eslint-config/**"
       - "package.json"
       - "package-lock.json"
@@ -14,6 +15,7 @@ on:
     branches: [main]
     paths:
       - "packages/ui/app-ui-base/**"
+      - "packages/ui/app-ui-api-codegen/**"
       - "packages/tooling/eslint-config/**"
       - "package.json"
       - "package-lock.json"
@@ -21,6 +23,29 @@ on:
       - ".github/workflows/ui.yml"
 
 jobs:
+  api-codegen:
+    name: Check and test frontend API generator
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ui/app-ui-api-codegen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            packages/ui/app-ui-api-codegen/package-lock.json
+      - name: Install shared lint tooling
+        run: npm ci
+        working-directory: .
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check
+      - run: npm test
+      - run: npm pack --dry-run
   check-and-build:
     name: Check and build @app-common/ui-base
     runs-on: ubuntu-latest

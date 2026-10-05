@@ -33,6 +33,7 @@ and relevant tests before finishing code changes; add behavior tests when needed
 | External storage contracts | `just test-docker` (Docker required) |
 | UI library | `just check-ui`, `just build-ui` after `just init-ui` |
 | Shared ESLint policy | `just test-eslint` |
+| Frontend API generator | `just init-api-codegen`, `just test-api-codegen` |
 
 `just test` runs SQLite tests without Docker. For a focused package, use
 `uv run pytest packages/base/app-layer-base/tests`. Each package owns its pytest

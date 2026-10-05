@@ -12,7 +12,7 @@ installation examples are not instructions to upgrade or downgrade dependencies.
 | Vite | Register `sveltekit()` and `@tailwindcss/vite`. Preserve project ports, proxy routes, and backend URL configuration. |
 | Tailwind v4 | Keep CSS-first semantic tokens in the project's main stylesheet, commonly `src/routes/layout.css`. |
 | shadcn-svelte | Match `components.json` aliases and stylesheet path to the project; use `@lucide/svelte` icons and existing primitives. |
-| API | Use `openapi-fetch` with generated `openapi-typescript` schemas; see [API binding](api.md). |
+| API | Use `openapi-fetch` with tag-based types from `@app-common/api-codegen`; see [API binding](api.md). |
 | ESLint | Compose the shared [file-size preset](structure.md) with existing correctness and formatting rules. |
 
 Keep these scripts, or their existing project equivalents, connected to local
@@ -21,7 +21,9 @@ verification and CI:
 - `check`: `svelte-kit sync && svelte-check --tsconfig ./tsconfig.json`
 - `lint`: `prettier --check . && eslint .`
 - `format`: `prettier --write .`
-- API generation: the project's script that produces `src/lib/api/schema.d.ts`
+- API generation: the project's schema export plus `@app-common/api-codegen`,
+  producing `src/lib/api/generated/`; keep `schema.d.ts` as a type re-export when
+  existing imports need it. Connect `--check` to verification/CI.
 
 Reuse the existing `cn` helper. If absent, define it with `clsx` and
 `tailwind-merge` rather than manually combining conflicting Tailwind classes:

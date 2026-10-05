@@ -2,7 +2,7 @@
 
 Independent Python foundation packages, adapters, prebuilt services, a Svelte UI
 library, and developer tools. Python packages share a `uv` workspace; the UI and
-ESLint tooling have their own npm lifecycle.
+frontend development tooling have their own npm lifecycle.
 
 ## Packages
 
@@ -25,6 +25,7 @@ Each package README covers its installation, public API, and usage.
 | UI | [app-ui-base](packages/ui/app-ui-base/README.md) | Svelte 5 components, state, and Tailwind tokens. |
 | Tooling | [app-tools](tools/app-tools/README.md) | Check runner, scaffolding, local linking, updates, and guides. |
 | Tooling | [@app-common/eslint-config](agents/skills/app-common/references/ui/structure.md) | Shared frontend size policy, distributed by the root npm package. |
+| Tooling | [@app-common/api-codegen](packages/ui/app-ui-api-codegen/README.md) | Tag-based OpenAPI declarations, shared schema types and contract freshness checks. |
 
 ## Installation
 
@@ -60,6 +61,8 @@ just build-ui
 
 `just test-pg` verifies PostgreSQL locking; `just test-docker` runs container-backed
 contracts. Both need Docker. `just test-eslint` verifies the shared frontend preset.
+`just init-api-codegen` installs the API generator; `just test-api-codegen` runs
+its lint, type checks and generation/CLI tests.
 SQLite package suites run in separate processes, up to four at a time. Use
 `TEST_JOBS=1 just test` for serial execution; PostgreSQL, Docker, and coverage runs
 remain serial. All selected packages finish before a failing exit status is returned.
@@ -69,7 +72,7 @@ and test selection are in [AGENTS.md](AGENTS.md).
 ## Releases
 
 Packages are Git dependencies, not PyPI releases. Use one repository version across
-all package `pyproject.toml` files, root/UI npm manifests and locks, and the guide
+all package `pyproject.toml` files, root/UI/tooling npm manifests and locks, and the guide
 catalog/APM manifest. After updating versions, tag and push `vX.Y.Z`; CI creates the
 GitHub Release only after lint, type checks, and all three Python test legs pass.
 Consumers should pin a tag or commit rather than `main`.

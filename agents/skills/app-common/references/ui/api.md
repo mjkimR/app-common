@@ -4,23 +4,63 @@ This architecture enforces **zero type hallucination**. Frontend types are direc
 
 ---
 
-## 1. OpenAPI Generator (`scripts/gen-api.sh`)
+## 1. Tag-based OpenAPI generator (`@app-common/api-codegen`)
 
-Every project must have a script to fetch or compile the FastAPI schema:
+Use the standalone frontend development package `@app-common/api-codegen`. It
+builds `openapi-typescript` declarations by operation tag, extracts shared schema
+references into `common.d.ts`, and exports aggregate `paths` and `components` from
+`generated/index.d.ts`. Keep schema export in the consumer project: its script
+knows how to compose the FastAPI application without starting a server.
 
-```bash
-#!/usr/bin/env bash
-set -e
+Install an npm artifact built from a pushed app-common commit as a dev dependency,
+as with `@app-common/ui-base`; record the artifact's source SHA and commit the
+consumer lockfile. npm Git dependencies install the root ESLint package, not the
+nested API generator. Never point consumer manifests at a sibling checkout.
 
-# Target backend OpenAPI endpoint
-API_URL="${API_URL:-http://localhost:8000/openapi.json}"
-OUT_FILE="src/lib/api/schema.d.ts"
+Run inside the frontend directory after exporting the backend schema:
 
-echo "Generating TypeScript schema from ${API_URL}..."
-npx openapi-typescript "${API_URL}" -o "${OUT_FILE}"
-
-echo "Schema successfully generated at ${OUT_FILE}."
+```sh
+npx --no-install app-common-gen-api --input /path/to/openapi.json --output src/lib/api/generated
+npx --no-install app-common-gen-api --input /path/to/openapi.json --output src/lib/api/generated --check
 ```
+
+An HTTP(S) OpenAPI URL is also supported, but local export makes CI independent of
+server availability. `--check` compares without writing and reports missing,
+changed or stale declarations. Generation removes only stale files carrying the
+generator's header; authored files are preserved. Use a dedicated output directory.
+
+The backend contract is explicit: each operation needs one lowercase kebab-case
+tag and a unique `operationId`; every method on the same path must share the tag.
+`common`, `index` and Windows device names are reserved. References must target
+local `#/components/schemas/...`; external/component response or parameter refs,
+referenced paths, webhooks and `$defs` are rejected. Missing tags/references fail
+rather than silently producing incomplete types.
+
+For existing `$lib/api/schema` imports, replace the old monolithic generated file
+with an authored re-export outside the generated directory:
+
+```typescript
+// src/lib/api/schema.d.ts
+export type { paths, components } from './generated';
+```
+
+Use the aggregate for one typed client. Feature code can import `components` from
+`$lib/api/generated/<tag>` to use domain types. Tags determine the file inventory;
+do not maintain a manual domain or schema ownership mapping.
+
+Existing project exporters can retain Python/uv invocation, temporary directories
+and cleanup, replacing only the generation/check stage:
+
+```javascript
+import { generateContract, writeContract } from '@app-common/api-codegen';
+
+const files = await generateContract(document);
+writeContract(files, targetDir, { check: process.argv.includes('--check') });
+```
+
+Connect generation and `--check` to the project's existing commands and CI.
+The generated aggregate intentionally exports `paths` and `components`; code
+needing operation declarations imports `operations` from its domain file.
 
 ---
 

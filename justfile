@@ -147,3 +147,14 @@ test-eslint:
 # Build UI package into dist/
 build-ui:
     uv run --no-active --no-sync app-tools run npm --path packages/ui/app-ui-base -- run build
+
+# Initialize standalone frontend API generation tooling
+init-api-codegen:
+    npm ci
+    npm ci --prefix packages/ui/app-ui-api-codegen
+
+# Lint, type check and test shared tag-based API generation
+test-api-codegen:
+    npm --prefix packages/ui/app-ui-api-codegen run lint
+    npm --prefix packages/ui/app-ui-api-codegen run check
+    npm --prefix packages/ui/app-ui-api-codegen test
