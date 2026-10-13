@@ -5,7 +5,10 @@ import sys
 from pathlib import Path
 
 import pytest
-from app_tools.create_code.create_feature import create_feature
+from app_tools.create_code import create_feature, create_web_feature
+from click.testing import CliRunner
+from devkit.advisory import AdvisoryError
+from devkit.cli import cli as devkit_cli
 
 # app-common workspace root: .../app-common/tools/app-tools/tests/integration/create_code/test_generate.py
 REPO_ROOT = Path(__file__).resolve().parents[5]
@@ -68,7 +71,6 @@ def test_generated_feature_typechecks_with_pyright(tmp_path):
         "extraPaths": [
             str(REPO_ROOT / "packages" / "base" / "app-layer-base" / "src"),
             str(REPO_ROOT / "packages" / "base" / "app-testing-base" / "src"),
-            str(REPO_ROOT / "packages" / "base" / "app-error" / "src"),
             ".",
         ],
         "venvPath": str(REPO_ROOT),
@@ -90,29 +92,42 @@ def test_generated_feature_typechecks_with_pyright(tmp_path):
 
 def test_create_feature_dry_run_does_not_touch_disk(tmp_path):
     result = create_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="genpkg", dry_run=True)
-    assert result["dry_run"] is True
-    assert result["status"] == "preview"
+    assert result.dry_run is True
     assert not (tmp_path / "genpkg" / "widgets").exists()
-    assert len(result["files"]) >= len(EXPECTED_FILES)
+    assert len(result.files) >= len(EXPECTED_FILES)
 
 
-def test_feature_already_exists_raises_app_error(tmp_path):
-    from app_tools.create_code.create_feature import FeatureAlreadyExistsError
-
+def test_existing_feature_is_refused_as_input_error(tmp_path):
     _generate(tmp_path, name="Widget", prefix="genpkg")
-    with pytest.raises(FeatureAlreadyExistsError) as exc_info:
+    with pytest.raises(AdvisoryError) as exc_info:
         create_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="genpkg")
 
     err = exc_info.value
-    assert err.code == "FEATURE_ALREADY_EXISTS"
-    assert "rm -rf" in (err.fix or "")
-    assert "[ERROR]  (FEATURE_ALREADY_EXISTS)" in "\n".join(err.lines())
+    assert err.code == "APP_SCAFFOLD_TARGET_EXISTS"
+    assert err.mode.value == "INPUT_ERROR"
+    assert "rm" not in (err.fix or "")
+
+
+def test_cli_creates_a_feature_and_warns_about_the_missing_router(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(devkit_cli, ["app", "create-code", "feature", "--name", "Widget"])
+    assert result.exit_code == 0, result.output
+    assert result.stdout.splitlines()[0].startswith("[FEATURE: Widget dir=")
+    assert "router=skipped" in result.stdout.splitlines()[0]
+    assert "(APP_SCAFFOLD_ROUTER_NOT_UPDATED)" in result.stderr
+    assert (tmp_path / "app/features/widgets/api/v1.py").is_file()
+
+
+def test_cli_rejects_a_name_that_is_not_camel_case(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(devkit_cli, ["app", "create-code", "feature", "--name", "widget", "--format", "json"])
+    assert result.exit_code == 2
+    assert '"APP_SCAFFOLD_NAME_INVALID"' in result.stdout
 
 
 def test_creates_web_feature_expected_files(tmp_path):
-    from app_tools.create_code.create_web_feature import create_web_feature
-
-    feature_dir = create_web_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="src/lib/features")
+    result = create_web_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="src/lib/features")
+    feature_dir = result.feature_dir
     assert (feature_dir / "widget.svelte.ts").is_file()
     assert (feature_dir / "WidgetView.svelte").is_file()
     assert (feature_dir / "components" / "WidgetDialog.svelte").is_file()
@@ -130,13 +145,8 @@ def test_creates_web_feature_expected_files(tmp_path):
     assert "export { default as WidgetView } from './WidgetView.svelte';" in index_content
 
 
-def test_web_feature_already_exists_raises_app_error(tmp_path):
-    from app_tools.create_code.create_web_feature import WebFeatureAlreadyExistsError, create_web_feature
-
+def test_existing_web_feature_is_refused(tmp_path):
     create_web_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="src/lib/features")
-    with pytest.raises(WebFeatureAlreadyExistsError) as exc_info:
+    with pytest.raises(AdvisoryError) as exc_info:
         create_web_feature(name="Widget", plural=None, base_dir=tmp_path, feature_prefix="src/lib/features")
-
-    err = exc_info.value
-    assert err.code == "WEB_FEATURE_ALREADY_EXISTS"
-    assert "rm -rf" in (err.fix or "")
+    assert exc_info.value.code == "APP_SCAFFOLD_TARGET_EXISTS"

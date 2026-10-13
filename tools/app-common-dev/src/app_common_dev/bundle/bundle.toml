@@ -1,0 +1,10 @@
+schema = 1
+name = "app-common-dev"
+version = "0.1.0"
+default_preset = "all"
+auto_select = true
+
+[[assets]]
+id = "app-common-contributor"
+kind = "skill"
+source = "skills/app-common-contributor"

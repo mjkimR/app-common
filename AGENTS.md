@@ -1,15 +1,16 @@
 # app-common: agent guide
 
-See [README](README.md) for packages and installation. Read
-[app-common-contributor](agents/dev-skills/app-common-contributor/SKILL.md) when
-contributing here; use the consumer `app-common` skill for package integration.
+See [README](README.md) for packages and installation. Read the `app-common-contributor`
+skill when contributing here; use the consumer `app-common` skill for package integration.
+Both are devkit bundles deployed by `just init` (`devkit sync`).
 
 ## Boundaries and architecture
 
 - Python sources live in `packages/<category>/<package>/src/` or `tools/<tool>/src/`;
   tests belong in each package's `tests/`, never under `src/`.
-- app-error has no third-party dependencies. Adapters must not depend on sibling
-  adapters. Each package owns its settings; applications compose them explicitly.
+- Errors are `devkit.advisory.AdvisoryError` subclasses; `devkit` is the only shared
+  runtime dependency for them. Adapters must not depend on sibling adapters. Each
+  package owns its settings; applications compose them explicitly.
 - CRUD flow is `Router → UseCase → Service → Repository`. Business hooks are
   standalone objects in an ordered `hooks` tuple: enter in order, unwind in reverse.
   Hooks never call one another or chain hook methods with `super()`.
@@ -29,13 +30,16 @@ and relevant tests before finishing code changes; add behavior tests when needed
 | Change | Checks |
 | --- | --- |
 | Python package | `just lint <module>`, `just check <module>`, package tests |
+| app-common devkit bundle (skill, rules, playbook, guidance) | `just sync-agents`, then `just rules-check`; commit the re-synced `.devkit/installation.json`, `AGENTS.md` and projected skills (`just lint-check` and CI fail otherwise) |
 | PostgreSQL locking/outbox | `just test-pg` (Docker required; SQLite does not verify row locking) |
 | External storage contracts | `just test-docker` (Docker required) |
 | UI library | `just check-ui`, `just build-ui` after `just init-ui` |
 | Shared ESLint policy | `just test-eslint` |
 | Frontend API generator | `just init-api-codegen`, `just test-api-codegen` |
 
-`just test` runs SQLite tests without Docker. For a focused package, use
+`just lint` runs Ruff and `devkit rules check`, which includes the app-common
+architecture rules (`RULE-app-*`) and Markdown link checks. For bounded output, wrap
+long commands as `uv run devkit run -- just test`. `just test` runs SQLite tests without Docker. For a focused package, use
 `uv run pytest packages/base/app-layer-base/tests`. Each package owns its pytest
 configuration; there is no workspace-wide `pythonpath`. Load shared fixtures with
 `pytest_plugins = ["app_testing_base.plugin"]` in the top-level conftest; never copy
@@ -52,14 +56,17 @@ raise ceilings automatically. Generated primitives are excluded, authored UI is 
 
 ## Shared guides and consumer development
 
-Canonical consumer documents live in `agents/skills/app-common/`; app-tools'
-`guide_data` points there. Edit only the canonical files. [Agent setup](agents/README.md)
-covers APM packaging and offline provisioning; contributors read `agents/dev-skills/`
-directly. Standalone app-error use does not imply the backend architecture rules.
+app-tools ships the consumer `app-common` devkit bundle
+(`tools/app-tools/src/app_tools/bundle/`): the skill and its references, the architecture
+rules, the onboarding playbook and the `AGENTS.md` guidance line; `devkit app guide` reads
+the same files. The contributor skill is the repository-only bundle in
+`tools/app-common-dev/`, never a consumer dependency. Edit only these sources, never
+`.devkit/managed/`, `.agents/skills/` or `.claude/skills/`. Using `devkit.advisory` errors
+alone does not imply the backend architecture rules.
 
-When testing local packages in a consumer, run `app-tools dev link` there. Never
-put local dependency paths in its manifests. Finish with `app-tools dev unlink`
-and `app-tools dev status` to verify restored installations. Follow the
+When testing local packages in a consumer, run `uv run devkit app dev link` there. Never
+put local dependency paths in its manifests. Finish with `uv run devkit app dev unlink`
+and `uv run devkit app dev status` to verify restored installations. Follow the
 [release checklist](README.md#releases) when updating repository versions.
 
 ## Documentation language
@@ -68,3 +75,17 @@ Use English for README/AGENTS files and technical, operational, or agent instruc
 Korean is for documents under `docs/` intended for the user's review, including
 analysis, research, and their review indexes. Preserve localized examples, literal
 UI labels, and the configured language of planning artifacts.
+
+<!-- DEVKIT:START -->
+## devkit
+
+This repository installs agent assets with `devkit`. `.devkit/config.toml` selects
+bundles; `.devkit/installation.json` records what is deployed.
+
+- Before work that touches a bundle's assets, run `uv run devkit get-context <bundle>` once per bundle in the current agent context. Installed bundles: `advisory`, `app-common`, `app-common-dev`, `devkit`.
+- Entry skill `devkit-playbook`: find and run an operational playbook (explicit user invocation only).
+- Never edit `.devkit/managed/` or projected agent files; change the source bundle or use `devkit override`.
+- app-common packages: read the `app-common` skill before changing code that uses them; its architecture rules run in `devkit rules check`, and `devkit app guide list` lists the topics for this project.
+
+This block is managed by `devkit sync`; edit outside the markers only.
+<!-- DEVKIT:END -->

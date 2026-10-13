@@ -1,0 +1,183 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import tomllib
+from collections.abc import Sequence
+from pathlib import Path
+
+import pytest
+from app_tools.update import update_project
+from click.testing import CliRunner
+from devkit.advisory import AdvisoryError
+from devkit.cli import cli as devkit_cli
+
+COMMIT = "a" * 40
+OLD = "b" * 40
+DEVKIT = {"git": "https://github.com/mjkimR/devkit", "subdirectory": "packages/devkit", "rev": "c" * 40}
+APP_COMMON_PYPROJECT = f"""
+[tool.uv.sources]
+devkit = {{ git = "{DEVKIT["git"]}", subdirectory = "{DEVKIT["subdirectory"]}", rev = "{DEVKIT["rev"]}" }}
+""".encode()
+
+
+class Recorder:
+    """Stands in for git and uv; records every command."""
+
+    def __init__(self, failing: str | None = None, ls_remote: str = f"{COMMIT}\trefs/heads/main\n") -> None:
+        self.calls: list[list[str]] = []
+        self.failing = failing
+        self.ls_remote = ls_remote
+
+    def __call__(self, command: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+        self.calls.append(list(command))
+        if command[0] == "git":
+            return subprocess.CompletedProcess(command, 0, self.ls_remote, "")
+        failed = self.failing is not None and " ".join(command) == self.failing
+        return subprocess.CompletedProcess(command, 1 if failed else 0, "", "resolution failed" if failed else "")
+
+
+def fetch(url: str) -> bytes:
+    assert url == f"https://raw.githubusercontent.com/mjkimR/app-common/{COMMIT}/pyproject.toml"
+    return APP_COMMON_PYPROJECT
+
+
+def url_manifest(path: Path) -> None:
+    (path / "pyproject.toml").write_text("""[project]
+name = "consumer"
+dependencies = [
+    "app-layer-base @ git+https://github.com/mjkimR/app-common.git@v0.1.0#subdirectory=packages/base/app-layer-base",
+]
+""")
+
+
+def sources_manifest(path: Path) -> None:
+    """The form consumers use: a uv workspace whose root pins every app-common source by commit."""
+    (path / "pyproject.toml").write_text(f"""[tool.uv.workspace]
+members = ["apps/*"]
+
+[dependency-groups]
+dev = ["app-tools"]
+
+# app-common packages are pinned by commit.
+[tool.uv.sources]
+app-layer-base = {{ git = "https://github.com/mjkimR/app-common.git", subdirectory = "packages/base/app-layer-base", rev = "{OLD}" }}
+app-tools = {{ git = "https://github.com/mjkimR/app-common", subdirectory = "tools/app-tools", tag = "v0.1.0" }}
+other = {{ git = "https://github.com/example/other", rev = "{OLD}" }}
+""")
+    member = path / "apps/hub"
+    member.mkdir(parents=True)
+    (member / "pyproject.toml").write_text('[project]\nname = "hub"\ndependencies = ["app-layer-base"]\n')
+
+
+def test_uv_sources_form_is_pinned_with_devkit_and_synced(tmp_path: Path):
+    sources_manifest(tmp_path)
+    run = Recorder()
+    result = update_project(tmp_path, run=run, fetch=fetch)
+    manifest = tomllib.loads((tmp_path / "pyproject.toml").read_text())
+    sources = manifest["tool"]["uv"]["sources"]
+    assert sources["app-layer-base"]["rev"] == COMMIT
+    assert sources["app-tools"]["rev"] == COMMIT and "tag" not in sources["app-tools"]
+    assert sources["other"]["rev"] == OLD
+    assert sources["devkit"] == DEVKIT
+    assert manifest["dependency-groups"]["dev"] == ["app-tools", "devkit"]  # sources apply to direct dependencies only
+    assert "# app-common packages are pinned by commit." in (tmp_path / "pyproject.toml").read_text()
+    assert result.commit == COMMIT
+    assert [(c.app_common, c.devkit) for c in result.changes] == [(2, True)]
+    assert run.calls[1:] == [["uv", "lock"], ["uv", "sync"], ["uv", "run", "--no-sync", "devkit", "sync"]]
+
+
+def test_requirement_url_form_is_pinned(tmp_path: Path):
+    url_manifest(tmp_path)
+    update_project(tmp_path, ref=COMMIT, sync=False, run=Recorder(), fetch=fetch)
+    text = (tmp_path / "pyproject.toml").read_text()
+    assert f"app-common.git@{COMMIT}#subdirectory=packages/base/app-layer-base" in text
+    assert tomllib.loads(text)["tool"]["uv"]["sources"]["devkit"] == DEVKIT
+    assert tomllib.loads(text)["dependency-groups"]["dev"] == ["devkit"]
+
+
+def test_a_direct_devkit_declaration_is_kept(tmp_path: Path):
+    sources_manifest(tmp_path)
+    manifest = tmp_path / "pyproject.toml"
+    manifest.write_text(manifest.read_text().replace('dev = ["app-tools"]', 'dev = ["app-tools", "devkit>=0.1"]'))
+    update_project(tmp_path, sync=False, run=Recorder(), fetch=fetch)
+    assert tomllib.loads(manifest.read_text())["dependency-groups"]["dev"] == ["app-tools", "devkit>=0.1"]
+
+
+def test_branch_and_tag_resolve_to_commits(tmp_path: Path):
+    url_manifest(tmp_path)
+    run = Recorder(ls_remote=f"{OLD}\trefs/tags/v1.0.0\n{COMMIT}\trefs/tags/v1.0.0^{{}}\n")
+    result = update_project(tmp_path, ref="v1.0.0", dry_run=True, run=run, fetch=fetch)
+    assert result.commit == COMMIT  # the peeled tag, not the tag object
+    assert run.calls == [
+        [
+            "git",
+            "ls-remote",
+            "https://github.com/mjkimR/app-common",
+            "refs/heads/v1.0.0",
+            "refs/tags/v1.0.0",
+            "refs/tags/v1.0.0^{}",
+        ]
+    ]
+
+
+def test_unknown_ref_is_an_input_error(tmp_path: Path):
+    url_manifest(tmp_path)
+    with pytest.raises(AdvisoryError) as raised:
+        update_project(tmp_path, ref="nope", run=Recorder(ls_remote=""), fetch=fetch)
+    assert raised.value.code == "APP_UPDATE_REF_NOT_FOUND"
+
+
+def test_dry_run_changes_nothing(tmp_path: Path):
+    sources_manifest(tmp_path)
+    before = (tmp_path / "pyproject.toml").read_text()
+    run = Recorder()
+    result = update_project(tmp_path, dry_run=True, run=run, fetch=fetch)
+    assert (tmp_path / "pyproject.toml").read_text() == before
+    assert [call[0] for call in run.calls] == ["git"]
+    assert result.commands == ["uv lock", "uv sync", "uv run --no-sync devkit sync"]
+
+
+def test_failed_lock_restores_the_manifests(tmp_path: Path):
+    sources_manifest(tmp_path)
+    before = (tmp_path / "pyproject.toml").read_text()
+    with pytest.raises(AdvisoryError) as raised:
+        update_project(tmp_path, run=Recorder(failing="uv lock"), fetch=fetch)
+    assert raised.value.code == "APP_STEP_FAILED"
+    assert (tmp_path / "pyproject.toml").read_text() == before
+    assert f"restored: {tmp_path / 'pyproject.toml'}" in raised.value.details
+
+
+def test_apm_consumer_is_told_to_migrate_and_not_synced_by_devkit(tmp_path: Path):
+    sources_manifest(tmp_path)
+    (tmp_path / "apm.yml").write_text("dependencies:\n  apm:\n    - git: mjkimR/app-common\n")
+    run = Recorder()
+    result = update_project(tmp_path, run=run, fetch=fetch)
+    assert [notice.code for notice in result.notices] == ["APP_APM_SUPERSEDED"]
+    assert ["uv", "run", "--no-sync", "devkit", "sync"] not in run.calls
+
+
+def test_commit_before_devkit_leaves_devkit_alone(tmp_path: Path):
+    url_manifest(tmp_path)
+    result = update_project(tmp_path, ref=COMMIT, sync=False, run=Recorder(), fetch=lambda url: b"[project]\n")
+    assert "devkit" not in (tmp_path / "pyproject.toml").read_text()
+    assert [notice.code for notice in result.notices] == ["APP_UPDATE_DEVKIT_UNPINNED"]
+
+
+def test_project_without_app_common_dependencies(tmp_path: Path):
+    (tmp_path / "pyproject.toml").write_text("[project]\ndependencies = []\n")
+    with pytest.raises(AdvisoryError) as raised:
+        update_project(tmp_path, ref=COMMIT, run=Recorder(), fetch=fetch)
+    assert raised.value.code == "APP_UPDATE_NO_DEPENDENCIES"
+
+
+def test_cli_reports_the_plan(tmp_path: Path, monkeypatch):
+    sources_manifest(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("app_tools.update.run_command", Recorder())
+    monkeypatch.setattr("app_tools.update.fetch_url", fetch)
+    result = CliRunner().invoke(devkit_cli, ["app", "update", "--dry-run", "--format", "json"])
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.stdout)
+    assert report["commit"] == COMMIT and report["dry_run"] is True
+    assert report["devkit"] == DEVKIT

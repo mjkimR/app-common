@@ -3,7 +3,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import Any
 
-from app_error import AppError
+from devkit.advisory import AdvisoryError
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
@@ -69,9 +69,9 @@ def format_custom_exception(
     return content
 
 
-def format_mcp_error(exc: AppError) -> str:
+def format_mcp_error(exc: AdvisoryError) -> str:
     """Format an exception into a prompt-friendly text block for Model Context Protocol tools."""
-    return exc.render_mcp()
+    return exc.render()
 
 
 def _process_custom_exception(request: Request, exc: CustomException):

@@ -36,7 +36,7 @@ Importing the new package registers the complete schema even with Google disable
 
 AutoHub currently remains on its published separate-package SHA. After this consolidation is published:
 
-1. Replace its three auth dependencies/source entries and the Python import prefixes above; update Python/APM pins together.
+1. Replace its three auth dependencies/source entries and the Python import prefixes above; update the Python pins together (`devkit app update` moves them as one).
 2. Update the user/settings, Google/provider, and machine-key dependency override imports in `app/main.py`, `app/auth.py`, tests and migration helpers.
 3. Replace the three auth mounts in `app/router.py` with `v1_open_router.include_router(create_auth_router())`, or retain individual mounts.
 4. Keep AutoHub's approval-required policy, bootstrap lifespan and scheduler scope overrides. The full-schema migration already prepared for the separate packages remains applicable.

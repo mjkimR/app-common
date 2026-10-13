@@ -1,6 +1,6 @@
 import pytest
-from app_error import Actor, AppError, Retry
 from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult, ToolRisk, create_http_app, create_mcp
+from devkit.advisory import Actor, AdvisoryError, Retry
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -17,7 +17,7 @@ async def _echo(_: ToolContext, arguments: EchoArguments) -> ToolResult:
 
 
 async def _fails(_: ToolContext, __: EchoArguments) -> ToolResult:
-    raise AppError("Action required", code="ACTION_REQUIRED", actor=Actor.USER, retry=Retry.AFTER_FIX)
+    raise AdvisoryError("Action required", code="ACTION_REQUIRED", actor=Actor.USER, retry=Retry.AFTER_FIX)
 
 
 async def test_registry_enforces_scopes_before_invocation():
@@ -87,7 +87,7 @@ async def test_invalid_argument_details_are_capped():
     assert details[-1] == "... and 5 more"
 
 
-async def test_registry_converts_app_errors_and_hides_unexpected_failures():
+async def test_registry_converts_advisory_errors_and_hides_unexpected_failures():
     registry = ToolRegistry()
     registry.register(ToolDefinition("fails", "Fails intentionally", _fails, EchoArguments))
 

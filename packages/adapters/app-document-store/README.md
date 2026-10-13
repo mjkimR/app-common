@@ -147,4 +147,4 @@ Unit tests cover operational failures, nanosecond tokens, and client shutdown.
 The emulator does not verify production IAM, billing, all limits, or latency;
 check those separately in a provisioned project before deployment.
 
-See the [consumer guide](../../../agents/skills/app-common/references/document/index.md).
+See the [consumer guide](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/document/index.md).

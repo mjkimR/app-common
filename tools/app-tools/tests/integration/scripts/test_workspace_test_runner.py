@@ -8,13 +8,17 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[5]
-MANIFESTS = [*ROOT.glob("packages/*/*/pyproject.toml"), *ROOT.glob("tools/*/pyproject.toml")]
+MANIFESTS = [
+    manifest
+    for manifest in [*ROOT.glob("packages/*/*/pyproject.toml"), *ROOT.glob("tools/*/pyproject.toml")]
+    if (manifest.parent / "tests").is_dir()
+]
 MODULES = {manifest.parent.name for manifest in MANIFESTS}
 STUB = r"""#!/bin/bash
 previous=""
 module=""
 for arg in "$@"; do
-    if [ "$previous" = "--path" ]; then module="${arg##*/}"; break; fi
+    if [ "$previous" = "--directory" ]; then module="${arg##*/}"; break; fi
     previous="$arg"
 done
 [ -n "$module" ] || exit 0
@@ -91,12 +95,12 @@ def concurrency(records):
 
 
 def test_parallel_packages_are_bounded_and_all_finish_after_a_failure(runner):
-    result, records = runner(TEST_JOBS="3", FAIL_MODULE="app-prebuilt-auth", EMPTY_MODULE="app-mcp")
+    result, records = runner(TEST_JOBS="3", FAIL_MODULE="app-tools", EMPTY_MODULE="app-mcp")
     assert result.returncode == 7, result.stdout + result.stderr
     assert {r["module"] for r in records if r["phase"] == "end"} == MODULES
     assert 1 < concurrency(records) <= 3
     assert "No tests collected for app-mcp" in result.stdout
-    assert result.stdout.index("finished app-error") < result.stdout.index("finished app-prebuilt-auth")
+    assert result.stdout.index("finished app-prebuilt-auth") < result.stdout.index("finished app-tools")
 
 
 @pytest.mark.parametrize(
@@ -141,7 +145,7 @@ def test_integration_selection_reports_absent_tiers_without_running_them(runner)
     assert len(records) == 2
     assert records[0]["module"] == "app-tools"
     assert records[0]["args"][-1] == "tests/integration"
-    assert "No integration tests in app-error." in result.stdout
+    assert "No integration tests in app-prebuilt-auth." in result.stdout
 
 
 @pytest.mark.parametrize("settings, paths", [({"TEST_TIER": "invalid"}, ()), ({"TEST_TIER": "unit"}, ("tests",))])

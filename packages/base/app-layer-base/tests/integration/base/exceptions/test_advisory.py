@@ -1,11 +1,11 @@
 from http import HTTPStatus
 
-from app_error import Actor, Retry
 from app_layer_base.base.exceptions.base import CustomException
 from app_layer_base.base.exceptions.basic import BadRequestException
 from app_layer_base.base.exceptions.handler import (
     set_exception_handler,
 )
+from devkit.advisory import Actor, Retry
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 

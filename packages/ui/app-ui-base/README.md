@@ -78,6 +78,6 @@ just build-ui     # Package into dist/ with @sveltejs/package
 just test-eslint  # Verify the shared size policy
 ```
 
-The UI uses the shared [file-size policy](../../../agents/skills/app-common/references/ui/structure.md).
+The UI uses the shared [file-size policy](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/ui/structure.md).
 Authored components are checked; oversized files need a meaningful split or a
 documented per-file ceiling. Run `npm run lint` inside this package for size checks alone.

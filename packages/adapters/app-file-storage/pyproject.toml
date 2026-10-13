@@ -5,7 +5,7 @@ description = "File storage adapter package supporting local and S3 storage"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "app-error",
+    "devkit>=0.1,<0.2",
     "aiofiles>=25.1.0",
     "aiobotocore>=3.1.1",
     "loguru>=0.7.3",
@@ -15,7 +15,6 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-app-error = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

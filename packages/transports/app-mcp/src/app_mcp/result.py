@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from app_error import AppError
+from devkit.advisory import AdvisoryError
 from pydantic import BaseModel
 
 
@@ -21,7 +21,7 @@ class ToolResult:
         )
 
     @classmethod
-    def from_app_error(cls, error: AppError) -> "ToolResult":
+    def from_advisory_error(cls, error: AdvisoryError) -> "ToolResult":
         """Expose an explicit advisory; callers must apply their own execution policy."""
         return cls(
             error={

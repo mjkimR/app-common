@@ -1,0 +1,4 @@
+# Written by devkit sync when missing; edit freely, devkit never changes it.
+# Generated content: `devkit sync` rebuilds it from the installed packages.
+/managed/
+/transient/

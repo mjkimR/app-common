@@ -99,8 +99,8 @@ deployment through `app.dependency_overrides`:
 
 ## See also
 
-- [App Prebuilt User Skill](../../../../agents/skills/app-common/references/user/index.md) — user auth, JWT login flow, and admin CRUD.
-- [App Backend Core Skill](../../../../agents/skills/app-common/references/backend/index.md) — layered architecture and dependencies.
+- [App Prebuilt User Skill](../../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/user/index.md) — user auth, JWT login flow, and admin CRUD.
+- [App Backend Core Skill](../../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/backend/index.md) — layered architecture and dependencies.
 
 ### Application-owned transactions
 

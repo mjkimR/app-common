@@ -2,41 +2,19 @@
 default:
     @just --list
 
-# Initialize project modules (all, app-base, or app-tools)
-init module="all":
-    #!/usr/bin/env bash
-    source ./scripts/_lib.sh
-    target=$(resolve_module "{{ module }}")
-    validate_module "$target"
+# There is deliberately no per-package variant: `uv sync --package` would strip the other
+# workspace members (and the bundles they ship) from the shared environment.
+# Initialize the whole workspace in the shared .venv and deploy the devkit bundles
+init:
+    uv sync --no-active
+    uv run --no-active --no-sync devkit sync
 
-    if [ "$target" = "all" ]; then
-        echo "Initializing workspace..."
-        uv sync --no-active
-    else
-        echo "Initializing $target..."
-        uv sync --no-active --package "$target"
-    fi
+# Initialize the whole workspace with all optional dependencies
+init-dev:
+    uv sync --no-active --all-extras
+    uv run --no-active --no-sync devkit sync
 
-    just hooks-install
-
-# Initialize project modules with all optional dependencies
-init-dev module="all":
-    #!/usr/bin/env bash
-    source ./scripts/_lib.sh
-    target=$(resolve_module "{{ module }}")
-    validate_module "$target"
-
-    if [ "$target" = "all" ]; then
-        echo "Initializing workspace with extras..."
-        uv sync --no-active --all-extras
-    else
-        echo "Initializing $target with extras..."
-        uv sync --no-active --package "$target" --all-extras
-    fi
-
-    just hooks-install
-
-# Run ruff format and lint for a specific module (all, app-base, or app-tools)
+# Format and fix with Ruff, redeploy the devkit bundles, then run the devkit rules (architecture included)
 lint module="all":
     #!/usr/bin/env bash
     set -e
@@ -44,17 +22,28 @@ lint module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-error app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
+    paths=()
+    for m in app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Linting $m ($path)..."
-                uv run --no-active --no-sync app-tools run lint --fix --path "$path"
+                uv run --no-active --no-sync ruff format "$path"
+                uv run --no-active --no-sync ruff check --fix "$path"
+                paths+=("$path")
             fi
         fi
     done
 
-# Run pyright static type checking for a specific module (all, app-base, or app-tools)
+    # Ruff also formats code blocks in the bundles' Markdown sources: redeploy before the rules load them.
+    uv run --no-active --no-sync devkit sync >/dev/null
+    if [ "$target" = "all" ]; then
+        uv run --no-active --no-sync devkit rules check
+    else
+        uv run --no-active --no-sync devkit rules check "${paths[@]}"
+    fi
+
+# Run pyright static type checking for a module (default: all)
 check module="all":
     #!/usr/bin/env bash
     set -e
@@ -62,17 +51,17 @@ check module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-error app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
+    for m in app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Type checking $m ($path)..."
-                uv run --no-active --no-sync app-tools run pyright -- "$path/src"
+                uv run --no-active --no-sync pyright "$path/src"
             fi
         fi
     done
 
-# Run ruff format and lint checks without modifying files
+# Check formatting, Ruff lint, the deployed bundles and the devkit rules (architecture included) without modifying files
 lint-check module="all":
     #!/usr/bin/env bash
     set -e
@@ -80,27 +69,37 @@ lint-check module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
-    for m in app-error app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
+    paths=()
+    for m in app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
                 echo "Checking lint for $m ($path)..."
-                uv run --no-active --no-sync app-tools run lint --path "$path"
+                uv run --no-active --no-sync ruff format --check "$path"
+                uv run --no-active --no-sync ruff check "$path"
+                paths+=("$path")
             fi
         fi
     done
 
-# Run architectural constraint validation across packages or specific paths
-check-arch +paths="":
-    uv run --no-active app-tools check-arch {{ paths }}
+    # Fails when a bundle source changed without `just sync-agents`.
+    if ! uv run --no-active --no-sync devkit sync --check >/dev/null; then
+        echo "Bundle sources changed without a sync: run 'just sync-agents' and commit the result." >&2
+        exit 1
+    fi
+    if [ "$target" = "all" ]; then
+        uv run --no-active --no-sync devkit rules check
+    else
+        uv run --no-active --no-sync devkit rules check "${paths[@]}"
+    fi
 
-# Install pre-commit hooks
-hooks-install:
-    uv run --no-active pre-commit install
+# Run the devkit rules (app-common architecture, Markdown links, ...) on the repository or specific paths
+rules-check +paths="":
+    uv run --no-active --no-sync devkit rules check {{ paths }}
 
-# Run pre-commit hooks against all files
-hooks-run:
-    uv run --no-active pre-commit run --all-files
+# Redeploy the devkit bundles after changing their sources (tools/app-tools/src/app_tools/bundle, tools/app-common-dev)
+sync-agents:
+    uv run --no-active --no-sync devkit sync
 
 # Run tests with SQLite; container-backed tests are deselected, so no Docker is needed
 test +paths="":
@@ -136,8 +135,8 @@ init-ui:
 
 # Enforce file-size limits and type check UI package
 check-ui:
-    uv run --no-active --no-sync app-tools run npm --path packages/ui/app-ui-base -- run lint
-    uv run --no-active --no-sync app-tools run npm --path packages/ui/app-ui-base -- run check
+    npm --prefix packages/ui/app-ui-base run lint
+    npm --prefix packages/ui/app-ui-base run check
 
 # Verify the shared frontend file-size preset
 test-eslint:
@@ -146,7 +145,7 @@ test-eslint:
 
 # Build UI package into dist/
 build-ui:
-    uv run --no-active --no-sync app-tools run npm --path packages/ui/app-ui-base -- run build
+    npm --prefix packages/ui/app-ui-base run build
 
 # Initialize standalone frontend API generation tooling
 init-api-codegen:

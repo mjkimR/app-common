@@ -465,10 +465,10 @@ class TestHookSelection:
         assert service.create_hooks == (first, second)
         assert service.delete_hooks == (first, second)
 
-    def test_hook_missing_context_key_raises_app_error(self, mock_repo):
-        from app_error import AppError
+    def test_hook_missing_context_key_raises_advisory_error(self, mock_repo):
         from app_layer_base.base.services.base import HookContextKeyMissingError
         from app_layer_base.base.services.hooks import BaseHook
+        from devkit.advisory import AdvisoryError
 
         class DemandingHook(BaseHook):
             required_context_keys = frozenset({"undeclared_key"})
@@ -478,7 +478,7 @@ class TestHookSelection:
             _ = service._hook_context_keys_checked
 
         err = exc_info.value
-        assert isinstance(err, AppError)
+        assert isinstance(err, AdvisoryError)
         assert isinstance(err, TypeError)
         assert err.code == "HOOK_CONTEXT_KEY_MISSING"
         assert "[ACTION]" in "\n".join(err.lines())

@@ -16,8 +16,10 @@ members = [
     "tools/*",
 ]
 
-[tool.app-tools]
-check-arch = true
+# devkit is pinned by commit; consumers declare the same source and rev in their own
+# [tool.uv.sources] (`devkit app update` keeps it in step with app-common).
+[tool.uv.sources]
+devkit = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit", rev = "24038118ec11d8ed9947d97b3712456a94e6f7c1" }
 
 [tool.ruff]
 exclude = [".git", ".venv", "migrations"]
@@ -46,7 +48,6 @@ extraPaths = [
     "./packages/prebuilt/app-prebuilt-outbox/src",
     "./packages/prebuilt/app-prebuilt-search/src",
     "./tools/app-tools/src",
-    "./packages/base/app-error/src",
     "./packages/base/app-layer-base/src",
     "./packages/base/app-testing-base/src",
     "./packages/adapters/app-file-storage/src",
@@ -61,7 +62,6 @@ extraPaths = [
 dev = [
     # Type-check the optional Secret Manager integration without requiring it at runtime.
     "google-cloud-secret-manager>=2.24.0",
-    "pre-commit>=4.6.0",
     "pyright>=1.1.409",
     "pytest-cov>=7.0.0",
 ]

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "DB-backed semantic search and explicit incremental indexing"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["app-error", "app-layer-base", "app-vector-store", "sqlalchemy>=2.0.39", "pydantic>=2.11.1", "qdrant-client>=1.16.2"]
+dependencies = ["devkit>=0.1,<0.2", "app-layer-base", "app-vector-store", "sqlalchemy>=2.0.39", "pydantic>=2.11.1", "qdrant-client>=1.16.2"]
 
 [project.optional-dependencies]
 fastembed = ["fastembed>=0.7.0"]
@@ -20,7 +20,6 @@ build-backend = "hatchling.build"
 packages = ["src/app_prebuilt_search"]
 
 [tool.uv.sources]
-app-error = { workspace = true }
 app-layer-base = { workspace = true }
 app-vector-store = { workspace = true }
 app-testing-base = { workspace = true }

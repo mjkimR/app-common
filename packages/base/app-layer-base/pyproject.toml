@@ -5,7 +5,7 @@ description = "Core layer base containing models, repos, services, usecases and 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "app-error",
+    "devkit>=0.1,<0.2",
     "fastapi>=0.115.12",
     "pydantic[email]>=2.11.1",
     "pydantic-settings>=2.8.1",
@@ -50,7 +50,6 @@ asyncio_default_fixture_loop_scope = "function"
 pythonpath = ["src"]
 
 [tool.uv.sources]
-app-error = { workspace = true }
 
 [[tool.app-tools.architecture.boundaries]]
 name = "application contracts do not depend on CRUD, database, transport or settings"

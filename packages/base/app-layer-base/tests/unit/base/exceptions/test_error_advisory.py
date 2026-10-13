@@ -1,15 +1,15 @@
 from http import HTTPStatus
 
-from app_error import ActionMode, Actor, AppError, Retry
 from app_layer_base.base.exceptions.base import CustomException
 from app_layer_base.base.exceptions.basic import BadRequestException, NotFoundException
 from app_layer_base.base.exceptions.handler import (
     format_custom_exception,
     format_mcp_error,
 )
+from devkit.advisory import ActionMode, Actor, AdvisoryError, Retry
 
 
-def test_custom_exception_inherits_app_error():
+def test_custom_exception_is_an_advisory_error():
     exc = CustomException(
         message="Resource not accessible",
         code="ACCESS_DENIED",
@@ -18,14 +18,14 @@ def test_custom_exception_inherits_app_error():
         fix="request permissions",
         target_files=["/etc/app/config.yaml"],
     )
-    assert isinstance(exc, AppError)
+    assert isinstance(exc, AdvisoryError)
     assert exc.code == "ACCESS_DENIED"
     assert exc.actor == Actor.USER
     assert exc.mode == ActionMode.INTERACTION
-    assert exc.target_files == ["/etc/app/config.yaml"]
+    assert exc.target_files == ("/etc/app/config.yaml",)
     assert exc.fix == "request permissions"
 
-    mcp_text = exc.render_mcp()
+    mcp_text = exc.render()
     assert "[ERROR]  (ACCESS_DENIED) Resource not accessible" in mcp_text
     assert "[ACTION] INTERACTION" in mcp_text
     assert "[TARGET] /etc/app/config.yaml" in mcp_text

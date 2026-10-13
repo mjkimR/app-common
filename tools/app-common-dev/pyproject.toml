@@ -1,0 +1,16 @@
+[project]
+name = "app-common-dev"
+version = "0.1.0"
+description = "Agent assets for developing app-common itself; never a consumer dependency"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.entry-points."devkit.bundles"]
+app-common-dev = "app_common_dev"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_common_dev"]

@@ -4,7 +4,7 @@ A single, fully installed authentication prebuilt: users, local password login, 
 
 ## Install and register
 
-Install from a published app-common Git commit at `packages/prebuilt/app-prebuilt-auth`. Pin the transitive app-common packages (`app-layer-base`, `app-error`, `app-http-client`) to the same commit in the host's `tool.uv.sources`. FastAPI, password hashing, JWT cryptography and form parsing are included in the default dependencies.
+Install from a published app-common Git commit at `packages/prebuilt/app-prebuilt-auth`. Pin the transitive app-common packages (`app-layer-base`, `app-http-client`) to the same commit in the host's `tool.uv.sources`, and `devkit` to the revision app-common pins. FastAPI, password hashing, JWT cryptography and form parsing are included in the default dependencies.
 
 ```python
 from fastapi import FastAPI

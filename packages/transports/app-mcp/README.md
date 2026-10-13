@@ -51,7 +51,7 @@ filter tool discovery by caller or implement resource-level authorization.
 Input models retain aliases, constraints, field descriptions and default factories.
 Tools return `{ok, result, error}` as structured content, with a matching output
 schema. Output keys use model field names, including when output models declare
-aliases; input aliases retain their normal validation behavior. Failures also set the MCP `isError` flag. Expected `AppError` advisories are
+aliases; input aliases retain their normal validation behavior. Failures also set the MCP `isError` flag. Expected `AdvisoryError` advisories are
 returned without executing their suggested fixes; unexpected failures are sanitized.
 Invalid input returns `MCP_INVALID_ARGUMENTS` with one advisory detail per problem
 (`location: message`, at most 20), without the submitted values. Validator messages

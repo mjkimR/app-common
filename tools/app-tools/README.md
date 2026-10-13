@@ -1,301 +1,89 @@
-# App Tools
+# app-tools
 
-Personal app development helper tools and utilities.
+The app-common development tooling, built on [devkit](https://github.com/mjkimR/devkit):
+
+- the **`devkit app`** command group (entry point `devkit.commands`), and
+- the **`app-common` devkit bundle** (entry point `devkit.bundles`, `src/app_tools/bundle/`),
+  deployed automatically by `devkit sync`: the `app-common` skill, the architecture rules,
+  the onboarding playbook and a guidance line in the root `AGENTS.md`.
 
 ## Installation
 
-To add this tool to your project, install it via `uv` from the GitHub repository:
+A development dependency of the consumer project, pinned to the app-common commit its
+other app-common packages use, next to `devkit` at the revision app-common pins:
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=tools/app-tools" --dev
+uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=tools/app-tools"
+uv run devkit sync
 ```
 
-## Usage
+List `devkit` itself as a dependency too (a dev dependency is enough): uv applies a source only to a direct dependency, and an unrelated `devkit` project exists on PyPI. `devkit app update` adds it when missing.
 
-Run the `app-tools` command to access various utilities.
+Run every command from the project environment (`uv run devkit ...`): a separately
+installed devkit does not see the project's packages.
 
-```bash
-app-tools [COMMAND]
-```
+## Commands
 
-### Features
+All commands follow devkit's agent-first output contract: one `[KIND: ...]` fact per
+stdout line, or one JSON object with `--format json`; advisories (`APP_*` codes) on stderr;
+exit `0` success, `1` a negative result, `2` could not run.
 
-#### Compact Command Runner (`run`)
-
-Run existing project checks without an additional configuration file:
-
-```bash
-app-tools run lint
-app-tools run lint --fix
-app-tools run check
-app-tools run test
-app-tools run test --path packages/base/app-error
-app-tools run check --path web
-```
-
-`--path` selects a directory tree (default: the current directory). Discovery stays
-inside that tree: invoking from a package does not expand to the entire repository.
-Run from the repository root to select all projects. Python projects are identified
-by `[project]` in `pyproject.toml`; uv workspace member/exclusion patterns are respected
-when selecting descendants. Node projects are identified by `package.json`. Generated
-and hidden directories, tests/fixtures/templates, symlink directories, and nested Git
-repositories are not traversed. Selecting a directory explicitly permits running its
-own project even when a parent workspace excludes it.
-
-| Task | Python | Node |
-| --- | --- | --- |
-| `lint` | `ruff format --check .`, then `ruff check .` | `npm run lint` |
-| `lint --fix` | `ruff format .`, then `ruff check --fix .` | `npm run lint:fix` |
-| `check` | Pyright when an existing Pyright configuration is found | `npm run check` |
-| `test` | pytest when a tests directory or pytest configuration exists | `npm run test` |
-
-Each Python command runs in its package directory through `uv run --no-sync`; existing
-pytest options, test paths, and plugins remain authoritative. Shared ancestor Pyright
-configuration is used with the selected package's `src` (or package directory) as the
-target. A package's own Pyright configuration controls its own scope. Unsupported tasks
-are reported as `SKIP`; an invocation with no runnable targets fails. Test collection
-failures, including pytest exit code 5, are not converted to success.
-
-Node scripts retain their project-defined behavior, including preparatory commands and
-E2E tests. Define `lint` as a read-only check and `lint:fix` as the project's explicit fix
-command. If a project has `lint` but no `lint:fix`, `lint --fix` fails during planning
-before any commands run. The runner does not append guessed flags to compound scripts.
-
-Use individual tools for native arguments, or the generic wrapper for repository scripts:
-
-```bash
-app-tools run pytest -- tests/unit -k user -n 0
-app-tools run pytest --path packages/base/app-layer-base -- --db-type postgres
-app-tools run ruff -- check src tests
-app-tools run vitest --path web -- run
-app-tools run npm --path web -- run build
-app-tools run -- bash scripts/check.sh py fast
-app-tools run --raw -- python -c 'print("complete output")'
-```
-
-Put wrapper options before `--`; everything after it is passed verbatim. Native relative
-paths are relative to `--path`, not the original calling directory. The generic wrapper
-executes an argument array without shell expansion; explicitly use `bash -c` for shell
-syntax. Individual Python tools are `pytest`, `ruff`, and `pyright`. Node tools are
-`vite`, `vitest`, `svelte-check`, `svelte-package`, `eslint`, `prettier`, `tsc`, and
-`playwright`; they resolve installed `node_modules/.bin` executables in the selected
-directory or its ancestors. `npm` and `uv` can also be invoked directly.
-
-Install dependencies and activate the appropriate Node version before running commands.
-The runner does not install dependencies or source nvm. Existing repository recipes can
-continue to perform that setup before calling `app-tools run`. There are no profiles,
-target aliases, DB defaults, Docker exclusions, or worker defaults added by app-tools;
-keep those policies in the project's existing configuration or scripts. In particular,
-`run test` does not inherit app-common's `just test` Docker deselection policy.
-
-Output is collected until each command exits. Success prints a status line plus recognized
-tool summaries (up to 2 KB): pytest/Vitest/Playwright outcome counts, Ruff formatting/fix
-results, Pyright/svelte-check/ESLint diagnostic counts, Prettier results, and pytest-cov
-totals. Skips, deselections, expected failures, and warnings remain visible in test
-summaries. Summary lines stay in tool order, including inside npm scripts and shell
-wrappers; counts from separate suites are not combined. Unknown output formats stay in
-the log, and missing summaries never imply zero tests or warnings. Failure prints
-up to 16 KB of output (head and tail when truncated). Complete combined stdout/stderr is
-saved in a private OS temporary directory, and every result includes its log path.
-Successful architecture warnings are also shown in compact output. Recognized Python,
-Pyright, Node, Ruff/uv, svelte-check, and ESLint warnings show their first message line
-and location when available. Identical messages appear once per command, at their first
-location; counts still reflect the tool's original totals. Warning messages are capped
-at 500 characters each and 2 KB per command, separately from result summaries. Full
-details and unrecognized warning formats remain in the log. Warnings suppressed by the
-tool itself (for example pytest `--disable-warnings`) cannot be recovered by the runner.
-`--raw` prints all collected output, including
-successful output, after each command finishes. These commands are intended for finite
-checks, not interactive shells or watch servers. Logs remain until removed or cleaned by
-the OS; they are not written into the repository.
-
-Generated Python tool commands use `uv run --no-active --no-sync` to explicitly select
-the project environment and avoid warnings about an unrelated inherited `VIRTUAL_ENV`.
-Explicit `run uv -- ...` and generic commands preserve their arguments. If an outer
-`uv run` launches app-tools, add `--no-active` there too to avoid its startup warning.
-
-Independent steps continue after a failure. A single command preserves its exit status;
-a multi-step task returns 1 if any step failed and reports totals. Ctrl-C stops execution
-and terminates the command process group on POSIX systems.
-
-#### Create Code (`create-code`)
-
-Generate boilerplate code for new application features.
-
-**1. Backend Feature (FastAPI Layered Architecture):**
-```bash
-app-tools create-code feature --name <FeatureName> [--plural <plural_name>] [--prefix <prefix>]
-```
-- `--name`: Name of the feature in CamelCase (e.g., `Article`, `User`).
-- `--plural`: (Optional) Plural name in snake_case (e.g., `articles`). If omitted, it will be auto-generated.
-- `--prefix`: (Optional) Directory prefix (defaults to `app/features`).
-
-*Example:*
-```bash
-app-tools create-code feature --name Article
-```
-
-**2. Web Feature (Svelte 5 Runes & shadcn UI):**
-```bash
-app-tools create-code web-feature --name <FeatureName> [--plural <plural_name>] [--prefix <prefix>]
-```
-- Generates Svelte 5 state store (`*.svelte.ts`), main view (`*View.svelte`), dialog (`*Dialog.svelte`), and index exports.
-- `--prefix`: (Optional) Directory prefix (auto-detects `src/lib/features` or `web/src/lib/features`).
-
-*Example:*
-```bash
-app-tools create-code web-feature --name Project
-```
-
-#### Local Development Linking (`dev`)
-
-Link installed `app-common` packages in downstream projects to a local clone of `app-common` without modifying `pyproject.toml` or `package.json`.
-
-- **Link packages**:
-  ```bash
-  app-tools dev link
-  # Or specify custom path
-  app-tools dev link --target-path ../app-common
-  ```
-- **Check status**:
-  ```bash
-  app-tools dev status
-  ```
-- **Unlink & restore original packages**:
-  ```bash
-  app-tools dev unlink
-  ```
-
-#### Update Installed Packages (`update`)
-
-Update every `app-common` Git dependency in the current consumer project's `pyproject.toml` to the latest published release, regenerate `uv.lock`, and synchronize `.venv`:
-
-```bash
-app-tools update
-```
-
-Preview the latest upgrade first if desired:
-
-```bash
-app-tools update --dry-run
-```
-
-`--no-sync` skips `.venv` installation. Skills are managed separately through APM; update the skill ref in `apm.yml` and follow the [APM installation workflow](../../agents/README.md). Package updates do not download, install, or change skills.
-
-## Documentation
-
-For a complete list of commands, usage examples, and details on how code generation and local linking work, please refer to the developer guides:
-
-- **[Local Development Guide](../../agents/skills/app-common/references/local-dev/index.md)**: Details on local symlinking (`app-tools dev`), backup mechanics, and options.
-- **[Package Update Guide](../../agents/skills/app-common/references/update/index.md)**: Updates downstream projects to a released `app-common` version.
-- **[Backend Guide](../../agents/skills/app-common/references/backend/index.md)**: FastAPI feature code scaffolding (`app-tools create-code feature`).
-- **[Svelte UI Guide](../../agents/skills/app-common/references/ui/index.md)**: Svelte 5 web feature scaffolding (`app-tools create-code web-feature`).
-
-## Offline package guidance
-
-`app-tools guide` lists relevant topics for the current project. Use
-`app-tools guide show backend/hooks` to read a document or
-`app-tools guide list --all` to discover setup guides for uninstalled packages.
-`--project <directory>` selects another project; `--source <app-common-checkout>`
-selects local-development documentation. These options precede `list` or `show`.
-
-All documents ship inside app-tools. The command reads manifests and distribution
-metadata without importing optional packages, spawning subprocesses, syncing an
-environment, or contacting the network. It distinguishes declarations, lock
-entries, and installed packages and reports known version mismatches.
-
-In a pre-provisioned offline environment, call `.venv/bin/app-tools guide` directly
-or use `uv run --no-sync --offline app-tools guide`. With no CLI installed, the
-copied `app-common` skill contains the same references and works by file reads.
-
-## Duration hygiene
-
-Every `run` command warns once with `RUN_SLOW_COMMAND` if an individual subprocess
-is still running after 60 seconds. This is wall time per command (including fixtures
-and child processes), not per test function or the accumulated task duration. The
-warning appears while the command is running, even in compact mode. It never cancels
-a command or changes its exit status. Tool-generated warnings retain their own behavior.
-
-```bash
-app-tools run test --warn-after 120
-app-tools run lint --no-warn
-```
-
-`--warn-after` accepts finite nonnegative seconds; `0` disables this warning.
-`--no-warn` overrides `--warn-after` and only silences the runner's duration warning.
-Put both options before `--` when forwarding native tool arguments.
-
-## Architecture lint
-
-`app-tools check-arch [PATH ...]` emits rule codes, source locations, explanations,
-and suggested fixes; `--json` exposes the same diagnostics for agents. Errors
-exit with status 1; package-aware advisories are warnings. Enable it after Ruff in `app-tools run lint` (including `--fix`):
-
-```toml
-[tool.app-tools]
-check-arch = true
-```
-
-The nearest explicit ancestor setting wins, stopping at the Git repository boundary.
-A package can opt out with `false`. This repository enables it and also runs the check
-in `just lint` / `just lint-check`, so CI enforces it. Architecture fixes are manual.
-
-| Code | Check |
+| Command | What it does |
 | --- | --- |
-| `ARCH_ROUTER_REPO_IMPORT` | Router/API imports repository modules, including nested and relative forms |
-| `ARCH_SERVICE_COMMIT` | Service invokes `commit()` or `rollback()` |
-| `ARCH_HOOK_SUPER_CALL` | Hook methods except `__init__` chain through `super()` |
-| `ARCH_ERROR_DEPENDENCY` | `src/app_error` imports a non-standard-library dependency |
-| `ARCH_ADAPTER_DEPENDENCY` | An adapter imports a sibling adapter in the source checkout |
-| `ARCH_PARSE_ERROR` | A Python source file cannot be parsed or decoded |
+| `devkit app guide list [--all] [--project P] [--source CHECKOUT]` | Guide topics for the packages the project declares or installs, with the declared, locked and installed state. Offline: no network, subprocess or package import. |
+| `devkit app guide show <topic>` | One guide; setup guides of packages that are not installed are readable too. |
+| `devkit app update [--ref REF] [--dry-run] [--no-sync]` | Resolve `REF` (default `main`) to a commit; pin every app-common dependency to it (requirement URLs and `[tool.uv.sources]`, workspace members included) and `devkit` to the revision app-common pins there; then `uv lock`, `uv sync` and `devkit sync`. A failed lock restores the manifests. |
+| `devkit app dev link\|unlink\|status [--target-path P] [--dry-run]` | Replace installed app-common packages with symlinks into a local checkout (backups as `.bak`), restore them, or report their state. |
+| `devkit app doctor [--project P]` | Declared app-common packages, whether the bundle is deployed, APM leftovers and the database URL. |
+| `devkit app create-code feature\|web-feature --name Name [--plural p] [--prefix dir] [--dry-run]` | Scaffold a backend CRUD feature (and register its router) or a Svelte 5 web feature; existing directories are refused. |
+| `devkit app env-spec --type app\|auth\|file_storage\|file_storage_local\|file_storage_s3\|vector_db` | The environment variables of an app-common settings class, with types and defaults (secrets hidden). Needs the package installed; `app-tools[env-spec]` installs all of them. |
 
-Exceptions require the exact code and a reason on the diagnostic's physical line:
+Long-running checks are not app-specific: wrap them with `devkit run -- <command>` for a
+bounded view and a complete log.
+
+## Architecture rules
+
+`devkit rules check [paths]` runs one rule per convention; `devkit rules explain <id>` prints
+its guide. Tests, `migrations/` and `alembic/` are not checked.
+
+| Rule | Severity | Check |
+| --- | --- | --- |
+| `RULE-app-router-repo-import` | error | A router/API module imports a repository module |
+| `RULE-app-service-commit` | error | A service calls `commit()` or `rollback()` |
+| `RULE-app-hook-super-call` | error | A hook method other than `__init__` chains through `super()` |
+| `RULE-app-adapter-dependency` | error | An adapter imports a sibling adapter (app-common source checkout) |
+| `RULE-app-forbidden-import` | error | An import crosses a boundary declared in `[[tool.app-tools.architecture.boundaries]]` |
+| `RULE-app-command-signature` | error | A public command in an opted-in `commands.py` is not `async def op(ctx: C, inp: I) -> O` |
+| `RULE-app-command-transaction` | error | A command module controls transactions |
+| `RULE-app-architecture-config` | error | `tool.app-tools.architecture` is malformed |
+| `RULE-app-parse-error` | error | A Python file cannot be parsed |
+| `RULE-app-http-client-construction` | warning | A package declaring app-http-client constructs httpx clients |
+| `RULE-app-shared-client-close` | warning | Application code closes the shared HTTP client |
+| `RULE-app-direct-current-time` | warning | A package declaring app-layer-base reads the clock directly |
+| `RULE-app-db-factory-in-layer` | warning | A router or service builds a DB engine or session factory |
+| `RULE-app-undeclared-dependency` | warning | An app-common package is imported but not declared |
+| `RULE-app-invalid-suppression` | warning | An `# arch: ignore[...]` names no finding on its line |
+
+A justified exception names the rule and a reason on the reported line:
 
 ```python
-session.commit()  # arch: ignore[ARCH_SERVICE_COMMIT] -- Legacy transaction boundary
+session.commit()  # arch: ignore[RULE-app-service-commit] -- Legacy transaction boundary
 ```
 
-Multiple codes are comma-separated inside brackets. Bare `noqa`, string contents,
-and comments without a reason do not suppress architecture diagnostics. For multiline
-imports, put the comment on the opening import line. This syntax is independent of
-Ruff's suppression syntax. `app_layer_base.base.repos.query_options` is a permitted
-router value-object import. The existing Qdrant catalog coupling has an explicit
-compatibility exception; removing that dependency needs a separate API change.
+Several rules are comma-separated inside the brackets; a comment without a reason, bare
+`noqa` and text inside strings suppress nothing. Put the comment on the opening line of a
+multi-line import. A project turns a rule off, changes its severity or excludes paths in
+`[rules]` of `.devkit/config.toml`.
 
-These are static, convention-based checks, not a proof of architecture: dynamic
-imports, aliases of transaction methods, transitive dependencies, and transitive dependency
-manifest relationships are not analyzed. Direct app-common imports are checked against declarations. Tests and migrations are excluded. Package
-isolation checks require the source layout; design rationale remains in the guides.
+The checks are static and convention-based: dynamic imports, aliases of transaction
+methods and transitive dependencies are not analyzed. The nearest `pyproject.toml` owns
+each file; its declared dependencies (extras and groups included) enable the
+package-aware warnings, while lock files and the shared environment do not.
+`app_layer_base.base.repos.query_options` is a permitted router import.
 
-### Package-aware advisories
+## Development
 
-Architecture errors still fail the command. These advisories have severity `warning`
-and keep exit status 0 when no errors exist:
-
-| Code | Guidance |
-| --- | --- |
-| `ARCH_HTTP_CLIENT_CONSTRUCTION` | Use shared HTTP getters when app-http-client is declared |
-| `ARCH_SHARED_CLIENT_CLOSE` | Shared client shutdown belongs to lifespan |
-| `ARCH_DIRECT_CURRENT_TIME` | Use UTC time/date utilities when app-layer-base is declared |
-| `ARCH_DB_FACTORY_IN_LAYER` | Inject configured sessions into routers/services |
-| `ARCH_UNDECLARED_DEPENDENCY` | Declare directly imported app-common packages |
-| `ARCH_INVALID_SUPPRESSION` | Remove unused exceptions or correct unknown codes |
-
-JSON includes severity, guide topic, and separate error/warning counts. `run lint`
-shows architecture warnings even when the check succeeds in compact mode. The output
-is bounded with a full-log pointer. `--no-warn` only disables duration warnings.
-
-The nearest project manifest owns each file. Required and optional dependency
-names (including extras and markers) establish applicability; optional groups are
-considered declared without evaluating the current environment's selected extras.
-Lockfiles and the shared virtualenv do not activate rules. Tests/migrations remain
-excluded. Implementation code in app-http-client may create/close clients and the
-canonical time utility may read the clock directly.
-
-Import aliases and simple local assignments are resolved conservatively; runtime
-rebinding, interprocedural data flow, and dynamic imports are outside this check.
-No recommendation rewrites timezone semantics or resource ownership automatically.
-The env-spec command's optional integrations are declared in `app-tools[env-spec]`.
-
-Ruff additionally enables `DTZ` timezone checks and `FAST002` for Annotated FastAPI
-dependencies; these general rules retain Ruff diagnostics and suppression syntax.
+The checks live in `app_tools.architecture` (`scan_files` and the rule catalog `RULES`);
+`bundle/rules/architecture.py` only declares one devkit rule class per catalog entry.
+After changing anything under `src/app_tools/bundle/`, run `just sync-agents` in the
+repository root and commit the updated receipt and projections with the change.

@@ -1,0 +1,25 @@
+schema = 1
+name = "app-common"
+version = "0.1.0"
+default_preset = "all"
+auto_select = true
+
+[[assets]]
+id = "app-common"
+kind = "skill"
+source = "skills/app-common"
+
+[[assets]]
+id = "architecture"
+kind = "rule"
+source = "rules"
+
+[[assets]]
+id = "onboard"
+kind = "playbook"
+source = "playbooks/onboard.md"
+
+[[assets]]
+id = "orientation"
+kind = "guidance"
+source = "guidance/orientation.md"

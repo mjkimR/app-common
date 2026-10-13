@@ -106,14 +106,9 @@ run_pytest() {
         marker_args=(-m "not docker")
     fi
 
-    # Coverage is an explicit report; keep its table visible instead of summarizing it.
-    local output_args=()
-    if [ "$COVERAGE" = "1" ]; then
-        output_args=(--raw)
-    fi
-
+    # Each package runs from its own directory, so its own pytest configuration applies.
     local status=0
-    uv run --no-active --no-sync app-tools run pytest --path "$path" ${output_args[@]+"${output_args[@]}"} -- $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" || status=$?
+    uv run --no-active --no-sync --directory "$path" pytest $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" || status=$?
 
     if [ "$status" -eq 5 ]; then
         echo "No tests collected for $module."
@@ -146,7 +141,7 @@ wait_batch() {
     pending_modules=()
 }
 
-for m in app-error app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
+for m in app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
     if should_run "$MODULE" "$m"; then
         echo "Testing $m..."
         if [ "$TEST_JOBS" -gt 1 ]; then

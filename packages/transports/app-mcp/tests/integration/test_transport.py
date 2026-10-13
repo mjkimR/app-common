@@ -1,7 +1,7 @@
 from uuid import UUID, uuid4
 
-from app_error import Actor, AppError
 from app_mcp import ToolContext, ToolDefinition, ToolRegistry, ToolResult, ToolRisk, create_mcp
+from devkit.advisory import Actor, AdvisoryError
 from fastmcp import Client
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -49,7 +49,7 @@ async def test_discovery_preserves_schema_and_call_uses_alias_defaults():
         assert first.structured_content["result"]["request_id"] != second.structured_content["result"]["request_id"]
 
 
-async def test_validation_scope_and_app_errors_are_protocol_errors():
+async def test_validation_scope_and_advisory_errors_are_protocol_errors():
     async with Client(server()) as client:
         for name, args, code in [
             ("echo", {"limit": 0}, "MCP_INVALID_ARGUMENTS"),
@@ -62,7 +62,7 @@ async def test_validation_scope_and_app_errors_are_protocol_errors():
             assert result.structured_content["error"]["code"] == code
 
     async def conflict(_, args):
-        raise AppError("Reload before retrying", code="CONFLICT", actor=Actor.USER)
+        raise AdvisoryError("Reload before retrying", code="CONFLICT", actor=Actor.USER)
 
     async with Client(server(conflict)) as client:
         result = await client.call_tool("echo", {}, raise_on_error=False)

@@ -1,4 +1,4 @@
-from app_error import Actor, AppError, Retry
+from devkit.advisory import Actor, AdvisoryError, Retry
 from loguru import logger
 
 from app_file_storage.config import FileStorageSettings
@@ -6,7 +6,7 @@ from app_file_storage.factory import FileStorageFactory
 from app_file_storage.interface import FileStorageClient
 
 
-class FileStorageNotInitializedError(AppError, RuntimeError):
+class FileStorageNotInitializedError(AdvisoryError, RuntimeError):
     code = "FILE_STORAGE_NOT_INITIALIZED"
     actor = Actor.DEVELOPER
     retry = Retry.AFTER_FIX
@@ -20,7 +20,7 @@ class FileStorageNotInitializedError(AppError, RuntimeError):
         )
 
 
-class FileStorageAlreadyInitializedError(AppError, RuntimeError):
+class FileStorageAlreadyInitializedError(AdvisoryError, RuntimeError):
     code = "FILE_STORAGE_ALREADY_INITIALIZED"
     actor = Actor.DEVELOPER
     retry = Retry.UNSAFE

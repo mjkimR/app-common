@@ -1,5 +1,6 @@
 import pytest
-from app_tools.create_code.create_feature import pluralize, to_snake_case, update_router
+from app_tools.create_code.feature import register_router
+from app_tools.create_code.naming import pluralize, to_snake_case
 
 
 class TestPluralize:
@@ -66,7 +67,7 @@ class TestUpdateRouter:
     def test_inserts_import_and_include(self, tmp_path):
         router_path = _write_router(tmp_path, ROUTER_WITH_FEATURES)
 
-        update_router("widgets", tmp_path, "app.features")
+        register_router(tmp_path, "widgets", "app.features", dry_run=False)
 
         text = router_path.read_text()
         assert "from app.features.widgets.api.v1 import router as v1_widgets_router" in text
@@ -75,8 +76,8 @@ class TestUpdateRouter:
     def test_is_idempotent(self, tmp_path):
         router_path = _write_router(tmp_path, ROUTER_WITH_FEATURES)
 
-        update_router("widgets", tmp_path, "app.features")
-        update_router("widgets", tmp_path, "app.features")
+        register_router(tmp_path, "widgets", "app.features", dry_run=False)
+        register_router(tmp_path, "widgets", "app.features", dry_run=False)
 
         text = router_path.read_text()
         assert text.count("import router as v1_widgets_router") == 1
@@ -85,7 +86,7 @@ class TestUpdateRouter:
     def test_uses_fallback_anchors_when_no_feature_routes(self, tmp_path):
         router_path = _write_router(tmp_path, ROUTER_NO_FEATURES)
 
-        update_router("widgets", tmp_path, "app.features")
+        register_router(tmp_path, "widgets", "app.features", dry_run=False)
 
         lines = router_path.read_text().splitlines()
         # import goes right after the get_session anchor
@@ -95,6 +96,12 @@ class TestUpdateRouter:
         include_idx = lines.index("router.include_router(v1_router)")
         assert lines[include_idx - 1] == "v1_router.include_router(v1_widgets_router)"
 
-    def test_missing_router_file_does_not_raise(self, tmp_path):
-        # No app/router.py present -> should warn and return without raising.
-        update_router("widgets", tmp_path, "app.features")
+    def test_missing_router_file_is_a_warning(self, tmp_path):
+        status, problem = register_router(tmp_path, "widgets", "app.features", dry_run=False)
+        assert status == "skipped"
+        assert problem is not None and problem.code == "APP_SCAFFOLD_ROUTER_NOT_UPDATED"
+
+    def test_reports_whether_it_changed_the_router(self, tmp_path):
+        _write_router(tmp_path, ROUTER_WITH_FEATURES)
+        assert register_router(tmp_path, "widgets", "app.features", dry_run=False) == ("updated", None)
+        assert register_router(tmp_path, "widgets", "app.features", dry_run=False) == ("unchanged", None)

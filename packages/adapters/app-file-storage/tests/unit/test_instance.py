@@ -77,11 +77,11 @@ async def test_close_storage_client_not_initialized():
 
 
 def test_storage_not_initialized_has_agent_advisory():
-    from app_error import AppError
     from app_file_storage.instance import FileStorageNotInitializedError
+    from devkit.advisory import AdvisoryError
 
     err = FileStorageNotInitializedError()
-    assert isinstance(err, AppError)
+    assert isinstance(err, AdvisoryError)
     assert isinstance(err, RuntimeError)
     assert err.code == "FILE_STORAGE_NOT_INITIALIZED"
     assert "register_file_storage_lifespan" in (err.fix or "")

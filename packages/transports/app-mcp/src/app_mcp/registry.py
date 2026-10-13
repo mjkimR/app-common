@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-from app_error import Actor, AppError, Retry
+from devkit.advisory import Actor, AdvisoryError, Retry
 from pydantic import BaseModel, ValidationError
 
 from app_mcp.context import ToolContext
@@ -86,8 +86,8 @@ class ToolRegistry:
         """Invoke an authorized tool without exposing unexpected failures."""
         tool = self._tools.get(name)
         if tool is None:
-            return ToolResult.from_app_error(
-                AppError(
+            return ToolResult.from_advisory_error(
+                AdvisoryError(
                     f"Unknown MCP tool: {name}",
                     code="MCP_TOOL_NOT_FOUND",
                     actor=Actor.USER,
@@ -95,8 +95,8 @@ class ToolRegistry:
                 )
             )
         if not context.permits(tool.required_scopes):
-            return ToolResult.from_app_error(
-                AppError(
+            return ToolResult.from_advisory_error(
+                AdvisoryError(
                     "The caller is not authorized to invoke this tool.",
                     code="MCP_FORBIDDEN",
                     actor=Actor.USER,
@@ -105,8 +105,8 @@ class ToolRegistry:
                 )
             )
         if tool.requires_confirmation and tool.name not in context.confirmed_tools:
-            return ToolResult.from_app_error(
-                AppError(
+            return ToolResult.from_advisory_error(
+                AdvisoryError(
                     "Explicit confirmation is required.",
                     code="MCP_CONFIRMATION_REQUIRED",
                     actor=Actor.USER,
@@ -115,8 +115,8 @@ class ToolRegistry:
                 )
             )
         if tool.idempotency_key_required and not context.idempotency_key:
-            return ToolResult.from_app_error(
-                AppError(
+            return ToolResult.from_advisory_error(
+                AdvisoryError(
                     "An idempotency key is required.",
                     code="MCP_IDEMPOTENCY_KEY_REQUIRED",
                     actor=Actor.USER,
@@ -128,14 +128,14 @@ class ToolRegistry:
             try:
                 validated = tool.input_model.model_validate(arguments)
             except ValidationError as error:
-                return ToolResult.from_app_error(
-                    AppError(
+                return ToolResult.from_advisory_error(
+                    AdvisoryError(
                         "Tool arguments do not match its schema.",
+                        *_validation_details(error),
                         code="MCP_INVALID_ARGUMENTS",
                         actor=Actor.USER,
                         retry=Retry.AFTER_FIX,
                         fix="Correct the arguments listed in details and call the tool again.",
-                        details=_validation_details(error),
                     )
                 )
             await self._audit("started", tool, context)
@@ -149,7 +149,7 @@ class ToolRegistry:
                 code=result.error and result.error.get("code"),
             )
             return result
-        except AppError as error:
-            return ToolResult.from_app_error(error)
+        except AdvisoryError as error:
+            return ToolResult.from_advisory_error(error)
         except Exception:
             return ToolResult.internal_error()

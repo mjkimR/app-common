@@ -17,7 +17,7 @@ from dataclasses import replace
 from functools import cached_property, lru_cache
 from typing import Any
 
-from app_error import Actor, AppError, Retry
+from devkit.advisory import Actor, AdvisoryError, Retry
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,7 +40,7 @@ from app_layer_base.base.services.hooks import (
 from app_layer_base.core.log import logger
 
 
-class HookContextKeyMissingError(AppError, TypeError):
+class HookContextKeyMissingError(AdvisoryError, TypeError):
     code = "HOOK_CONTEXT_KEY_MISSING"
     actor = Actor.DEVELOPER
     retry = Retry.AFTER_FIX

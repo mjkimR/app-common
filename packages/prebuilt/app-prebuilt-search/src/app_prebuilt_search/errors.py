@@ -1,19 +1,19 @@
-from app_error import Actor, AppError, Retry
+from devkit.advisory import Actor, AdvisoryError, Retry
 
 
-class SearchConfigurationError(AppError, ValueError):
+class SearchConfigurationError(AdvisoryError, ValueError):
     code = "SEARCH_CONFIGURATION_INVALID"
     actor = Actor.DEVELOPER
     retry = Retry.AFTER_FIX
 
 
-class SearchInputError(AppError, ValueError):
+class SearchInputError(AdvisoryError, ValueError):
     code = "SEARCH_INPUT_INVALID"
     actor = Actor.USER
     retry = Retry.AFTER_FIX
 
 
-class SearchSourceError(AppError, ValueError):
+class SearchSourceError(AdvisoryError, ValueError):
     code = "SEARCH_SOURCE_INVALID"
     actor = Actor.DEVELOPER
     retry = Retry.AFTER_FIX

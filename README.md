@@ -10,7 +10,6 @@ Each package README covers its installation, public API, and usage.
 
 | Category | Package | Purpose |
 | --- | --- | --- |
-| Base | [app-error](packages/base/app-error/README.md) | Dependency-free errors and agent advisories. |
 | Base | [app-layer-base](packages/base/app-layer-base/README.md) | CRUD hooks, command/transaction contracts, database and FastAPI infrastructure. |
 | Base | [app-testing-base](packages/base/app-testing-base/README.md) | Pytest plugins, DB/HTTP fixtures, and contract assertions. |
 | Adapter | [app-file-storage](packages/adapters/app-file-storage/README.md) | Local and S3 object storage. |
@@ -23,18 +22,79 @@ Each package README covers its installation, public API, and usage.
 | Prebuilt | [app-prebuilt-search](packages/prebuilt/app-prebuilt-search/README.md) | Semantic search and explicit incremental indexing. |
 | Transport | [app-mcp](packages/transports/app-mcp/README.md) | MCP tool registry, authorization, and error translation. |
 | UI | [app-ui-base](packages/ui/app-ui-base/README.md) | Svelte 5 components, state, and Tailwind tokens. |
-| Tooling | [app-tools](tools/app-tools/README.md) | Check runner, scaffolding, local linking, updates, and guides. |
-| Tooling | [@app-common/eslint-config](agents/skills/app-common/references/ui/structure.md) | Shared frontend size policy, distributed by the root npm package. |
+| Tooling | [app-tools](tools/app-tools/README.md) | The `devkit app` commands (guides, updates, scaffolding, local linking) and the `app-common` devkit bundle (skill, architecture rules, onboarding playbook). |
+| Tooling | [@app-common/eslint-config](tools/app-tools/src/app_tools/bundle/skills/app-common/references/ui/structure.md) | Shared frontend size policy, distributed by the root npm package. |
 | Tooling | [@app-common/api-codegen](packages/ui/app-ui-api-codegen/README.md) | Tag-based OpenAPI declarations, shared schema types and contract freshness checks. |
 
 ## Installation
 
-Install Python packages directly from Git, pinned to a release tag or pushed commit:
+Install Python packages directly from Git, pinned to one pushed commit:
 
 ```bash
-uv add "git+https://github.com/mjkimR/app-common.git@<ref>#subdirectory=packages/base/app-layer-base"
-uv add --dev "git+https://github.com/mjkimR/app-common.git@<ref>#subdirectory=tools/app-tools"
+uv add "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=packages/base/app-layer-base"
+uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=tools/app-tools"
 ```
+
+Errors and agent advisories come from [devkit](https://github.com/mjkimR/devkit)
+(`devkit.advisory`), a dependency of the packages. uv does not follow the sources of Git
+dependencies, so declare every app-common package the project uses, and `devkit` at the
+revision this repository's root `pyproject.toml` pins, in the project's own
+`[tool.uv.sources]`. List `devkit` itself as a dependency too (a dev dependency is enough;
+`project.dependencies` of a package that imports `devkit.advisory`): uv applies a source
+only to a direct dependency, and an unrelated `devkit` project exists on PyPI.
+`uv run devkit app update` keeps all of this in step afterwards.
+
+## Use in a project
+
+app-tools registers the `app-common` devkit bundle, deployed automatically by
+`uv run devkit sync`: the `app-common` skill for Claude Code, Codex and Antigravity, the
+architecture rules run by `uv run devkit rules check`, a line in the root `AGENTS.md`, and
+the onboarding playbook (`/devkit-playbook app-common onboarding`). Commit
+`.devkit/config.toml` (once created), `.devkit/installation.json`, `.devkit/.gitignore`,
+`AGENTS.md` and the projected skills under `.agents/skills/` and `.claude/skills/`, so a
+fresh checkout or a cloud agent has them without a sync. Projects that raise app-common
+errors also select devkit's advisory library guide once: `uv run devkit add advisory:python`.
+
+| Command | Purpose |
+| --- | --- |
+| `uv run devkit app guide list` / `guide show <topic>` | Guides for the packages the project uses, offline |
+| `uv run devkit app update [--ref <ref>]` | Pin every app-common package and devkit to one app-common commit, lock, sync and redeploy |
+| `uv run devkit app create-code feature\|web-feature --name <Name>` | Scaffold a backend or Svelte feature |
+| `uv run devkit app dev link\|unlink\|status` | Use a local app-common checkout without editing manifests |
+| `uv run devkit app doctor` / `env-spec --type <type>` | Check the setup; list settings variables |
+
+## Migrating a project from APM and app-error
+
+The app-tools a project installed before the devkit migration cannot make this move:
+its `update` reads only requirement URLs and GitHub releases, and the skill APM installed
+does not describe devkit. Move once by hand; `uv run devkit app update` takes over after.
+
+1. **Pins.** Set every app-common reference (`[tool.uv.sources]` `rev`, or the `@<ref>` of
+   a requirement URL) to the new app-common commit. Copy the `devkit` entry of this
+   repository's root `[tool.uv.sources]` at that commit into the project's, and add
+   `devkit` to the `dev` dependency group (to `project.dependencies` of every package
+   that imports `devkit.advisory`). Drop `app-error` from dependencies and sources.
+2. **APM.** Remove the app-common entry from `apm.yml` (`apm.yml`, `apm.lock.yaml` and
+   `apm_modules/` too when it was the only one) and delete `.agents/skills/app-common` and
+   `.claude/skills/app-common`.
+3. **Environment and agents.** `uv lock`, `uv sync`, `uv run devkit sync`,
+   `uv run devkit add advisory:python`. Commit `.devkit/`, `AGENTS.md` and the projected
+   skills (un-ignore them if `.gitignore` hides dot-directories).
+4. **Code.** `from app_error import AppError, Actor, Retry` becomes
+   `from devkit.advisory import AdvisoryError, Actor, Retry`, and `AppError` becomes
+   `AdvisoryError`; `render_mcp()` is `render()`, `ToolResult.from_app_error` is
+   `from_advisory_error`, `to_dict(include_advisory=...)` takes a keyword, `target_files`
+   is a tuple and exit codes are devkit's `0/1/2`. An error whose mode is `AUTO` (actor
+   `TOOL`, retry not `UNSAFE`) must carry a `fix`, or its constructor raises `ValueError`.
+5. **Tooling.** `app-tools run <task>` becomes the tool itself (`uv run ruff ...`,
+   `uv run pyright ...`, `npm --prefix <dir> run <script>`), wrapped as
+   `uv run devkit run -- <command>` when an agent reads the output. `app-tools check-arch`
+   becomes `uv run devkit rules check`; delete `[tool.app-tools] check-arch` (the
+   `architecture` tables stay) and rename `# arch: ignore[ARCH_X]` to the rule ID
+   (`RULE-app-x`, listed in [app-tools](tools/app-tools/README.md#architecture-rules)).
+   Every other `app-tools <command>` is `uv run devkit app <command>`, with
+   `get-env-spec` renamed `env-spec` and `guide` split into `guide list` and `guide show`.
+6. **Verify.** `uv run devkit app doctor` and `uv run devkit rules check`.
 
 ## Architecture
 
@@ -42,13 +102,18 @@ The CRUD stack follows `Router → UseCase → Service → Repository`: usecases
 transactions, and services compose ordered hook objects. Non-CRUD applications can
 use typed commands and caller-owned transactions without adopting the CRUD stack.
 Each package owns its settings; the application composes the settings it needs.
-See [backend guides](agents/skills/app-common/references/backend/index.md).
+See [backend guides](tools/app-tools/src/app_tools/bundle/skills/app-common/references/backend/index.md).
 
 ## Development
 
 Install `just` with `scripts/install-just.sh` (macOS/Linux) or
 `scripts/install-just.bat` (Windows). [justfile](justfile) defines available commands
-and arguments; start with `just init` or `just init-dev` for optional dependencies.
+and arguments; start with `just init` or `just init-dev` for optional dependencies. Both
+sync the whole workspace into the shared `.venv` (there is no per-package init: a partial
+sync would remove the other members and the bundles they ship) and run `devkit sync`,
+which deploys the repository's agent bundles; devkit supports macOS and Linux only.
+After editing a bundle source, run `just sync-agents`; `just lint-check` and CI fail
+until the redeployed files are committed.
 
 ```bash
 just lint
@@ -66,24 +131,27 @@ its lint, type checks and generation/CLI tests.
 SQLite package suites run in separate processes, up to four at a time. Use
 `TEST_JOBS=1 just test` for serial execution; PostgreSQL, Docker, and coverage runs
 remain serial. All selected packages finish before a failing exit status is returned.
-Check output includes a `log:` path with complete diagnostics. Contribution rules
-and test selection are in [AGENTS.md](AGENTS.md).
+`uv run devkit run -- just test` prints a bounded view and keeps the complete output in
+a log file. Contribution rules and test selection are in [AGENTS.md](AGENTS.md).
 
 ## Releases
 
 Packages are Git dependencies, not PyPI releases. Use one repository version across
-all package `pyproject.toml` files, root/UI/tooling npm manifests and locks, and the guide
-catalog/APM manifest. After updating versions, tag and push `vX.Y.Z`; CI creates the
-GitHub Release only after lint, type checks, and all three Python test legs pass.
-Consumers should pin a tag or commit rather than `main`.
+all package `pyproject.toml` files, root/UI/tooling npm manifests and locks, the guide
+catalog and both bundle manifests (`bundle.toml`). After updating versions, run
+`just sync-agents`, tag and push `vX.Y.Z`; CI creates the GitHub Release only after lint,
+type checks, and all three Python test legs pass. Consumers pin a commit rather than
+`main`. Moving the devkit pin is a release note: consumers receive it through
+`devkit app update`.
 
 ## Agent guidance
 
-[agents/README.md](agents/README.md) covers APM installation and canonical guide
-sources. Consumers use the `app-common` skill; contributors additionally read
-`app-common-contributor`. `app-tools guide` recommends topics for the current project;
-`app-tools guide show <topic>` opens one. The [onboarding guide](agents/onboard/SKILL.md)
-covers a new FastAPI project.
+The consumer bundle's sources live in
+[tools/app-tools/src/app_tools/bundle](tools/app-tools/src/app_tools/bundle/bundle.toml); the
+contributor skill is the repository-only bundle in
+[tools/app-common-dev](tools/app-common-dev/pyproject.toml). The
+[onboarding playbook](tools/app-tools/src/app_tools/bundle/playbooks/onboard.md) covers a
+new FastAPI project.
 
 ## Test tiers and source layout
 

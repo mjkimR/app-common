@@ -1,0 +1,810 @@
+{
+  "assets": [
+    {
+      "bundle": "advisory",
+      "id": "agent-advisory",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/advisory/instructions/agent-advisory.md"
+      ]
+    },
+    {
+      "bundle": "advisory",
+      "id": "agent-advisory-python",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/advisory/instructions/agent-advisory-python.md"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "app-common",
+      "kind": "skill",
+      "paths": [
+        ".agents/skills/app-common/SKILL.md",
+        ".agents/skills/app-common/catalog.json",
+        ".agents/skills/app-common/references/ai/index.md",
+        ".agents/skills/app-common/references/ai/setup.md",
+        ".agents/skills/app-common/references/api-key/index.md",
+        ".agents/skills/app-common/references/auth/index.md",
+        ".agents/skills/app-common/references/backend/commands.md",
+        ".agents/skills/app-common/references/backend/errors.md",
+        ".agents/skills/app-common/references/backend/hooks.md",
+        ".agents/skills/app-common/references/backend/index.md",
+        ".agents/skills/app-common/references/backend/session.md",
+        ".agents/skills/app-common/references/backend/setup.md",
+        ".agents/skills/app-common/references/backend/time.md",
+        ".agents/skills/app-common/references/document/index.md",
+        ".agents/skills/app-common/references/http/index.md",
+        ".agents/skills/app-common/references/http/setup.md",
+        ".agents/skills/app-common/references/local-dev/index.md",
+        ".agents/skills/app-common/references/mcp/index.md",
+        ".agents/skills/app-common/references/outbox/index.md",
+        ".agents/skills/app-common/references/outbox/setup.md",
+        ".agents/skills/app-common/references/search/index.md",
+        ".agents/skills/app-common/references/storage/index.md",
+        ".agents/skills/app-common/references/storage/setup.md",
+        ".agents/skills/app-common/references/testing/examples.md",
+        ".agents/skills/app-common/references/testing/index.md",
+        ".agents/skills/app-common/references/ui/api.md",
+        ".agents/skills/app-common/references/ui/checklist.md",
+        ".agents/skills/app-common/references/ui/components.md",
+        ".agents/skills/app-common/references/ui/index.md",
+        ".agents/skills/app-common/references/ui/runes.md",
+        ".agents/skills/app-common/references/ui/setup.md",
+        ".agents/skills/app-common/references/ui/structure.md",
+        ".agents/skills/app-common/references/update/index.md",
+        ".agents/skills/app-common/references/user/google-auth.md",
+        ".agents/skills/app-common/references/user/index.md",
+        ".agents/skills/app-common/references/user/setup.md",
+        ".agents/skills/app-common/references/vector/index.md",
+        ".agents/skills/app-common/references/vector/setup.md",
+        ".claude/skills/app-common/SKILL.md",
+        ".claude/skills/app-common/catalog.json",
+        ".claude/skills/app-common/references/ai/index.md",
+        ".claude/skills/app-common/references/ai/setup.md",
+        ".claude/skills/app-common/references/api-key/index.md",
+        ".claude/skills/app-common/references/auth/index.md",
+        ".claude/skills/app-common/references/backend/commands.md",
+        ".claude/skills/app-common/references/backend/errors.md",
+        ".claude/skills/app-common/references/backend/hooks.md",
+        ".claude/skills/app-common/references/backend/index.md",
+        ".claude/skills/app-common/references/backend/session.md",
+        ".claude/skills/app-common/references/backend/setup.md",
+        ".claude/skills/app-common/references/backend/time.md",
+        ".claude/skills/app-common/references/document/index.md",
+        ".claude/skills/app-common/references/http/index.md",
+        ".claude/skills/app-common/references/http/setup.md",
+        ".claude/skills/app-common/references/local-dev/index.md",
+        ".claude/skills/app-common/references/mcp/index.md",
+        ".claude/skills/app-common/references/outbox/index.md",
+        ".claude/skills/app-common/references/outbox/setup.md",
+        ".claude/skills/app-common/references/search/index.md",
+        ".claude/skills/app-common/references/storage/index.md",
+        ".claude/skills/app-common/references/storage/setup.md",
+        ".claude/skills/app-common/references/testing/examples.md",
+        ".claude/skills/app-common/references/testing/index.md",
+        ".claude/skills/app-common/references/ui/api.md",
+        ".claude/skills/app-common/references/ui/checklist.md",
+        ".claude/skills/app-common/references/ui/components.md",
+        ".claude/skills/app-common/references/ui/index.md",
+        ".claude/skills/app-common/references/ui/runes.md",
+        ".claude/skills/app-common/references/ui/setup.md",
+        ".claude/skills/app-common/references/ui/structure.md",
+        ".claude/skills/app-common/references/update/index.md",
+        ".claude/skills/app-common/references/user/google-auth.md",
+        ".claude/skills/app-common/references/user/index.md",
+        ".claude/skills/app-common/references/user/setup.md",
+        ".claude/skills/app-common/references/vector/index.md",
+        ".claude/skills/app-common/references/vector/setup.md",
+        ".devkit/managed/app-common/skills/app-common/SKILL.md",
+        ".devkit/managed/app-common/skills/app-common/catalog.json",
+        ".devkit/managed/app-common/skills/app-common/references/ai/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/ai/setup.md",
+        ".devkit/managed/app-common/skills/app-common/references/api-key/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/auth/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/backend/commands.md",
+        ".devkit/managed/app-common/skills/app-common/references/backend/errors.md",
+        ".devkit/managed/app-common/skills/app-common/references/backend/hooks.md",
+        ".devkit/managed/app-common/skills/app-common/references/backend/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/backend/session.md",
+        ".devkit/managed/app-common/skills/app-common/references/backend/setup.md",
+        ".devkit/managed/app-common/skills/app-common/references/backend/time.md",
+        ".devkit/managed/app-common/skills/app-common/references/document/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/http/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/http/setup.md",
+        ".devkit/managed/app-common/skills/app-common/references/local-dev/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/mcp/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/outbox/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/outbox/setup.md",
+        ".devkit/managed/app-common/skills/app-common/references/search/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/storage/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/storage/setup.md",
+        ".devkit/managed/app-common/skills/app-common/references/testing/examples.md",
+        ".devkit/managed/app-common/skills/app-common/references/testing/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/ui/api.md",
+        ".devkit/managed/app-common/skills/app-common/references/ui/checklist.md",
+        ".devkit/managed/app-common/skills/app-common/references/ui/components.md",
+        ".devkit/managed/app-common/skills/app-common/references/ui/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/ui/runes.md",
+        ".devkit/managed/app-common/skills/app-common/references/ui/setup.md",
+        ".devkit/managed/app-common/skills/app-common/references/ui/structure.md",
+        ".devkit/managed/app-common/skills/app-common/references/update/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/user/google-auth.md",
+        ".devkit/managed/app-common/skills/app-common/references/user/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/user/setup.md",
+        ".devkit/managed/app-common/skills/app-common/references/vector/index.md",
+        ".devkit/managed/app-common/skills/app-common/references/vector/setup.md"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "architecture",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/architecture.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "entrypoints": [
+        ".devkit/managed/app-common/playbooks/onboard.md"
+      ],
+      "id": "onboard",
+      "kind": "playbook",
+      "paths": [
+        ".devkit/managed/app-common/playbooks/onboard.md"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "orientation",
+      "kind": "guidance",
+      "paths": [
+        ".devkit/managed/app-common/guidance/orientation.md"
+      ]
+    },
+    {
+      "bundle": "app-common-dev",
+      "id": "app-common-contributor",
+      "kind": "skill",
+      "paths": [
+        ".agents/skills/app-common-contributor/SKILL.md",
+        ".claude/skills/app-common-contributor/SKILL.md",
+        ".devkit/managed/app-common-dev/skills/app-common-contributor/SKILL.md"
+      ]
+    },
+    {
+      "bundle": "devkit",
+      "id": "consumption",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/devkit/instructions/consumption.md"
+      ]
+    },
+    {
+      "bundle": "devkit",
+      "id": "resource-kinds",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/devkit/instructions/resource-kinds.md"
+      ]
+    },
+    {
+      "bundle": "devkit",
+      "id": "in-repo-bundle",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/devkit/instructions/in-repo-bundle.md"
+      ]
+    },
+    {
+      "bundle": "devkit",
+      "id": "devkit-run",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/devkit/instructions/devkit-run.md"
+      ]
+    }
+  ],
+  "files": {
+    ".agents/skills/app-common-contributor/SKILL.md": {
+      "mode": 420,
+      "sha256": "e539caa7c025b643686c5f8bcdfa429742f2bd90d7d8b6d8df8a327c5a1fcd97"
+    },
+    ".agents/skills/app-common/SKILL.md": {
+      "mode": 420,
+      "sha256": "af5fc001eb11498df9400a6dfef723b408949e6c877a9b2a2ae3dba136c6026d"
+    },
+    ".agents/skills/app-common/catalog.json": {
+      "mode": 420,
+      "sha256": "53d9faaec2c49faf7a286123b9fa96e073a56b02e46ca85a2d663c5a508ac4d6"
+    },
+    ".agents/skills/app-common/references/ai/index.md": {
+      "mode": 420,
+      "sha256": "b0d06c6732eaeeeed8f2687ae32a1cc4e6efa6f8bec72eca769307a62be3b3f1"
+    },
+    ".agents/skills/app-common/references/ai/setup.md": {
+      "mode": 420,
+      "sha256": "6f70eb4719f7fa59c490a08310343055fb1123002a5b5c6cd0fe63dbddaaa89d"
+    },
+    ".agents/skills/app-common/references/api-key/index.md": {
+      "mode": 420,
+      "sha256": "c30b400a236f8afb6dff033f41c4a36920d6b6b4018347c99eeb20840690d77c"
+    },
+    ".agents/skills/app-common/references/auth/index.md": {
+      "mode": 420,
+      "sha256": "a4fd36bc167cc9e94eb07d6c627b3e1fa572e1cca51ba7f71033aba574f96317"
+    },
+    ".agents/skills/app-common/references/backend/commands.md": {
+      "mode": 420,
+      "sha256": "c11853a26ea7a9c39e9bf80e9a6aa7b840eb3d975563e0369761b829cec52707"
+    },
+    ".agents/skills/app-common/references/backend/errors.md": {
+      "mode": 420,
+      "sha256": "f31a0c59c5d6d6d91b7aceb21fcf9771231a52390a73bd16b995bc5c1a5b3834"
+    },
+    ".agents/skills/app-common/references/backend/hooks.md": {
+      "mode": 420,
+      "sha256": "68cbf8144c831baec4a2b52c7cf86705a21587477f118b75b02fb5a87aa24094"
+    },
+    ".agents/skills/app-common/references/backend/index.md": {
+      "mode": 420,
+      "sha256": "9567a00846c02543aa96ecd1af5a62144959f47e7d7eebc2c91347fa75a3ed36"
+    },
+    ".agents/skills/app-common/references/backend/session.md": {
+      "mode": 420,
+      "sha256": "acdb887e3d82aa05f2a3df5cbd2afe75de17ed8a688c0e69ce87192072b63013"
+    },
+    ".agents/skills/app-common/references/backend/setup.md": {
+      "mode": 420,
+      "sha256": "7d5d61f0a4400a4b734456a4e596dd88b55e026ab25cf99ea8e0fd5b2f38f611"
+    },
+    ".agents/skills/app-common/references/backend/time.md": {
+      "mode": 420,
+      "sha256": "1d465c45666fb1c9f288d057785a3b5fca79dfe0e0fff87bd8164c0fa65e56f7"
+    },
+    ".agents/skills/app-common/references/document/index.md": {
+      "mode": 420,
+      "sha256": "fcb1805a236c2f56106536b1d8bb4cf8f704473fe77323bd9fe59cc176bf7e37"
+    },
+    ".agents/skills/app-common/references/http/index.md": {
+      "mode": 420,
+      "sha256": "f083ccecf4b0b84bb6ea2ff19f126937122b062abc6df8df60204c3faa1119f5"
+    },
+    ".agents/skills/app-common/references/http/setup.md": {
+      "mode": 420,
+      "sha256": "9b4376363d90173da942a8b67e7c93c20bbc61439fd3316cec3e67e756643095"
+    },
+    ".agents/skills/app-common/references/local-dev/index.md": {
+      "mode": 420,
+      "sha256": "ebaed8c2eb739bc531040c14e0544df14bb860d41784d78b1b8fc39a6a95c5ae"
+    },
+    ".agents/skills/app-common/references/mcp/index.md": {
+      "mode": 420,
+      "sha256": "eb577b75cb5c11827567202c3ea6296cf5a66c997943a67aeb991363c140f1b3"
+    },
+    ".agents/skills/app-common/references/outbox/index.md": {
+      "mode": 420,
+      "sha256": "a34bef9f4f046e6dccc36eae2e43053a85d2dd2202712dd8ca0ca1feb0654287"
+    },
+    ".agents/skills/app-common/references/outbox/setup.md": {
+      "mode": 420,
+      "sha256": "8034b1aa36e199d6fe16b015e53c0b49763259c14fb29a5617920b93837ddd4e"
+    },
+    ".agents/skills/app-common/references/search/index.md": {
+      "mode": 420,
+      "sha256": "5c68a76d6b575b08cf2c92dd6808868591e95ce16e94523a3cac068118fa1b14"
+    },
+    ".agents/skills/app-common/references/storage/index.md": {
+      "mode": 420,
+      "sha256": "9cab8fd0a21f6ed476dd3536c77d93da690c28e6bc6f8df2f7648403be6c5c3b"
+    },
+    ".agents/skills/app-common/references/storage/setup.md": {
+      "mode": 420,
+      "sha256": "67ceef61b440e56d2c15434f5c0d0e969ca0984316ed76b2528e00e4b37d7f0e"
+    },
+    ".agents/skills/app-common/references/testing/examples.md": {
+      "mode": 420,
+      "sha256": "84e37f2d0dc3460ad40576c8cead53828520c63a8a7743bb03a50ab19e00f13f"
+    },
+    ".agents/skills/app-common/references/testing/index.md": {
+      "mode": 420,
+      "sha256": "23f7e70461bf0b435461071544bf7bc7708b2adc24aef54bc37de35375d4e788"
+    },
+    ".agents/skills/app-common/references/ui/api.md": {
+      "mode": 420,
+      "sha256": "6aed3b9931197a8b8b3ec7c83860ba5bdd1e2f51d6c88168778ac081fd93614a"
+    },
+    ".agents/skills/app-common/references/ui/checklist.md": {
+      "mode": 420,
+      "sha256": "0cf5e07e4371e8d8c93de162c33cdd07a3d33db19ff46c57f2c27744895f920d"
+    },
+    ".agents/skills/app-common/references/ui/components.md": {
+      "mode": 420,
+      "sha256": "3ba319c21a68ea3f607c270045fe8120e694e73fadc8d16b1f62e8f7694d6f61"
+    },
+    ".agents/skills/app-common/references/ui/index.md": {
+      "mode": 420,
+      "sha256": "a97f8eaf27bd336c3500169a74f67b51d491a826bd414608526cd892cabd9096"
+    },
+    ".agents/skills/app-common/references/ui/runes.md": {
+      "mode": 420,
+      "sha256": "1a981c14faee991c60331b7698d36be5dcdc01f6bac1b935f3b574dbca88b0dc"
+    },
+    ".agents/skills/app-common/references/ui/setup.md": {
+      "mode": 420,
+      "sha256": "fd6591b2e48e9471db3385f2749d657638a9b3e378a33d332a0389d6c2e3a35d"
+    },
+    ".agents/skills/app-common/references/ui/structure.md": {
+      "mode": 420,
+      "sha256": "c150d72b79df09f136944c01ed1502c856c6873080c441f90c82d7a40d0c2272"
+    },
+    ".agents/skills/app-common/references/update/index.md": {
+      "mode": 420,
+      "sha256": "80b28d1ca8667f19e6628534c6d04b18e38e61e2b352afde816e53d19b67e327"
+    },
+    ".agents/skills/app-common/references/user/google-auth.md": {
+      "mode": 420,
+      "sha256": "06b040df0a1c037b9ddaf9cfcf8b90256431b2db35b2f1e16b11491b5d60415e"
+    },
+    ".agents/skills/app-common/references/user/index.md": {
+      "mode": 420,
+      "sha256": "371a1215dc0e3fd0a2a100a116646483abe39bef00a940733bb3194ea68c22d9"
+    },
+    ".agents/skills/app-common/references/user/setup.md": {
+      "mode": 420,
+      "sha256": "39bf2cfe9c2df8d7bbc517e3eb47cb5aab69e5e554d052d06139b63041200799"
+    },
+    ".agents/skills/app-common/references/vector/index.md": {
+      "mode": 420,
+      "sha256": "918991587d4f1d254b4e27398cd33a539692ef267954a9d02c3876f051bac47f"
+    },
+    ".agents/skills/app-common/references/vector/setup.md": {
+      "mode": 420,
+      "sha256": "39383ac07dd7a4ce283eaa3b3ce18fb429f1daf9169f1f2858e777834e2ccf12"
+    },
+    ".agents/skills/devkit-playbook/SKILL.md": {
+      "mode": 420,
+      "sha256": "eb2926a6c126471a57fe552209158d46e0243293b6ace07d7f92d3b31980a05c"
+    },
+    ".agents/skills/devkit-playbook/agents/openai.yaml": {
+      "mode": 420,
+      "sha256": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94"
+    },
+    ".claude/skills/app-common-contributor/SKILL.md": {
+      "mode": 420,
+      "sha256": "e539caa7c025b643686c5f8bcdfa429742f2bd90d7d8b6d8df8a327c5a1fcd97"
+    },
+    ".claude/skills/app-common/SKILL.md": {
+      "mode": 420,
+      "sha256": "af5fc001eb11498df9400a6dfef723b408949e6c877a9b2a2ae3dba136c6026d"
+    },
+    ".claude/skills/app-common/catalog.json": {
+      "mode": 420,
+      "sha256": "53d9faaec2c49faf7a286123b9fa96e073a56b02e46ca85a2d663c5a508ac4d6"
+    },
+    ".claude/skills/app-common/references/ai/index.md": {
+      "mode": 420,
+      "sha256": "b0d06c6732eaeeeed8f2687ae32a1cc4e6efa6f8bec72eca769307a62be3b3f1"
+    },
+    ".claude/skills/app-common/references/ai/setup.md": {
+      "mode": 420,
+      "sha256": "6f70eb4719f7fa59c490a08310343055fb1123002a5b5c6cd0fe63dbddaaa89d"
+    },
+    ".claude/skills/app-common/references/api-key/index.md": {
+      "mode": 420,
+      "sha256": "c30b400a236f8afb6dff033f41c4a36920d6b6b4018347c99eeb20840690d77c"
+    },
+    ".claude/skills/app-common/references/auth/index.md": {
+      "mode": 420,
+      "sha256": "a4fd36bc167cc9e94eb07d6c627b3e1fa572e1cca51ba7f71033aba574f96317"
+    },
+    ".claude/skills/app-common/references/backend/commands.md": {
+      "mode": 420,
+      "sha256": "c11853a26ea7a9c39e9bf80e9a6aa7b840eb3d975563e0369761b829cec52707"
+    },
+    ".claude/skills/app-common/references/backend/errors.md": {
+      "mode": 420,
+      "sha256": "f31a0c59c5d6d6d91b7aceb21fcf9771231a52390a73bd16b995bc5c1a5b3834"
+    },
+    ".claude/skills/app-common/references/backend/hooks.md": {
+      "mode": 420,
+      "sha256": "68cbf8144c831baec4a2b52c7cf86705a21587477f118b75b02fb5a87aa24094"
+    },
+    ".claude/skills/app-common/references/backend/index.md": {
+      "mode": 420,
+      "sha256": "9567a00846c02543aa96ecd1af5a62144959f47e7d7eebc2c91347fa75a3ed36"
+    },
+    ".claude/skills/app-common/references/backend/session.md": {
+      "mode": 420,
+      "sha256": "acdb887e3d82aa05f2a3df5cbd2afe75de17ed8a688c0e69ce87192072b63013"
+    },
+    ".claude/skills/app-common/references/backend/setup.md": {
+      "mode": 420,
+      "sha256": "7d5d61f0a4400a4b734456a4e596dd88b55e026ab25cf99ea8e0fd5b2f38f611"
+    },
+    ".claude/skills/app-common/references/backend/time.md": {
+      "mode": 420,
+      "sha256": "1d465c45666fb1c9f288d057785a3b5fca79dfe0e0fff87bd8164c0fa65e56f7"
+    },
+    ".claude/skills/app-common/references/document/index.md": {
+      "mode": 420,
+      "sha256": "fcb1805a236c2f56106536b1d8bb4cf8f704473fe77323bd9fe59cc176bf7e37"
+    },
+    ".claude/skills/app-common/references/http/index.md": {
+      "mode": 420,
+      "sha256": "f083ccecf4b0b84bb6ea2ff19f126937122b062abc6df8df60204c3faa1119f5"
+    },
+    ".claude/skills/app-common/references/http/setup.md": {
+      "mode": 420,
+      "sha256": "9b4376363d90173da942a8b67e7c93c20bbc61439fd3316cec3e67e756643095"
+    },
+    ".claude/skills/app-common/references/local-dev/index.md": {
+      "mode": 420,
+      "sha256": "ebaed8c2eb739bc531040c14e0544df14bb860d41784d78b1b8fc39a6a95c5ae"
+    },
+    ".claude/skills/app-common/references/mcp/index.md": {
+      "mode": 420,
+      "sha256": "eb577b75cb5c11827567202c3ea6296cf5a66c997943a67aeb991363c140f1b3"
+    },
+    ".claude/skills/app-common/references/outbox/index.md": {
+      "mode": 420,
+      "sha256": "a34bef9f4f046e6dccc36eae2e43053a85d2dd2202712dd8ca0ca1feb0654287"
+    },
+    ".claude/skills/app-common/references/outbox/setup.md": {
+      "mode": 420,
+      "sha256": "8034b1aa36e199d6fe16b015e53c0b49763259c14fb29a5617920b93837ddd4e"
+    },
+    ".claude/skills/app-common/references/search/index.md": {
+      "mode": 420,
+      "sha256": "5c68a76d6b575b08cf2c92dd6808868591e95ce16e94523a3cac068118fa1b14"
+    },
+    ".claude/skills/app-common/references/storage/index.md": {
+      "mode": 420,
+      "sha256": "9cab8fd0a21f6ed476dd3536c77d93da690c28e6bc6f8df2f7648403be6c5c3b"
+    },
+    ".claude/skills/app-common/references/storage/setup.md": {
+      "mode": 420,
+      "sha256": "67ceef61b440e56d2c15434f5c0d0e969ca0984316ed76b2528e00e4b37d7f0e"
+    },
+    ".claude/skills/app-common/references/testing/examples.md": {
+      "mode": 420,
+      "sha256": "84e37f2d0dc3460ad40576c8cead53828520c63a8a7743bb03a50ab19e00f13f"
+    },
+    ".claude/skills/app-common/references/testing/index.md": {
+      "mode": 420,
+      "sha256": "23f7e70461bf0b435461071544bf7bc7708b2adc24aef54bc37de35375d4e788"
+    },
+    ".claude/skills/app-common/references/ui/api.md": {
+      "mode": 420,
+      "sha256": "6aed3b9931197a8b8b3ec7c83860ba5bdd1e2f51d6c88168778ac081fd93614a"
+    },
+    ".claude/skills/app-common/references/ui/checklist.md": {
+      "mode": 420,
+      "sha256": "0cf5e07e4371e8d8c93de162c33cdd07a3d33db19ff46c57f2c27744895f920d"
+    },
+    ".claude/skills/app-common/references/ui/components.md": {
+      "mode": 420,
+      "sha256": "3ba319c21a68ea3f607c270045fe8120e694e73fadc8d16b1f62e8f7694d6f61"
+    },
+    ".claude/skills/app-common/references/ui/index.md": {
+      "mode": 420,
+      "sha256": "a97f8eaf27bd336c3500169a74f67b51d491a826bd414608526cd892cabd9096"
+    },
+    ".claude/skills/app-common/references/ui/runes.md": {
+      "mode": 420,
+      "sha256": "1a981c14faee991c60331b7698d36be5dcdc01f6bac1b935f3b574dbca88b0dc"
+    },
+    ".claude/skills/app-common/references/ui/setup.md": {
+      "mode": 420,
+      "sha256": "fd6591b2e48e9471db3385f2749d657638a9b3e378a33d332a0389d6c2e3a35d"
+    },
+    ".claude/skills/app-common/references/ui/structure.md": {
+      "mode": 420,
+      "sha256": "c150d72b79df09f136944c01ed1502c856c6873080c441f90c82d7a40d0c2272"
+    },
+    ".claude/skills/app-common/references/update/index.md": {
+      "mode": 420,
+      "sha256": "80b28d1ca8667f19e6628534c6d04b18e38e61e2b352afde816e53d19b67e327"
+    },
+    ".claude/skills/app-common/references/user/google-auth.md": {
+      "mode": 420,
+      "sha256": "06b040df0a1c037b9ddaf9cfcf8b90256431b2db35b2f1e16b11491b5d60415e"
+    },
+    ".claude/skills/app-common/references/user/index.md": {
+      "mode": 420,
+      "sha256": "371a1215dc0e3fd0a2a100a116646483abe39bef00a940733bb3194ea68c22d9"
+    },
+    ".claude/skills/app-common/references/user/setup.md": {
+      "mode": 420,
+      "sha256": "39bf2cfe9c2df8d7bbc517e3eb47cb5aab69e5e554d052d06139b63041200799"
+    },
+    ".claude/skills/app-common/references/vector/index.md": {
+      "mode": 420,
+      "sha256": "918991587d4f1d254b4e27398cd33a539692ef267954a9d02c3876f051bac47f"
+    },
+    ".claude/skills/app-common/references/vector/setup.md": {
+      "mode": 420,
+      "sha256": "39383ac07dd7a4ce283eaa3b3ce18fb429f1daf9169f1f2858e777834e2ccf12"
+    },
+    ".claude/skills/devkit-playbook/SKILL.md": {
+      "mode": 420,
+      "sha256": "ee0bc59240c360ede46d87cdd2575779ddd9b553f613b8088adc635040886a2e"
+    },
+    ".devkit/managed/_devkit/skills/devkit-playbook/SKILL.md": {
+      "mode": 420,
+      "sha256": "eb2926a6c126471a57fe552209158d46e0243293b6ace07d7f92d3b31980a05c"
+    },
+    ".devkit/managed/_devkit/skills/devkit-playbook/agents/openai.yaml": {
+      "mode": 420,
+      "sha256": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94"
+    },
+    ".devkit/managed/advisory/bundle.toml": {
+      "mode": 420,
+      "sha256": "a8ba8cfe0b1b6f8a3e55af6aa935a7395bdf075625ffc9dd461af657a66871cc"
+    },
+    ".devkit/managed/advisory/instructions/agent-advisory-python.md": {
+      "mode": 420,
+      "sha256": "1a9f3274bd26b0f73c621206b66f56c7e559f3156d7b86fef813d61801b56650"
+    },
+    ".devkit/managed/advisory/instructions/agent-advisory.md": {
+      "mode": 420,
+      "sha256": "d6a5e93bfe6dba0f9b55ca33e16ab5bbf37f232856f26d71e4e57880cf139866"
+    },
+    ".devkit/managed/app-common-dev/bundle.toml": {
+      "mode": 420,
+      "sha256": "6386695db2dbc66a0d336d4334f7f1df4b4ea2c3f7cf5fced4b75529e02ab4e7"
+    },
+    ".devkit/managed/app-common-dev/skills/app-common-contributor/SKILL.md": {
+      "mode": 420,
+      "sha256": "e539caa7c025b643686c5f8bcdfa429742f2bd90d7d8b6d8df8a327c5a1fcd97"
+    },
+    ".devkit/managed/app-common/bundle.toml": {
+      "mode": 420,
+      "sha256": "f987595206e6d01b97d16ed2a45fd0715b5e5f58832380edff127b52339a3f99"
+    },
+    ".devkit/managed/app-common/guidance/orientation.md": {
+      "mode": 420,
+      "sha256": "493c9f7bee5e30f2b09ab869cb622d7608076f30812bdc0810204ea836428dde"
+    },
+    ".devkit/managed/app-common/playbooks/onboard.md": {
+      "mode": 420,
+      "sha256": "400d1c0d5d65684ac1ee748677f81e02b56d1d695ca82659037961ac4fe82392"
+    },
+    ".devkit/managed/app-common/rules/architecture.py": {
+      "mode": 420,
+      "sha256": "6f84987f038aa68b558d388391ae8284448723754263c2fb6e89e6df75943354"
+    },
+    ".devkit/managed/app-common/skills/app-common/SKILL.md": {
+      "mode": 420,
+      "sha256": "af5fc001eb11498df9400a6dfef723b408949e6c877a9b2a2ae3dba136c6026d"
+    },
+    ".devkit/managed/app-common/skills/app-common/catalog.json": {
+      "mode": 420,
+      "sha256": "53d9faaec2c49faf7a286123b9fa96e073a56b02e46ca85a2d663c5a508ac4d6"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ai/index.md": {
+      "mode": 420,
+      "sha256": "b0d06c6732eaeeeed8f2687ae32a1cc4e6efa6f8bec72eca769307a62be3b3f1"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ai/setup.md": {
+      "mode": 420,
+      "sha256": "6f70eb4719f7fa59c490a08310343055fb1123002a5b5c6cd0fe63dbddaaa89d"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/api-key/index.md": {
+      "mode": 420,
+      "sha256": "c30b400a236f8afb6dff033f41c4a36920d6b6b4018347c99eeb20840690d77c"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/auth/index.md": {
+      "mode": 420,
+      "sha256": "a4fd36bc167cc9e94eb07d6c627b3e1fa572e1cca51ba7f71033aba574f96317"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/backend/commands.md": {
+      "mode": 420,
+      "sha256": "c11853a26ea7a9c39e9bf80e9a6aa7b840eb3d975563e0369761b829cec52707"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/backend/errors.md": {
+      "mode": 420,
+      "sha256": "f31a0c59c5d6d6d91b7aceb21fcf9771231a52390a73bd16b995bc5c1a5b3834"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/backend/hooks.md": {
+      "mode": 420,
+      "sha256": "68cbf8144c831baec4a2b52c7cf86705a21587477f118b75b02fb5a87aa24094"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/backend/index.md": {
+      "mode": 420,
+      "sha256": "9567a00846c02543aa96ecd1af5a62144959f47e7d7eebc2c91347fa75a3ed36"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/backend/session.md": {
+      "mode": 420,
+      "sha256": "acdb887e3d82aa05f2a3df5cbd2afe75de17ed8a688c0e69ce87192072b63013"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/backend/setup.md": {
+      "mode": 420,
+      "sha256": "7d5d61f0a4400a4b734456a4e596dd88b55e026ab25cf99ea8e0fd5b2f38f611"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/backend/time.md": {
+      "mode": 420,
+      "sha256": "1d465c45666fb1c9f288d057785a3b5fca79dfe0e0fff87bd8164c0fa65e56f7"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/document/index.md": {
+      "mode": 420,
+      "sha256": "fcb1805a236c2f56106536b1d8bb4cf8f704473fe77323bd9fe59cc176bf7e37"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/http/index.md": {
+      "mode": 420,
+      "sha256": "f083ccecf4b0b84bb6ea2ff19f126937122b062abc6df8df60204c3faa1119f5"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/http/setup.md": {
+      "mode": 420,
+      "sha256": "9b4376363d90173da942a8b67e7c93c20bbc61439fd3316cec3e67e756643095"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/local-dev/index.md": {
+      "mode": 420,
+      "sha256": "ebaed8c2eb739bc531040c14e0544df14bb860d41784d78b1b8fc39a6a95c5ae"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/mcp/index.md": {
+      "mode": 420,
+      "sha256": "eb577b75cb5c11827567202c3ea6296cf5a66c997943a67aeb991363c140f1b3"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/outbox/index.md": {
+      "mode": 420,
+      "sha256": "a34bef9f4f046e6dccc36eae2e43053a85d2dd2202712dd8ca0ca1feb0654287"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/outbox/setup.md": {
+      "mode": 420,
+      "sha256": "8034b1aa36e199d6fe16b015e53c0b49763259c14fb29a5617920b93837ddd4e"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/search/index.md": {
+      "mode": 420,
+      "sha256": "5c68a76d6b575b08cf2c92dd6808868591e95ce16e94523a3cac068118fa1b14"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/storage/index.md": {
+      "mode": 420,
+      "sha256": "9cab8fd0a21f6ed476dd3536c77d93da690c28e6bc6f8df2f7648403be6c5c3b"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/storage/setup.md": {
+      "mode": 420,
+      "sha256": "67ceef61b440e56d2c15434f5c0d0e969ca0984316ed76b2528e00e4b37d7f0e"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/testing/examples.md": {
+      "mode": 420,
+      "sha256": "84e37f2d0dc3460ad40576c8cead53828520c63a8a7743bb03a50ab19e00f13f"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/testing/index.md": {
+      "mode": 420,
+      "sha256": "23f7e70461bf0b435461071544bf7bc7708b2adc24aef54bc37de35375d4e788"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ui/api.md": {
+      "mode": 420,
+      "sha256": "6aed3b9931197a8b8b3ec7c83860ba5bdd1e2f51d6c88168778ac081fd93614a"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ui/checklist.md": {
+      "mode": 420,
+      "sha256": "0cf5e07e4371e8d8c93de162c33cdd07a3d33db19ff46c57f2c27744895f920d"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ui/components.md": {
+      "mode": 420,
+      "sha256": "3ba319c21a68ea3f607c270045fe8120e694e73fadc8d16b1f62e8f7694d6f61"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ui/index.md": {
+      "mode": 420,
+      "sha256": "a97f8eaf27bd336c3500169a74f67b51d491a826bd414608526cd892cabd9096"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ui/runes.md": {
+      "mode": 420,
+      "sha256": "1a981c14faee991c60331b7698d36be5dcdc01f6bac1b935f3b574dbca88b0dc"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ui/setup.md": {
+      "mode": 420,
+      "sha256": "fd6591b2e48e9471db3385f2749d657638a9b3e378a33d332a0389d6c2e3a35d"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/ui/structure.md": {
+      "mode": 420,
+      "sha256": "c150d72b79df09f136944c01ed1502c856c6873080c441f90c82d7a40d0c2272"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/update/index.md": {
+      "mode": 420,
+      "sha256": "80b28d1ca8667f19e6628534c6d04b18e38e61e2b352afde816e53d19b67e327"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/user/google-auth.md": {
+      "mode": 420,
+      "sha256": "06b040df0a1c037b9ddaf9cfcf8b90256431b2db35b2f1e16b11491b5d60415e"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/user/index.md": {
+      "mode": 420,
+      "sha256": "371a1215dc0e3fd0a2a100a116646483abe39bef00a940733bb3194ea68c22d9"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/user/setup.md": {
+      "mode": 420,
+      "sha256": "39bf2cfe9c2df8d7bbc517e3eb47cb5aab69e5e554d052d06139b63041200799"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/vector/index.md": {
+      "mode": 420,
+      "sha256": "918991587d4f1d254b4e27398cd33a539692ef267954a9d02c3876f051bac47f"
+    },
+    ".devkit/managed/app-common/skills/app-common/references/vector/setup.md": {
+      "mode": 420,
+      "sha256": "39383ac07dd7a4ce283eaa3b3ce18fb429f1daf9169f1f2858e777834e2ccf12"
+    },
+    ".devkit/managed/devkit/AGENTS.md": {
+      "mode": 420,
+      "sha256": "0b941ff21b95a3f3509e7d6632059a06be5c0896a6082e676d484d1ffad6e6ad"
+    },
+    ".devkit/managed/devkit/bundle.toml": {
+      "mode": 420,
+      "sha256": "103f47ead60b1095de359e4e06ca871b40103a2c86dc918ab3d8e660abc036b3"
+    },
+    ".devkit/managed/devkit/instructions/consumption.md": {
+      "mode": 420,
+      "sha256": "4d0f1510edf893d5595a07dd82f4b861ff69cb552650b0495433c9ea749d933d"
+    },
+    ".devkit/managed/devkit/instructions/devkit-run.md": {
+      "mode": 420,
+      "sha256": "9c1271816f3b02c4c7da0d3c0fbd56728b09f0382c154a49ab0861b7a4dae854"
+    },
+    ".devkit/managed/devkit/instructions/in-repo-bundle.md": {
+      "mode": 420,
+      "sha256": "214c928f3a393dd20c43638336981312897b5362657c18704b2df3227cc752b0"
+    },
+    ".devkit/managed/devkit/instructions/resource-kinds.md": {
+      "mode": 420,
+      "sha256": "62b2cfec493620220dce5c4895d0c20893c323107a7dca151a88aeda22f559c4"
+    }
+  },
+  "guidance_block": "4af1a3e3f435c38d90fa47f4b588ee3ecf75b147bc70165086f52c4bfedae1b2",
+  "packages": [
+    {
+      "bundle": "advisory",
+      "bundle_version": "0.1.0",
+      "package": "devkit",
+      "package_version": "0.1.0"
+    },
+    {
+      "bundle": "app-common",
+      "bundle_version": "0.1.0",
+      "package": "app-tools",
+      "package_version": "0.1.0"
+    },
+    {
+      "bundle": "app-common-dev",
+      "bundle_version": "0.1.0",
+      "package": "app-common-dev",
+      "package_version": "0.1.0"
+    },
+    {
+      "bundle": "devkit",
+      "bundle_version": "0.1.0",
+      "package": "devkit",
+      "package_version": "0.1.0"
+    }
+  ],
+  "schema": 1,
+  "selection": {
+    "agents": [
+      "antigravity",
+      "claude-code",
+      "codex"
+    ],
+    "presets": {
+      "advisory": [
+        "core",
+        "python"
+      ],
+      "app-common": [
+        "all"
+      ],
+      "app-common-dev": [
+        "all"
+      ],
+      "devkit": [
+        "core"
+      ]
+    }
+  },
+  "tool": {
+    "package": "devkit",
+    "version": "0.1.0"
+  }
+}

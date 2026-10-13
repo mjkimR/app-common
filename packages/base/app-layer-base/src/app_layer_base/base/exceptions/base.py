@@ -1,21 +1,23 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from http import HTTPStatus
 from typing import Any
 
-from app_error import Actor, Advisory, AppError, ExitCode, Retry
+from devkit.advisory import Actor, Advisory, AdvisoryError, ExitCode, Level, Retry
 
 __all__ = [
     "Actor",
     "Advisory",
-    "AppError",
+    "AdvisoryError",
     "CustomException",
     "ExitCode",
+    "Level",
     "Retry",
 ]
 
 
-class CustomException(AppError):
+class CustomException(AdvisoryError):
     status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR
     title: str = "Internal Server Error"
     message: str = "Internal Server Error"
@@ -35,29 +37,29 @@ class CustomException(AppError):
         actor: Actor | None = None,
         retry: Retry | None = None,
         guardrail: bool | None = None,
+        input_error: bool | None = None,
         retry_after: str | None = None,
         fix: str | None = None,
         what_to_report: str | None = None,
-        target_files: list[str] | tuple[str, ...] | None = None,
-        details: list[str] | tuple[str, ...] | None = None,
+        target_files: Sequence[str] | None = None,
+        details: Sequence[str] | None = None,
         exit_code: ExitCode | None = None,
     ) -> None:
         resolved_message = message if message is not None else self.message
         super().__init__(
             resolved_message,
+            *(details or ()),
             code=code,
             actor=actor,
             retry=retry,
             guardrail=guardrail,
+            input_error=input_error,
             retry_after=retry_after,
             fix=fix,
             what_to_report=what_to_report,
             target_files=target_files,
-            details=details,
             exit_code=exit_code,
         )
-        if message is not None:
-            self.message = message
         if log_message is not None:
             self.log_message = log_message
         if status_code is not None:
@@ -70,7 +72,7 @@ class CustomException(AppError):
         if log_message is None:
             self.log_message = self.message
 
-    def to_dict(self, include_advisory: bool = False) -> dict[str, Any]:
+    def to_dict(self, *, include_advisory: bool = False) -> dict[str, Any]:
         data: dict[str, Any] = {
             "title": self.title,
             "message": self.message,
