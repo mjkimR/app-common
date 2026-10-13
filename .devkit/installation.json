@@ -139,10 +139,152 @@
     },
     {
       "bundle": "app-common",
-      "id": "architecture",
+      "id": "router-repo-import",
       "kind": "rule",
       "paths": [
-        ".devkit/managed/app-common/rules/architecture.py"
+        ".devkit/managed/app-common/rules/router_repo_import/guide.md",
+        ".devkit/managed/app-common/rules/router_repo_import/rule.py",
+        ".devkit/managed/app-common/rules/router_repo_import/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "service-commit",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/service_commit/guide.md",
+        ".devkit/managed/app-common/rules/service_commit/rule.py",
+        ".devkit/managed/app-common/rules/service_commit/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "hook-super-call",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/hook_super_call/guide.md",
+        ".devkit/managed/app-common/rules/hook_super_call/rule.py",
+        ".devkit/managed/app-common/rules/hook_super_call/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "adapter-dependency",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/adapter_dependency/guide.md",
+        ".devkit/managed/app-common/rules/adapter_dependency/rule.py",
+        ".devkit/managed/app-common/rules/adapter_dependency/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "forbidden-import",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/forbidden_import/guide.md",
+        ".devkit/managed/app-common/rules/forbidden_import/rule.py",
+        ".devkit/managed/app-common/rules/forbidden_import/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "command-signature",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/command_signature/guide.md",
+        ".devkit/managed/app-common/rules/command_signature/rule.py",
+        ".devkit/managed/app-common/rules/command_signature/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "command-transaction",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/command_transaction/guide.md",
+        ".devkit/managed/app-common/rules/command_transaction/rule.py",
+        ".devkit/managed/app-common/rules/command_transaction/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "architecture-config",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/architecture_config/guide.md",
+        ".devkit/managed/app-common/rules/architecture_config/rule.py",
+        ".devkit/managed/app-common/rules/architecture_config/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "parse-error",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/parse_error/guide.md",
+        ".devkit/managed/app-common/rules/parse_error/rule.py",
+        ".devkit/managed/app-common/rules/parse_error/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "http-client-construction",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/http_client_construction/guide.md",
+        ".devkit/managed/app-common/rules/http_client_construction/rule.py",
+        ".devkit/managed/app-common/rules/http_client_construction/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "shared-client-close",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/shared_client_close/guide.md",
+        ".devkit/managed/app-common/rules/shared_client_close/rule.py",
+        ".devkit/managed/app-common/rules/shared_client_close/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "direct-current-time",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/direct_current_time/guide.md",
+        ".devkit/managed/app-common/rules/direct_current_time/rule.py",
+        ".devkit/managed/app-common/rules/direct_current_time/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "db-factory-in-layer",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/db_factory_in_layer/guide.md",
+        ".devkit/managed/app-common/rules/db_factory_in_layer/rule.py",
+        ".devkit/managed/app-common/rules/db_factory_in_layer/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "undeclared-dependency",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/undeclared_dependency/guide.md",
+        ".devkit/managed/app-common/rules/undeclared_dependency/rule.py",
+        ".devkit/managed/app-common/rules/undeclared_dependency/tests/test_rule.py"
+      ]
+    },
+    {
+      "bundle": "app-common",
+      "id": "invalid-suppression",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/app-common/rules/invalid_suppression/guide.md",
+        ".devkit/managed/app-common/rules/invalid_suppression/rule.py",
+        ".devkit/managed/app-common/rules/invalid_suppression/tests/test_rule.py"
       ]
     },
     {
@@ -210,7 +352,7 @@
   "files": {
     ".agents/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "e539caa7c025b643686c5f8bcdfa429742f2bd90d7d8b6d8df8a327c5a1fcd97"
+      "sha256": "cbfeb696c04a8d33d550a11bd11117dcfda57ca50ecc6c02432fb23802182bc0"
     },
     ".agents/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -258,7 +400,7 @@
     },
     ".agents/skills/app-common/references/backend/setup.md": {
       "mode": 420,
-      "sha256": "27ba322e28729e198bee4b83943039af9414e8e2f9de336ac8ecc93b6631392b"
+      "sha256": "083e527f5ebd756bdbf1e271e4b782692a764fabc712f5d267388dac4f85d851"
     },
     ".agents/skills/app-common/references/backend/time.md": {
       "mode": 420,
@@ -342,7 +484,7 @@
     },
     ".agents/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "ec43e9f47626c66b5de8b0990041398e3da7660214e5824a26e9ccce8e1e05ba"
+      "sha256": "3e4126f9f1f97b8bd879e42a33c23df74a85a2f26ac06ac4a5c00ced3de1ce82"
     },
     ".agents/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -374,7 +516,7 @@
     },
     ".claude/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "e539caa7c025b643686c5f8bcdfa429742f2bd90d7d8b6d8df8a327c5a1fcd97"
+      "sha256": "cbfeb696c04a8d33d550a11bd11117dcfda57ca50ecc6c02432fb23802182bc0"
     },
     ".claude/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -422,7 +564,7 @@
     },
     ".claude/skills/app-common/references/backend/setup.md": {
       "mode": 420,
-      "sha256": "27ba322e28729e198bee4b83943039af9414e8e2f9de336ac8ecc93b6631392b"
+      "sha256": "083e527f5ebd756bdbf1e271e4b782692a764fabc712f5d267388dac4f85d851"
     },
     ".claude/skills/app-common/references/backend/time.md": {
       "mode": 420,
@@ -506,7 +648,7 @@
     },
     ".claude/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "ec43e9f47626c66b5de8b0990041398e3da7660214e5824a26e9ccce8e1e05ba"
+      "sha256": "3e4126f9f1f97b8bd879e42a33c23df74a85a2f26ac06ac4a5c00ced3de1ce82"
     },
     ".claude/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -558,11 +700,11 @@
     },
     ".devkit/managed/app-common-dev/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "e539caa7c025b643686c5f8bcdfa429742f2bd90d7d8b6d8df8a327c5a1fcd97"
+      "sha256": "cbfeb696c04a8d33d550a11bd11117dcfda57ca50ecc6c02432fb23802182bc0"
     },
     ".devkit/managed/app-common/bundle.toml": {
       "mode": 420,
-      "sha256": "f987595206e6d01b97d16ed2a45fd0715b5e5f58832380edff127b52339a3f99"
+      "sha256": "9bf1947c7a1bcb1f5e67d2b0520baedb77b215d6a1fd0036a7e01f158f08c1b3"
     },
     ".devkit/managed/app-common/guidance/orientation.md": {
       "mode": 420,
@@ -570,11 +712,187 @@
     },
     ".devkit/managed/app-common/playbooks/onboard.md": {
       "mode": 420,
-      "sha256": "56b33353433e72b0757e7cf7db0b815ca52e956414e794404419f61430d1c498"
+      "sha256": "d9917de7cca3b23d1cc5de564412bbe2c9521d2c4161a23a9b37b6d459866662"
     },
-    ".devkit/managed/app-common/rules/architecture.py": {
+    ".devkit/managed/app-common/rules/adapter_dependency/guide.md": {
       "mode": 420,
-      "sha256": "6f84987f038aa68b558d388391ae8284448723754263c2fb6e89e6df75943354"
+      "sha256": "58f5d841f43a60c47c60586cef6a2253a2ef76ecc6b70a2aac688c3f6bed1fbb"
+    },
+    ".devkit/managed/app-common/rules/adapter_dependency/rule.py": {
+      "mode": 420,
+      "sha256": "754891c197c12cf7136c4fbd2eadc6904940705390ace7de67d13f672c834f47"
+    },
+    ".devkit/managed/app-common/rules/adapter_dependency/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "909565fc1db8bb6bf03c52705a85ca5012b48efb08c8b1bbcfba034e971ad44f"
+    },
+    ".devkit/managed/app-common/rules/architecture_config/guide.md": {
+      "mode": 420,
+      "sha256": "5c43c638e4490a428c4879577e54bbdf056ce11db17ab243f6a8faaf61efe37b"
+    },
+    ".devkit/managed/app-common/rules/architecture_config/rule.py": {
+      "mode": 420,
+      "sha256": "baf1b933226e91e71274f96099778726b49728e779677d994a80bfeba3c7091e"
+    },
+    ".devkit/managed/app-common/rules/architecture_config/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "71df600f4b231c44c59a1bdecebf5c0ec74a2988720677f1d793f6e7fe60a56b"
+    },
+    ".devkit/managed/app-common/rules/command_signature/guide.md": {
+      "mode": 420,
+      "sha256": "5da8d1777fc16a0933ef2236e8e822abb1859f2769049980639f57380565d9f2"
+    },
+    ".devkit/managed/app-common/rules/command_signature/rule.py": {
+      "mode": 420,
+      "sha256": "0b92002735195bf0f8f9aab6373d2034994ab2a251c119934e45885c164ad65e"
+    },
+    ".devkit/managed/app-common/rules/command_signature/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "8251a4154965525263bb16504c166df705d7c5b00e39e53c7051ebf4355ff912"
+    },
+    ".devkit/managed/app-common/rules/command_transaction/guide.md": {
+      "mode": 420,
+      "sha256": "fc98894a97a4eb123792f45d75ea58a08b4afa3e8a838f53497bfc1b96fb2386"
+    },
+    ".devkit/managed/app-common/rules/command_transaction/rule.py": {
+      "mode": 420,
+      "sha256": "4821fe6af1c1d65b90cc85d1518fe6de59864150acc6cd12c35f6f6d40456656"
+    },
+    ".devkit/managed/app-common/rules/command_transaction/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "7e36258aea96b9a605e1469e8e4ed19c8832e9cfd992b895121e9d1b9487f880"
+    },
+    ".devkit/managed/app-common/rules/db_factory_in_layer/guide.md": {
+      "mode": 420,
+      "sha256": "9ffdffb2f9dd18a74d82d03718e53a18ab35d7f597e97524daffcba067782cc2"
+    },
+    ".devkit/managed/app-common/rules/db_factory_in_layer/rule.py": {
+      "mode": 420,
+      "sha256": "7e6d7a6ebdc52f307da624d889838eff22a538b6dc14ce9a56773bc62c2dfceb"
+    },
+    ".devkit/managed/app-common/rules/db_factory_in_layer/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "49b26bd60aae334459e93e7d7995e70689f09f7f73f5055aba417e43dd9d6935"
+    },
+    ".devkit/managed/app-common/rules/direct_current_time/guide.md": {
+      "mode": 420,
+      "sha256": "57ad3666522a5a624f6ae002977cfbe14acdad43ecea239989b498c0538bae7c"
+    },
+    ".devkit/managed/app-common/rules/direct_current_time/rule.py": {
+      "mode": 420,
+      "sha256": "46047e7a681a11506c4b2a221a1f84729baf4adda57cd11ad35e259415a0d84f"
+    },
+    ".devkit/managed/app-common/rules/direct_current_time/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "0539f2c282ff7442f8e39affac129e1dc3556e31eb31898f28f5af3b0d9bdf7c"
+    },
+    ".devkit/managed/app-common/rules/forbidden_import/guide.md": {
+      "mode": 420,
+      "sha256": "bad47bfb2b288c3d2ecb6e687cfe0905b9659e3b806ce8ec90009c2cbbf9c328"
+    },
+    ".devkit/managed/app-common/rules/forbidden_import/rule.py": {
+      "mode": 420,
+      "sha256": "6b12f1a867a66ed17922911c771c105429aecc2d97300d8324801910c54d9216"
+    },
+    ".devkit/managed/app-common/rules/forbidden_import/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "7bd28bd7da57f7ed5f8d05097dd2a6113203af753bb98d26fa282276908d14b4"
+    },
+    ".devkit/managed/app-common/rules/hook_super_call/guide.md": {
+      "mode": 420,
+      "sha256": "0f77916fc8763cde780087d22724706f005ca1c91711918547daed8533ddeacc"
+    },
+    ".devkit/managed/app-common/rules/hook_super_call/rule.py": {
+      "mode": 420,
+      "sha256": "a56ed21ed9168626f7bae7ddf92dd00c9517aaeda90d301522e32ebc0ff048dc"
+    },
+    ".devkit/managed/app-common/rules/hook_super_call/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "39952717bf8407600846c3d49974ab2a3beed06d0b2e8883127b53bf3df3391a"
+    },
+    ".devkit/managed/app-common/rules/http_client_construction/guide.md": {
+      "mode": 420,
+      "sha256": "930cbb23a2aeeb1b5fba58bf4ac0cf3716d223d26d2bfa079b217708c6a307b7"
+    },
+    ".devkit/managed/app-common/rules/http_client_construction/rule.py": {
+      "mode": 420,
+      "sha256": "72093a58f86f1fbff8eb6e5382ab047b6d0132dc585149dc78ccf3a64b0d770a"
+    },
+    ".devkit/managed/app-common/rules/http_client_construction/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "af3d1eceddc78d4a811b650d1a8b14b7678413460a085a20ea97fad6682f3995"
+    },
+    ".devkit/managed/app-common/rules/invalid_suppression/guide.md": {
+      "mode": 420,
+      "sha256": "0af4cb9fca3c170a7f2149c79de9c7bff56dd5b8afc8b982fcde4f2074ff2813"
+    },
+    ".devkit/managed/app-common/rules/invalid_suppression/rule.py": {
+      "mode": 420,
+      "sha256": "3cc304fae7463a79082900fb3998820b20bae1559b95b25cb26c8d932a565e37"
+    },
+    ".devkit/managed/app-common/rules/invalid_suppression/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "3cf722461e5a6a9bce5a46fbdc99f096a4b81a031426adba003fd35e9af3f42b"
+    },
+    ".devkit/managed/app-common/rules/parse_error/guide.md": {
+      "mode": 420,
+      "sha256": "f48dd37b2bbb1b190fe2c9e3223d999f514fb90cbdad87a5cd5e53d2fcd2ca11"
+    },
+    ".devkit/managed/app-common/rules/parse_error/rule.py": {
+      "mode": 420,
+      "sha256": "ca2e2d2195abc793d8bc46daa68c851eb5d0b7d5d47fb47e7251f56d285f9667"
+    },
+    ".devkit/managed/app-common/rules/parse_error/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "abedcd2f059ffc5e0c59b616eba041cdf1c1c2edc7cb43e4da8d38656357591c"
+    },
+    ".devkit/managed/app-common/rules/router_repo_import/guide.md": {
+      "mode": 420,
+      "sha256": "cc2dd28f5f716c7c86d4651d9a275b9d9c45f2c8b515151d2046472cb2372249"
+    },
+    ".devkit/managed/app-common/rules/router_repo_import/rule.py": {
+      "mode": 420,
+      "sha256": "fc1622cd3bb8ee8dc5f6c642b8e3227e7e5c5b3bc50c25a6df4abcecbe5bb4b3"
+    },
+    ".devkit/managed/app-common/rules/router_repo_import/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "b0c67633145ebb51eb97185098b8114a6db8185ba20f1300996f75b686bd7ace"
+    },
+    ".devkit/managed/app-common/rules/service_commit/guide.md": {
+      "mode": 420,
+      "sha256": "ba415d3d360abd392b8ee934cd70b861f3f5b3b1e44781e6801ae949e3f7dd9d"
+    },
+    ".devkit/managed/app-common/rules/service_commit/rule.py": {
+      "mode": 420,
+      "sha256": "ffe1a64717fec253b28b1b47698ad827da30202b335086b8e9ed05b56b73d6de"
+    },
+    ".devkit/managed/app-common/rules/service_commit/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "960182eb90774d43d61b4e79d78a765e0389d26dca65a84a8150ff4593cfee74"
+    },
+    ".devkit/managed/app-common/rules/shared_client_close/guide.md": {
+      "mode": 420,
+      "sha256": "998c3e3e4813b8eb8c3ee42b3c443fee2627bfd9a12cc2d2be644e99d229cd54"
+    },
+    ".devkit/managed/app-common/rules/shared_client_close/rule.py": {
+      "mode": 420,
+      "sha256": "5d6c9c0e4114a5550b85e95b8f45e13b2f71433d4b67b2dd5ae1b4c3a1eac542"
+    },
+    ".devkit/managed/app-common/rules/shared_client_close/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "e22c03bc0a518fa0b9222d85965fe8c7a8bda0c16c4a66bab56797a5b2f0d5eb"
+    },
+    ".devkit/managed/app-common/rules/undeclared_dependency/guide.md": {
+      "mode": 420,
+      "sha256": "ae8007280fa45a2b4cdffda9549ba6df6bf7f24eeead898918735148a1516ee2"
+    },
+    ".devkit/managed/app-common/rules/undeclared_dependency/rule.py": {
+      "mode": 420,
+      "sha256": "18e31cec074a9eb58246a55cb8741dd8addda227d111e1e0099864b9072bc45b"
+    },
+    ".devkit/managed/app-common/rules/undeclared_dependency/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "6191fcac4384fca9088e2d8e180db3e94577eeb5f4c44f7b3e06b5aca090e1f7"
     },
     ".devkit/managed/app-common/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -622,7 +940,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/backend/setup.md": {
       "mode": 420,
-      "sha256": "27ba322e28729e198bee4b83943039af9414e8e2f9de336ac8ecc93b6631392b"
+      "sha256": "083e527f5ebd756bdbf1e271e4b782692a764fabc712f5d267388dac4f85d851"
     },
     ".devkit/managed/app-common/skills/app-common/references/backend/time.md": {
       "mode": 420,
@@ -706,7 +1024,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "ec43e9f47626c66b5de8b0990041398e3da7660214e5824a26e9ccce8e1e05ba"
+      "sha256": "3e4126f9f1f97b8bd879e42a33c23df74a85a2f26ac06ac4a5c00ced3de1ce82"
     },
     ".devkit/managed/app-common/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -738,7 +1056,7 @@
     },
     ".devkit/managed/devkit/instructions/consumption.md": {
       "mode": 420,
-      "sha256": "63ac16364442fbefc0073a0482208a70104615d76eeea3abfe7887c628116fd1"
+      "sha256": "e5a72cab2850af8ce630a14034dd4dbbc1bb7da5fb6a51e59886bdc0569fe061"
     },
     ".devkit/managed/devkit/instructions/devkit-run.md": {
       "mode": 420,
@@ -746,11 +1064,11 @@
     },
     ".devkit/managed/devkit/instructions/in-repo-bundle.md": {
       "mode": 420,
-      "sha256": "6b227b860caacb49e0f6513173ed796933b7fe00f8b97587f1a5d2b9be082ee2"
+      "sha256": "53e37eb168b05d8560ce99636c1f915d566a0f903b308561e32d44d71e15c9b8"
     },
     ".devkit/managed/devkit/instructions/resource-kinds.md": {
       "mode": 420,
-      "sha256": "62b2cfec493620220dce5c4895d0c20893c323107a7dca151a88aeda22f559c4"
+      "sha256": "c023fc9441653e5c51680682bef381b5e113cae41f7d79e6a911ef4ce6c05a2e"
     }
   },
   "guidance_block": "4af1a3e3f435c38d90fa47f4b588ee3ecf75b147bc70165086f52c4bfedae1b2",

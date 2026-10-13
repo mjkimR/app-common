@@ -14,9 +14,11 @@ The command resolves the ref to a full commit and pins every app-common dependen
 it, in both forms: `git+https://github.com/mjkimR/app-common.git@<ref>#subdirectory=...`
 requirements and `[tool.uv.sources]` entries (`rev`; a `tag` or `branch` is replaced),
 in the root manifest and its uv workspace members. It also sets the `devkit` and
-`devkit-advisory` sources to the revision app-common pins at that commit, because uv does
-not follow the sources of Git dependencies, and adds each to the root `dev` dependency
-group when the project does not declare it: uv applies a source only to a direct dependency. It then runs `uv lock`, `uv sync` and `uv run devkit sync`, which
+`devkit-advisory` sources to the revision app-common pins at that commit (uv rejects any
+other: the app-common packages bring those exact URLs), and adds each to the root `dev`
+dependency group when the project does not declare it: a project's source applies only to
+its direct dependencies, and a declared `devkit` without one resolves from PyPI, where an
+unrelated project owns the name. It then runs `uv lock`, `uv sync` and `uv run devkit sync`, which
 redeploys the app-common skill, rules and guidance from the new app-tools.
 
 - `--dry-run` reports the commit, the manifests and the commands without changing anything.
@@ -24,7 +26,9 @@ redeploys the app-common skill, rules and guidance from the new app-tools.
 - A failing `uv lock` restores the manifests; the error names the failed command.
 
 Commit `pyproject.toml`, `uv.lock` and the files `devkit sync` changed
-(`.devkit/installation.json`, `AGENTS.md`, `.agents/skills/`, `.claude/skills/`).
+(`.devkit/installation.json`, `AGENTS.md`, `.agents/skills/`, `.claude/skills/`). Other
+clones and CI then run `uv sync` and `uv run devkit sync --locked`, which restores the
+managed copies from that receipt and never rewrites committed files.
 
 ## Leaving APM
 

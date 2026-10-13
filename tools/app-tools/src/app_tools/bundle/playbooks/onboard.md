@@ -48,9 +48,13 @@ uv add "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=packa
 uv add "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=packages/prebuilt/app-prebuilt-outbox"
 ```
 
-uv does not follow the sources of Git dependencies: declare every app-common package the
-project uses, directly or transitively, in its own `[tool.uv.sources]` at the same commit,
-and keep `devkit` and `devkit-advisory` at the revision app-common's root `pyproject.toml` pins. List both as dependencies too (a dev dependency is enough): uv applies a source only to a direct dependency, and an unrelated `devkit` project exists on PyPI.
+Pin every app-common package the project declares to the same commit: uv resolves their
+own dependencies (other app-common packages, `devkit`, `devkit-advisory`) from app-common's
+sources at that commit, and two commits are a conflicting-URL error. Copy the `devkit` and
+`devkit-advisory` entries of app-common's root `[tool.uv.sources]` into the project's at
+the same revision and list both as dependencies (a dev dependency is enough): a project's
+source applies only to its direct dependencies, and a declared `devkit` that nothing brings
+from Git resolves from PyPI, where an unrelated project owns the name.
 `uv run devkit app update` moves all of them together later.
 
 ## Phase 3: Project Skeleton and Lifespan
@@ -108,4 +112,7 @@ uv run devkit app create-code web-feature --name Item   # Svelte frontend only
 
 Commit `.devkit/config.toml`, `.devkit/installation.json`, `.devkit/.gitignore`, the root
 `AGENTS.md` and the projected skills under `.agents/skills/` and `.claude/skills/`, so a
-fresh checkout or a cloud agent has the guidance without running a sync.
+fresh checkout or a cloud agent has the guidance without running a sync. Set up a fresh
+clone and CI with `uv sync` and `uv run devkit sync --locked` (it restores the ignored
+managed copies and fails with `RECEIPT_STALE` instead of rewriting committed files); a
+plain `uv run devkit sync` is for dependency or selection changes, committed with them.

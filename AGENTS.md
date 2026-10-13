@@ -7,7 +7,8 @@ Both are devkit bundles deployed by `just init` (`devkit sync`).
 ## Boundaries and architecture
 
 - Python sources live in `packages/<category>/<package>/src/` or `tools/<tool>/src/`;
-  tests belong in each package's `tests/`, never under `src/`.
+  tests belong in each package's `tests/`, never under `src/`, except a devkit rule's own
+  tests, which travel with it in `<rule>/tests/` of its bundle.
 - Errors are `devkit.advisory.AdvisoryError` subclasses; `devkit-advisory` (standard
   library only) is the only shared runtime dependency for them. `devkit` itself is
   development tooling (app-tools), never a runtime dependency of a package. Adapters must not depend on sibling adapters. Each

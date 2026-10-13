@@ -161,8 +161,9 @@ def rewrite_manifest(
         if current is None or dict(current) != source:
             sources[name] = _devkit_table(source)
             devkit = True
-        # uv applies a project's source only to its direct dependencies, so the pin is declared too;
-        # without one, devkit could resolve from PyPI, where an unrelated project owns the name.
+        # A project's source applies only to its direct dependencies, so the pin is declared too; a
+        # declared devkit that nothing brings from Git would otherwise resolve from PyPI, where an
+        # unrelated project owns the name. The revision is app-common's: uv rejects two URLs for one package.
         if declares_devkit and name not in {dependency_name(spec) for spec in declared_requirements(document)}:
             groups = document.setdefault("dependency-groups", tomlkit.table())
             groups.setdefault("dev", tomlkit.array()).append(name)

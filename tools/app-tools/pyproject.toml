@@ -42,7 +42,10 @@ packages = ["src/app_tools"]
 
 [tool.pytest.ini_options]
 log_level = "INFO"
-pythonpath = "src"
-testpaths = "tests"
+# "." keeps `tests.` importable; importlib mode lets every rule folder hold its own tests/test_rule.py.
+pythonpath = ["src", "."]
+# Rule tests live in each rule's folder (src/app_tools/bundle/rules/<slug>/tests/), as devkit deploys them.
+testpaths = ["tests", "src"]
+addopts = "--import-mode=importlib"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

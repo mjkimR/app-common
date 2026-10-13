@@ -55,8 +55,9 @@ adapter imports. Use `just rules-check packages tools` (or `uv run devkit rules 
 carry `# arch: ignore[RULE-app-<rule>] -- reason` on the diagnostic line. These import
 checks do not replace dependency-manifest review or the design constraints above.
 
-The rule logic lives in `tools/app-tools/src/app_tools/architecture/`; the bundle's
-`rules/architecture.py` only declares the rule classes. After editing anything under
+The rule logic lives in `tools/app-tools/src/app_tools/architecture/`; each rule is a
+package under the bundle's `rules/<slug>/` (`rule.py` declares the class, `guide.md` is its
+guide, `tests/` its tests; see the app-tools README). After editing anything under
 `tools/app-tools/src/app_tools/bundle/` or `tools/app-common-dev/`, run `just sync-agents`
 and commit `.devkit/installation.json`, `AGENTS.md` and the projected skills with the
 source change; never edit `.devkit/managed/`, `.agents/skills/` or `.claude/skills/`.

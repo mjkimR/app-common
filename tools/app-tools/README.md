@@ -17,7 +17,7 @@ uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory
 uv run devkit sync
 ```
 
-List both as dependencies too (a dev dependency is enough): uv applies a source only to a direct dependency, and an unrelated `devkit` project exists on PyPI. `devkit app update` adds them when missing.
+List both as dependencies too (a dev dependency is enough), at the same revision as app-common's pins (uv rejects two URLs for one package): a project's source applies only to its direct dependencies, and a declared `devkit` that nothing brings from Git resolves from PyPI, where an unrelated project owns the name. `devkit app update` adds them when missing. A fresh clone and CI run `uv run devkit sync --locked`, which restores the managed copies from the committed receipt without rewriting committed files.
 
 Run every command from the project environment (`uv run devkit ...`): a separately
 installed devkit does not see the project's packages.
@@ -44,7 +44,8 @@ bounded view and a complete log.
 ## Architecture rules
 
 `devkit rules check [paths]` runs one rule per convention; `devkit rules explain <id>` prints
-its guide. Tests, `migrations/` and `alembic/` are not checked.
+its guide and `devkit rules test [id]` runs its tests. Tests, `migrations/` and `alembic/`
+are not checked.
 
 | Rule | Severity | Check |
 | --- | --- | --- |
@@ -83,7 +84,17 @@ package-aware warnings, while lock files and the shared environment do not.
 
 ## Development
 
-The checks live in `app_tools.architecture` (`scan_files` and the rule catalog `RULES`);
-`bundle/rules/architecture.py` only declares one devkit rule class per catalog entry.
-After changing anything under `src/app_tools/bundle/`, run `just sync-agents` in the
-repository root and commit the updated receipt and projections with the change.
+Each rule is one plugin package of the bundle, `src/app_tools/bundle/rules/<slug>/`, in
+devkit's rule layout: `rule.py` subclasses `ArchitectureRule` with the rule's ID, `guide.md`
+is the guide `devkit rules explain` prints (overview, cause, remediation, configuration,
+exceptions), and `tests/test_rule.py` loads the folder with `devkit.rules.testing.load_rule`
+and checks it on files it writes. The checks themselves live in `app_tools.architecture`
+(`scan_files` and the rule catalog `RULES`): one AST pass serves every rule, because a
+suppression comment and `RULE-app-invalid-suppression` need all findings of a line. A new
+rule adds a catalog entry, its finding in the scanner, a package and a `[[assets]]` entry in
+`bundle.toml`; `tests/unit/architecture/test_rules.py` checks that they stay in step.
+
+The rule tests run with the package's tests (`just test app-tools`, which collects `src/`
+too) and, against the deployed copies, with `just rules-test`. After changing anything
+under `src/app_tools/bundle/`, run `just sync-agents` in the repository root and commit the
+updated receipt and projections with the change.

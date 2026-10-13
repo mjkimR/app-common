@@ -30,90 +30,60 @@ class RuleSpec:
     name: str
     description: str
     severity: Literal["error", "warning"]
-    guide: str  # skill reference topic, as listed in catalog.json
+
+    @property
+    def slug(self) -> str:
+        """The rule's package directory under the bundle's ``rules/`` (``RULE-app-service-commit``: ``service_commit``)."""
+        return self.id.removeprefix("RULE-app-").replace("-", "_")
 
 
-def _spec(slug: str, description: str, severity: Literal["error", "warning"], guide: str) -> RuleSpec:
-    return RuleSpec(f"RULE-app-{slug}", f"app-{slug}", description, severity, guide)
+def _spec(slug: str, description: str, severity: Literal["error", "warning"]) -> RuleSpec:
+    return RuleSpec(f"RULE-app-{slug}", f"app-{slug}", description, severity)
 
 
 RULES: dict[str, RuleSpec] = {
     spec.id: spec
     for spec in (
-        _spec(
-            "router-repo-import",
-            "Router/API modules do not import repository modules.",
-            "error",
-            "backend",
-        ),
-        _spec("service-commit", "Services do not call commit() or rollback().", "error", "backend/session"),
-        _spec(
-            "hook-super-call",
-            "Hook methods other than __init__ do not chain through super().",
-            "error",
-            "backend/hooks",
-        ),
+        _spec("router-repo-import", "Router/API modules do not import repository modules.", "error"),
+        _spec("service-commit", "Services do not call commit() or rollback().", "error"),
+        _spec("hook-super-call", "Hook methods other than __init__ do not chain through super().", "error"),
         _spec(
             "adapter-dependency",
             "An adapter package does not import a sibling adapter in the source checkout.",
             "error",
-            "backend",
         ),
-        _spec(
-            "forbidden-import",
-            "Modules respect the boundaries declared in tool.app-tools.architecture.",
-            "error",
-            "backend/commands",
-        ),
+        _spec("forbidden-import", "Modules respect the boundaries declared in tool.app-tools.architecture.", "error"),
         _spec(
             "command-signature",
             "Public command functions are undecorated async functions with typed context, input and output.",
             "error",
-            "backend/commands",
         ),
-        _spec(
-            "command-transaction",
-            "Command modules leave the execution scope to their caller.",
-            "error",
-            "backend/commands",
-        ),
-        _spec(
-            "architecture-config",
-            "tool.app-tools.architecture in pyproject.toml is well formed.",
-            "error",
-            "backend/commands",
-        ),
-        _spec("parse-error", "Python sources can be parsed for architecture checks.", "error", "backend"),
+        _spec("command-transaction", "Command modules leave the execution scope to their caller.", "error"),
+        _spec("architecture-config", "tool.app-tools.architecture in pyproject.toml is well formed.", "error"),
+        _spec("parse-error", "Python sources can be parsed for architecture checks.", "error"),
         _spec(
             "http-client-construction",
             "Packages declaring app-http-client use the shared HTTP client getters.",
             "warning",
-            "http",
         ),
-        _spec("shared-client-close", "Application code does not close the shared HTTP client.", "warning", "http"),
+        _spec("shared-client-close", "Application code does not close the shared HTTP client.", "warning"),
         _spec(
             "direct-current-time",
             "Packages declaring app-layer-base read the clock through its UTC time utilities.",
             "warning",
-            "backend/time",
         ),
         _spec(
             "db-factory-in-layer",
             "Routers and services do not build their own DB engine or session factory.",
             "warning",
-            "backend/session",
         ),
         _spec(
             "undeclared-dependency",
             "Directly imported app-common packages are declared by the importing package.",
             "warning",
-            "local-dev",
         ),
         _spec(
-            "invalid-suppression",
-            "Every `# arch: ignore[...]` comment names a rule reported on its line.",
-            "warning",
-            "backend",
+            "invalid-suppression", "Every `# arch: ignore[...]` comment names a rule reported on its line.", "warning"
         ),
     )
 }

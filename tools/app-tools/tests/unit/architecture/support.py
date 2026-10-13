@@ -1,4 +1,4 @@
-"""Run the architecture scan as the tests' targets name it, and through `devkit rules check`."""
+"""Run the bundle's rules through `devkit rules check`, as a project runs them."""
 
 from __future__ import annotations
 
@@ -6,23 +6,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app_tools.architecture import RULES, ArchViolation, scan_files
 from click.testing import CliRunner
 from devkit.cli import cli as devkit_cli
 
-BUNDLE_RULES = Path(__file__).resolve().parents[3] / "src/app_tools/bundle/rules"
-
-
-def scan(*targets: Path) -> list[ArchViolation]:
-    """Scan files and directory trees, as `devkit rules check <targets>` selects them."""
-    files: list[Path] = []
-    for target in targets:
-        files += sorted(target.rglob("*.py")) if target.is_dir() else [target]
-    return scan_files(files)
-
-
-def severity(violation: ArchViolation) -> str:
-    return RULES[violation.rule].severity
+BUNDLE = Path(__file__).resolve().parents[3] / "src/app_tools/bundle"
+BUNDLE_RULES = BUNDLE / "rules"
 
 
 def rules_check(workspace: Path, *targets: Path) -> tuple[int, dict[str, Any]]:

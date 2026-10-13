@@ -9,10 +9,82 @@ id = "app-common"
 kind = "skill"
 source = "skills/app-common"
 
+# Architecture rules: one plugin package per rule (rule.py, guide.md, tests/), all reading one shared scan
+# in app_tools.architecture.
 [[assets]]
-id = "architecture"
+id = "router-repo-import"
 kind = "rule"
-source = "rules"
+source = "rules/router_repo_import"
+
+[[assets]]
+id = "service-commit"
+kind = "rule"
+source = "rules/service_commit"
+
+[[assets]]
+id = "hook-super-call"
+kind = "rule"
+source = "rules/hook_super_call"
+
+[[assets]]
+id = "adapter-dependency"
+kind = "rule"
+source = "rules/adapter_dependency"
+
+[[assets]]
+id = "forbidden-import"
+kind = "rule"
+source = "rules/forbidden_import"
+
+[[assets]]
+id = "command-signature"
+kind = "rule"
+source = "rules/command_signature"
+
+[[assets]]
+id = "command-transaction"
+kind = "rule"
+source = "rules/command_transaction"
+
+[[assets]]
+id = "architecture-config"
+kind = "rule"
+source = "rules/architecture_config"
+
+[[assets]]
+id = "parse-error"
+kind = "rule"
+source = "rules/parse_error"
+
+[[assets]]
+id = "http-client-construction"
+kind = "rule"
+source = "rules/http_client_construction"
+
+[[assets]]
+id = "shared-client-close"
+kind = "rule"
+source = "rules/shared_client_close"
+
+[[assets]]
+id = "direct-current-time"
+kind = "rule"
+source = "rules/direct_current_time"
+
+[[assets]]
+id = "db-factory-in-layer"
+kind = "rule"
+source = "rules/db_factory_in_layer"
+
+[[assets]]
+id = "undeclared-dependency"
+kind = "rule"
+source = "rules/undeclared_dependency"
+
+[[assets]]
+id = "invalid-suppression"
+kind = "rule"
+source = "rules/invalid_suppression"
 
 [[assets]]
 id = "onboard"

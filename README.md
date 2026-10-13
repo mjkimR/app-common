@@ -38,13 +38,16 @@ uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory
 Errors and agent advisories come from [devkit](https://github.com/mjkimR/devkit)'s
 `devkit-advisory` package (`devkit.advisory`, standard library only), the runtime
 dependency of the packages; `devkit` itself is development tooling that app-tools brings.
-uv does not follow the sources of Git dependencies, so declare every app-common package
-the project uses, and `devkit` and `devkit-advisory` at the revision this repository's
-root `pyproject.toml` pins, in the project's own `[tool.uv.sources]`. List both as
-dependencies too (a dev dependency is enough; a package that imports `devkit.advisory`
-lists `devkit-advisory` in `project.dependencies`, never `devkit`): uv applies a source
-only to a direct dependency, and an unrelated `devkit` project exists on PyPI.
-`uv run devkit app update` keeps all of this in step afterwards.
+Pin every app-common package the project declares to one commit. uv resolves what those
+packages depend on (other app-common packages, and `devkit` and `devkit-advisory` at the
+revision this repository's root `pyproject.toml` pins) from app-common's own sources at
+that commit, so two different commits are a conflicting-URL error. Still copy the `devkit`
+and `devkit-advisory` entries of that root `[tool.uv.sources]` into the project's, with the
+same revision, and list both as dependencies (a dev dependency is enough; a package that
+imports `devkit.advisory` lists `devkit-advisory` in `project.dependencies`, never
+`devkit`): a project's source applies only to its direct dependencies, and a declared
+`devkit` that nothing brings from Git resolves from PyPI, where an unrelated project owns
+the name. `uv run devkit app update` keeps all of this in step afterwards.
 
 ## Use in a project
 
@@ -54,7 +57,11 @@ architecture rules run by `uv run devkit rules check`, a line in the root `AGENT
 the onboarding playbook (`/devkit-playbook app-common onboarding`). Commit
 `.devkit/config.toml` (once created), `.devkit/installation.json`, `.devkit/.gitignore`,
 `AGENTS.md` and the projected skills under `.agents/skills/` and `.claude/skills/`, so a
-fresh checkout or a cloud agent has them without a sync. Projects that raise app-common
+fresh checkout or a cloud agent has them without a sync. A fresh clone and CI then run
+`uv sync` and `uv run devkit sync --locked`: it restores the Git-ignored managed copies the
+rules and playbooks are read from, and fails with `RECEIPT_STALE` instead of rewriting
+committed files. Run a plain `uv run devkit sync` only after changing dependencies or the
+selection, and commit what it changes. Projects that raise app-common
 errors also select devkit's advisory library guide once: `uv run devkit add advisory:python`.
 
 | Command | Purpose |
@@ -112,10 +119,11 @@ Install `just` with `scripts/install-just.sh` (macOS/Linux) or
 `scripts/install-just.bat` (Windows). [justfile](justfile) defines available commands
 and arguments; start with `just init` or `just init-dev` for optional dependencies. Both
 sync the whole workspace into the shared `.venv` (there is no per-package init: a partial
-sync would remove the other members and the bundles they ship) and run `devkit sync`,
-which deploys the repository's agent bundles; devkit supports macOS and Linux only.
-After editing a bundle source, run `just sync-agents`; `just lint-check` and CI fail
-until the redeployed files are committed.
+sync would remove the other members and the bundles they ship) and run
+`devkit sync --locked`, which restores the repository's deployed agent bundles from the
+committed receipt; devkit supports macOS and Linux only. After editing a bundle source,
+run `just sync-agents`; `just init`, `just lint-check` and CI fail until the redeployed
+files are committed.
 
 ```bash
 just lint

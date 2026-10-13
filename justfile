@@ -99,6 +99,10 @@ lint-check module="all":
 rules-check +paths="":
     uv run --no-active --no-sync devkit rules check {{ paths }}
 
+# Run the tests in each deployed rule's folder (devkit rules test [RULE-ID...] [-- PYTEST-ARGS...])
+rules-test *args:
+    uv run --no-active --no-sync devkit rules test {{ args }}
+
 # Redeploy the devkit bundles after changing their sources (tools/app-tools/src/app_tools/bundle, tools/app-common-dev)
 sync-agents:
     uv run --no-active --no-sync devkit sync

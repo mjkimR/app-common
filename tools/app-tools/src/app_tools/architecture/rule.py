@@ -1,4 +1,10 @@
-"""The devkit rule adapter: one ``devkit rules`` rule per entry of ``RULES``, one scan per evaluation."""
+"""The devkit rule adapter: one ``devkit rules`` rule per entry of ``RULES``, one scan per evaluation.
+
+Each rule is a plugin package of the ``app-common`` bundle, ``bundle/rules/<slug>/``: ``rule.py`` subclasses
+``ArchitectureRule`` with its ``rule_id``, ``guide.md`` beside it is the guide, and ``tests/`` holds its tests. The
+checks themselves stay here, in one AST pass shared by every rule: suppression comments and
+``RULE-app-invalid-suppression`` need every rule's findings on a line.
+"""
 
 from __future__ import annotations
 
@@ -11,16 +17,7 @@ from devkit.rules.rules import BaseRule
 from app_tools.architecture.model import RULES, ArchViolation
 from app_tools.architecture.scan import scan_files
 
-# The bundle deploys rule files to rules/ and the skill to skills/app-common/, side by side.
-SKILL_FROM_RULES = "../skills/app-common"
-
 _last_scan: tuple[object, list[ArchViolation]] | None = None
-
-
-def guide_document(topic: str) -> str:
-    """The skill reference of a catalog topic, relative to the deployed rule file."""
-    relative = f"references/{topic}.md" if "/" in topic else f"references/{topic}/index.md"
-    return f"{SKILL_FROM_RULES}/{relative}"
 
 
 def findings(ctx: RuleContext) -> list[ArchViolation]:
@@ -43,7 +40,10 @@ def findings(ctx: RuleContext) -> list[ArchViolation]:
 
 
 class ArchitectureRule(BaseRule):
-    """Base of the rule classes in the bundle's ``rules/architecture.py``; ``rule_id`` names the ``RULES`` entry."""
+    """Base of the bundle's rule classes (``rules/<slug>/rule.py``); ``rule_id`` names the ``RULES`` entry.
+
+    ``guide.md`` resolves next to the subclass's module, so each rule package carries its own guide.
+    """
 
     rule_id: ClassVar[str]
 
@@ -55,7 +55,7 @@ class ArchitectureRule(BaseRule):
             description=spec.description,
             phase=Phase.LINTER,
             severity=Severity(spec.severity),
-            guide=guide_document(spec.guide),
+            guide="guide.md",
         )
 
     def check(self, ctx: RuleContext) -> list[Violation]:

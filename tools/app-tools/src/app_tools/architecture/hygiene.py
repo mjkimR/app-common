@@ -102,8 +102,8 @@ class HygieneVisitor(ast.NodeVisitor):
                     "project.dependencies with the Git source app-common pins in [tool.uv.sources].",
                 )
             return
-        # Restrict this rule to app-common's known public import roots, and devkit: through app-common
-        # it arrives transitively, but uv applies its Git source only to a direct dependency.
+        # Restrict this rule to app-common's known public import roots, and devkit: a package that imports
+        # it declares it, with the Git source, instead of relying on it arriving through another package.
         packages = {
             "devkit",
             "app_layer_base",
@@ -146,7 +146,14 @@ class HygieneVisitor(ast.NodeVisitor):
                 self.bindings.pop(alias.asname or alias.name, None)
             return
         module = node.module or ""
-        self.check_dependency(node, module)
+        if module == "devkit":
+            # `devkit` is a namespace package shared by two distributions: `from devkit import advisory`
+            # imports devkit-advisory, any other name devkit itself.
+            targets = dict.fromkeys("devkit.advisory" if alias.name == "advisory" else "devkit" for alias in node.names)
+            for target in targets:
+                self.check_dependency(node, target)
+        else:
+            self.check_dependency(node, module)
         for alias in node.names:
             self.bindings[alias.asname or alias.name] = f"{module}.{alias.name}"
 
