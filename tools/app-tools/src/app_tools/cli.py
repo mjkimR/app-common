@@ -20,6 +20,7 @@ from devkit.core.cli import (
     report_exit_code,
 )
 
+from app_tools.envspec import SETTINGS  # a table only; the settings modules load on use
 from app_tools.output import echo_fact
 
 PROJECT_OPTION = click.option(
@@ -317,7 +318,7 @@ def create_web_feature_cmd(
     "--type",
     "settings_type",
     required=True,
-    type=click.Choice(["app", "auth", "file_storage", "file_storage_local", "file_storage_s3", "vector_db"]),
+    type=click.Choice(list(SETTINGS)),
     help="The settings to describe.",
 )
 @FORMAT_OPTION

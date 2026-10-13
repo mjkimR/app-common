@@ -7,7 +7,7 @@ import re
 import tomllib
 from pathlib import Path
 
-from app_tools.architecture.model import ArchViolation
+from app_tools.architecture.model import ArchViolation, relative_parts
 
 
 def package_context(path: Path, root: Path | None = None) -> tuple[str, set[str]]:
@@ -66,6 +66,7 @@ class HygieneVisitor(ast.NodeVisitor):
     def __init__(self, path: Path, root: Path | None = None) -> None:
         self.path = path
         self.package, self.dependencies = package_context(path, root)
+        self.parts = relative_parts(path, root)
         self.enabled = self.dependencies | {self.package}
         self.bindings: dict[str, str] = {}
         self.violations: list[ArchViolation] = []
@@ -233,7 +234,7 @@ class HygieneVisitor(ast.NodeVisitor):
                     "Let app_http_client lifespan own shutdown; closing here affects other users of the client.",
                 )
         layer_module = self.path.stem in {"router", "routes", "service", "services"} or bool(
-            {"api", "services"}.intersection(self.path.parts)
+            {"api", "services"}.intersection(self.parts)
         )
         if (
             "app-layer-base" in self.enabled

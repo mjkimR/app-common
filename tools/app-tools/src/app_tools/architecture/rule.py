@@ -24,9 +24,12 @@ def guide_document(topic: str) -> str:
 
 
 def findings(ctx: RuleContext) -> list[ArchViolation]:
-    """Scan the targeted Python files once per evaluation; every architecture rule filters the result."""
+    """Scan the targeted Python files once per evaluation; every architecture rule filters the result.
+
+    Keyed on the context, not its cache: a caller may share one cache across evaluations of other targets.
+    """
     global _last_scan
-    if _last_scan is not None and _last_scan[0] is ctx.cache:
+    if _last_scan is not None and _last_scan[0] is ctx:
         return _last_scan[1]
     root = ctx.workspace_root.resolve()
     files = [
@@ -35,7 +38,7 @@ def findings(ctx: RuleContext) -> list[ArchViolation]:
         if ctx.is_file_targeted(path.relative_to(root).as_posix())
     ]
     result = scan_files(files, root=root, read=ctx.cache.read_text)
-    _last_scan = (ctx.cache, result)
+    _last_scan = (ctx, result)
     return result
 
 

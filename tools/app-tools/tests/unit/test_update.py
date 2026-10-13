@@ -104,6 +104,26 @@ def test_a_direct_devkit_declaration_is_kept(tmp_path: Path):
     assert tomllib.loads(manifest.read_text())["dependency-groups"]["dev"] == ["app-tools", "devkit>=0.1"]
 
 
+def test_sources_declared_only_by_members_still_pin_devkit_at_the_root(tmp_path: Path):
+    (tmp_path / "pyproject.toml").write_text('[tool.uv.workspace]\nmembers = ["apps/*"]\n')
+    member = tmp_path / "apps/hub"
+    member.mkdir(parents=True)
+    (member / "pyproject.toml").write_text(f"""[project]
+name = "hub"
+dependencies = ["app-layer-base"]
+
+[tool.uv.sources]
+app-layer-base = {{ git = "https://github.com/mjkimR/app-common", subdirectory = "packages/base/app-layer-base", rev = "{OLD}" }}
+""")
+    update_project(tmp_path, sync=False, run=Recorder(), fetch=fetch)
+    root = tomllib.loads((tmp_path / "pyproject.toml").read_text())
+    assert root["tool"]["uv"]["sources"]["devkit"] == DEVKIT
+    assert root["dependency-groups"]["dev"] == ["devkit"]
+    hub = tomllib.loads((member / "pyproject.toml").read_text())
+    assert hub["tool"]["uv"]["sources"]["app-layer-base"]["rev"] == COMMIT
+    assert "devkit" not in hub["tool"]["uv"]["sources"]
+
+
 def test_branch_and_tag_resolve_to_commits(tmp_path: Path):
     url_manifest(tmp_path)
     run = Recorder(ls_remote=f"{OLD}\trefs/tags/v1.0.0\n{COMMIT}\trefs/tags/v1.0.0^{{}}\n")

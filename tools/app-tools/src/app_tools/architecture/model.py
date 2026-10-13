@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 
@@ -13,6 +14,14 @@ class ArchViolation:
     line: int
     message: str
     fix: str
+
+
+def relative_parts(path: Path, root: Path | None) -> tuple[str, ...]:
+    """The path components below ``root``: directories above the workspace never classify a file."""
+    resolved = path.resolve()
+    if root is not None and resolved.is_relative_to(root):
+        return resolved.relative_to(root).parts
+    return path.parts
 
 
 @dataclass(frozen=True)

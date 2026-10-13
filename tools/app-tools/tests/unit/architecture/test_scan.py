@@ -150,3 +150,15 @@ def test_adapter_isolation_in_scoped_scan(tmp_path):
     path = tmp_path / "packages/adapters/app_first/src/app_first/client.py"
     path.write_text("from app_second.client import Client\nimport app_first\n")
     assert [v.rule for v in scan(path)] == ["RULE-app-adapter-dependency"]
+
+
+def test_directories_above_the_workspace_never_classify_files(tmp_path: Path):
+    workspace = tmp_path / "tests" / "api" / "repo"  # e.g. a clone under ~/work/api/
+    module = workspace / "app/features/items/models.py"
+    module.parent.mkdir(parents=True)
+    module.write_text("from app.features.items.repos import ItemRepository\nsession.commit()\n")
+    assert app_violations(rules_check(workspace)[1]) == []
+    router = workspace / "app/api/items.py"
+    router.parent.mkdir(parents=True)
+    router.write_text("from app.features.items.repos import ItemRepository\n")
+    assert [v["rule_id"] for v in app_violations(rules_check(workspace)[1])] == ["RULE-app-router-repo-import"]

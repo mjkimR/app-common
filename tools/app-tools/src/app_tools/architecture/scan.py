@@ -11,20 +11,24 @@ from pathlib import Path
 
 from app_tools.architecture.boundaries import BoundaryChecks
 from app_tools.architecture.hygiene import HygieneVisitor
-from app_tools.architecture.model import RULES, ArchViolation
+from app_tools.architecture.model import RULES, ArchViolation, relative_parts
 
 EXCLUDED_PARTS = frozenset({"tests", "alembic", "migrations"})
 SUPPRESSION = re.compile(r"#\s*arch:\s*ignore\[([A-Za-z0-9_, -]+)\]\s*--\s*(\S.*)")
 
 
 class ArchitecturalVisitor(ast.NodeVisitor):
-    def __init__(self, file_path: Path) -> None:
+    def __init__(self, file_path: Path, root: Path | None = None) -> None:
         self.file_path = file_path
         self.violations: list[ArchViolation] = []
         self._rel_path = str(file_path)
-        self._is_api_file = "api" in file_path.parts or file_path.stem in ("router", "routes")
-        self._is_service_file = "services" in file_path.parts or file_path.stem in ("service", "services")
-        self._source_root = next((p for p in file_path.resolve().parents if p.name == "src"), None)
+        parts = relative_parts(file_path, root)
+        self._is_api_file = "api" in parts or file_path.stem in ("router", "routes")
+        self._is_service_file = "services" in parts or file_path.stem in ("service", "services")
+        self._source_root = next(
+            (p for p in file_path.resolve().parents if p.name == "src" and (root is None or p.is_relative_to(root))),
+            None,
+        )
         self._current_class: str | None = None
         self._is_hook_class = False
         self._current_function: str | None = None
@@ -154,9 +158,9 @@ def suppressed_lines(source: str) -> dict[int, set[str]]:
     return result
 
 
-def is_excluded(path: Path) -> bool:
+def is_excluded(path: Path, root: Path | None = None) -> bool:
     """Tests and migrations are outside the architecture checks."""
-    return bool(EXCLUDED_PARTS.intersection(path.parts))
+    return bool(EXCLUDED_PARTS.intersection(relative_parts(path, root)))
 
 
 def scan_files(
@@ -170,7 +174,7 @@ def scan_files(
     seen: set[Path] = set()
     boundaries = BoundaryChecks(root)
     for py_file in files:
-        if py_file.suffix != ".py" or is_excluded(py_file) or py_file.resolve() in seen:
+        if py_file.suffix != ".py" or is_excluded(py_file, root) or py_file.resolve() in seen:
             continue
         seen.add(py_file.resolve())
         if boundaries.configuration(py_file)[1] is None:
@@ -178,7 +182,7 @@ def scan_files(
         try:
             source = read(py_file)
             tree = ast.parse(source, filename=str(py_file))
-            visitor = ArchitecturalVisitor(py_file)
+            visitor = ArchitecturalVisitor(py_file, root)
             visitor.visit(tree)
             found = [*visitor.violations, *boundaries.inspect(py_file, tree)]
             hygiene = HygieneVisitor(py_file, root)

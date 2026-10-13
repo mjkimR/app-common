@@ -128,9 +128,13 @@ def _devkit_table(source: dict[str, Any]) -> InlineTable:
 
 
 def rewrite_manifest(
-    text: str, commit: str, devkit_source: dict[str, Any] | None, *, is_root: bool
+    text: str, commit: str, devkit_source: dict[str, Any] | None, *, declares_devkit: bool
 ) -> tuple[str, int, bool]:
-    """``text`` with every app-common reference at ``commit`` and, where devkit is pinned, its source."""
+    """``text`` with every app-common reference at ``commit`` and, where devkit is pinned, its source.
+
+    ``declares_devkit`` marks the manifest that must pin and declare devkit (the workspace root of a
+    project with app-common dependencies); any other manifest that already pins devkit is kept in step.
+    """
     text, count = REQUIREMENT_URL.subn(lambda match: f"{match[1]}{commit}{match[3]}", text)
     document = tomlkit.parse(text)
     sources = document.get("tool", {}).get("uv", {}).get("sources")
@@ -141,8 +145,7 @@ def rewrite_manifest(
             entries = source if isinstance(source, (Array, AoT, list)) else [source]
             count += sum(_pin_entry(entry, commit) for entry in entries)
     devkit = False
-    # The root manifest pins devkit beside app-common; a member that already pins it is kept in step.
-    if devkit_source is not None and ((sources is not None and "devkit" in sources) or (is_root and count)):
+    if devkit_source is not None and ((sources is not None and "devkit" in sources) or declares_devkit):
         if sources is None:
             tool = document.setdefault("tool", tomlkit.table(is_super_table=True))
             uv = tool.setdefault("uv", tomlkit.table(is_super_table=True))
@@ -153,7 +156,7 @@ def rewrite_manifest(
             devkit = True
         # uv applies a source only to a direct dependency; through app-tools alone, devkit would
         # resolve from PyPI, where an unrelated project owns the name.
-        if is_root and "devkit" not in {dependency_name(spec) for spec in declared_requirements(document)}:
+        if declares_devkit and "devkit" not in {dependency_name(spec) for spec in declared_requirements(document)}:
             groups = document.setdefault("dependency-groups", tomlkit.table())
             groups.setdefault("dev", tomlkit.array()).append("devkit")
             devkit = True
@@ -200,13 +203,20 @@ def update_project(
                 code="APP_UPDATE_DEVKIT_UNPINNED",
             )
         )
+    manifests = {
+        folder / "pyproject.toml": (folder / "pyproject.toml").read_text(encoding="utf-8")
+        for folder in project_roots(root)
+    }
+    # Members may declare the app-common sources; the root pins devkit whenever any manifest uses app-common.
+    uses_app_common = any(rewrite_manifest(text, commit, None, declares_devkit=False)[1] for text in manifests.values())
     originals: dict[Path, str] = {}
     rewritten: dict[Path, str] = {}
     changes: list[ManifestChange] = []
-    for folder in project_roots(root):
-        path = folder / "pyproject.toml"
-        text = path.read_text(encoding="utf-8")
-        updated, count, devkit = rewrite_manifest(text, commit, devkit_source, is_root=folder == root)
+    for path, text in manifests.items():
+        is_root = path.parent == root
+        updated, count, devkit = rewrite_manifest(
+            text, commit, devkit_source, declares_devkit=is_root and uses_app_common
+        )
         if count or devkit:
             changes.append(ManifestChange(path, count, devkit))
         if updated != text:
