@@ -10,14 +10,14 @@ The app-common development tooling, built on [devkit](https://github.com/mjkimR/
 ## Installation
 
 A development dependency of the consumer project, pinned to the app-common commit its
-other app-common packages use, next to `devkit` at the revision app-common pins:
+other app-common packages use, next to `devkit` and `devkit-advisory` at the revision app-common pins:
 
 ```bash
 uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=tools/app-tools"
 uv run devkit sync
 ```
 
-List `devkit` itself as a dependency too (a dev dependency is enough): uv applies a source only to a direct dependency, and an unrelated `devkit` project exists on PyPI. `devkit app update` adds it when missing.
+List both as dependencies too (a dev dependency is enough): uv applies a source only to a direct dependency, and an unrelated `devkit` project exists on PyPI. `devkit app update` adds them when missing.
 
 Run every command from the project environment (`uv run devkit ...`): a separately
 installed devkit does not see the project's packages.
@@ -32,7 +32,7 @@ exit `0` success, `1` a negative result, `2` could not run.
 | --- | --- |
 | `devkit app guide list [--all] [--project P] [--source CHECKOUT]` | Guide topics for the packages the project declares or installs, with the declared, locked and installed state. Offline: no network, subprocess or package import. |
 | `devkit app guide show <topic>` | One guide; setup guides of packages that are not installed are readable too. |
-| `devkit app update [--ref REF] [--dry-run] [--no-sync]` | Resolve `REF` (default `main`) to a commit; pin every app-common dependency to it (requirement URLs and `[tool.uv.sources]`, workspace members included) and `devkit` to the revision app-common pins there; then `uv lock`, `uv sync` and `devkit sync`. A failed lock restores the manifests. |
+| `devkit app update [--ref REF] [--dry-run] [--no-sync]` | Resolve `REF` (default `main`) to a commit; pin every app-common dependency to it (requirement URLs and `[tool.uv.sources]`, workspace members included) and `devkit` and `devkit-advisory` to the revision app-common pins there; then `uv lock`, `uv sync` and `devkit sync`. A failed lock restores the manifests. |
 | `devkit app dev link\|unlink\|status [--target-path P] [--dry-run]` | Replace installed app-common packages with symlinks into a local checkout (backups as `.bak`), restore them, or report their state. |
 | `devkit app doctor [--project P]` | Declared app-common packages, whether the bundle is deployed, APM leftovers and the database URL. |
 | `devkit app create-code feature\|web-feature --name Name [--plural p] [--prefix dir] [--dry-run]` | Scaffold a backend CRUD feature (and register its router) or a Svelte 5 web feature; existing directories are refused. |

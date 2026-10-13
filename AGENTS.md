@@ -8,8 +8,9 @@ Both are devkit bundles deployed by `just init` (`devkit sync`).
 
 - Python sources live in `packages/<category>/<package>/src/` or `tools/<tool>/src/`;
   tests belong in each package's `tests/`, never under `src/`.
-- Errors are `devkit.advisory.AdvisoryError` subclasses; `devkit` is the only shared
-  runtime dependency for them. Adapters must not depend on sibling adapters. Each
+- Errors are `devkit.advisory.AdvisoryError` subclasses; `devkit-advisory` (standard
+  library only) is the only shared runtime dependency for them. `devkit` itself is
+  development tooling (app-tools), never a runtime dependency of a package. Adapters must not depend on sibling adapters. Each
   package owns its settings; applications compose them explicitly.
 - CRUD flow is `Router → UseCase → Service → Repository`. Business hooks are
   standalone objects in an ordered `hooks` tuple: enter in order, unwind in reverse.

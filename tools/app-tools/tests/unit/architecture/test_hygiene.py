@@ -104,13 +104,20 @@ def test_undeclared_app_common_dependency(tmp_path):
     assert violations[0].rule == "RULE-app-undeclared-dependency"
 
 
-def test_devkit_must_be_declared_where_it_is_imported(tmp_path):
+def test_devkit_advisory_must_be_declared_where_it_is_imported(tmp_path):
     path = source(tmp_path, "from devkit.advisory import AdvisoryError", dependencies=["app-layer-base"])
     [violation] = scan(path)
     assert violation.rule == "RULE-app-undeclared-dependency"
-    assert "Git source" in violation.fix
-    path = source(tmp_path, "from devkit.advisory import AdvisoryError", dependencies=["app-layer-base", "devkit>=0.1"])
-    assert scan(path) == []
+    assert violation.message.startswith("devkit-advisory is imported") and "Git source" in violation.fix
+    for declared in ("devkit-advisory>=0.1", "devkit>=0.1"):  # devkit depends on devkit-advisory
+        path = source(tmp_path, "import devkit.advisory", dependencies=["app-layer-base", declared])
+        assert scan(path) == []
+
+
+def test_other_devkit_modules_need_devkit(tmp_path):
+    path = source(tmp_path, "from devkit.rules import Severity", dependencies=["devkit-advisory>=0.1"])
+    [violation] = scan(path)
+    assert violation.message.startswith("devkit is imported")
 
 
 def test_optional_and_normalized_dependency_declarations(tmp_path):

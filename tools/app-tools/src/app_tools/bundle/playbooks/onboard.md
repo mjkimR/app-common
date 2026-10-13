@@ -50,7 +50,7 @@ uv add "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=packa
 
 uv does not follow the sources of Git dependencies: declare every app-common package the
 project uses, directly or transitively, in its own `[tool.uv.sources]` at the same commit,
-and keep `devkit` at the revision app-common's root `pyproject.toml` pins. List `devkit` itself as a dependency too (a dev dependency is enough): uv applies a source only to a direct dependency, and an unrelated `devkit` project exists on PyPI.
+and keep `devkit` and `devkit-advisory` at the revision app-common's root `pyproject.toml` pins. List both as dependencies too (a dev dependency is enough): uv applies a source only to a direct dependency, and an unrelated `devkit` project exists on PyPI.
 `uv run devkit app update` moves all of them together later.
 
 ## Phase 3: Project Skeleton and Lifespan

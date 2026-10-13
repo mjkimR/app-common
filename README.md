@@ -35,12 +35,14 @@ uv add "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=packa
 uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=tools/app-tools"
 ```
 
-Errors and agent advisories come from [devkit](https://github.com/mjkimR/devkit)
-(`devkit.advisory`), a dependency of the packages. uv does not follow the sources of Git
-dependencies, so declare every app-common package the project uses, and `devkit` at the
-revision this repository's root `pyproject.toml` pins, in the project's own
-`[tool.uv.sources]`. List `devkit` itself as a dependency too (a dev dependency is enough;
-`project.dependencies` of a package that imports `devkit.advisory`): uv applies a source
+Errors and agent advisories come from [devkit](https://github.com/mjkimR/devkit)'s
+`devkit-advisory` package (`devkit.advisory`, standard library only), the runtime
+dependency of the packages; `devkit` itself is development tooling that app-tools brings.
+uv does not follow the sources of Git dependencies, so declare every app-common package
+the project uses, and `devkit` and `devkit-advisory` at the revision this repository's
+root `pyproject.toml` pins, in the project's own `[tool.uv.sources]`. List both as
+dependencies too (a dev dependency is enough; a package that imports `devkit.advisory`
+lists `devkit-advisory` in `project.dependencies`, never `devkit`): uv applies a source
 only to a direct dependency, and an unrelated `devkit` project exists on PyPI.
 `uv run devkit app update` keeps all of this in step afterwards.
 
@@ -70,10 +72,10 @@ its `update` reads only requirement URLs and GitHub releases, and the skill APM 
 does not describe devkit. Move once by hand; `uv run devkit app update` takes over after.
 
 1. **Pins.** Set every app-common reference (`[tool.uv.sources]` `rev`, or the `@<ref>` of
-   a requirement URL) to the new app-common commit. Copy the `devkit` entry of this
-   repository's root `[tool.uv.sources]` at that commit into the project's, and add
-   `devkit` to the `dev` dependency group (to `project.dependencies` of every package
-   that imports `devkit.advisory`). Drop `app-error` from dependencies and sources.
+   a requirement URL) to the new app-common commit. Copy the `devkit` and
+   `devkit-advisory` entries of this repository's root `[tool.uv.sources]` at that commit
+   into the project's, and add both to the `dev` dependency group (`devkit-advisory` to
+   `project.dependencies` of every package that imports `devkit.advisory`). Drop `app-error` from dependencies and sources.
 2. **APM.** Remove the app-common entry from `apm.yml` (`apm.yml`, `apm.lock.yaml` and
    `apm_modules/` too when it was the only one) and delete `.agents/skills/app-common` and
    `.claude/skills/app-common`.
@@ -141,7 +143,8 @@ all package `pyproject.toml` files, root/UI/tooling npm manifests and locks, the
 catalog and both bundle manifests (`bundle.toml`). After updating versions, run
 `just sync-agents`, tag and push `vX.Y.Z`; CI creates the GitHub Release only after lint,
 type checks, and all three Python test legs pass. Consumers pin a commit rather than
-`main`. Moving the devkit pin is a release note: consumers receive it through
+`main`. Moving the devkit pins (`devkit` and `devkit-advisory`, always one devkit
+commit) is a release note: consumers receive them through
 `devkit app update`.
 
 ## Agent guidance

@@ -16,10 +16,12 @@ members = [
     "tools/*",
 ]
 
-# devkit is pinned by commit; consumers declare the same source and rev in their own
-# [tool.uv.sources] (`devkit app update` keeps it in step with app-common).
+# devkit (tooling, for app-tools) and devkit-advisory (devkit.advisory, for the runtime packages) are pinned at
+# one devkit commit; consumers declare the same sources and rev in their own [tool.uv.sources]
+# (`devkit app update` keeps them in step with app-common).
 [tool.uv.sources]
-devkit = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit", rev = "24038118ec11d8ed9947d97b3712456a94e6f7c1" }
+devkit = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit", rev = "263aad8874f3c7ad912a6547a579b047b8810318" }
+devkit-advisory = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit-advisory", rev = "263aad8874f3c7ad912a6547a579b047b8810318" }
 
 [tool.ruff]
 exclude = [".git", ".venv", "migrations"]

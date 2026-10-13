@@ -13,10 +13,10 @@ uv run devkit app update --ref <branch, tag or full commit>
 The command resolves the ref to a full commit and pins every app-common dependency to
 it, in both forms: `git+https://github.com/mjkimR/app-common.git@<ref>#subdirectory=...`
 requirements and `[tool.uv.sources]` entries (`rev`; a `tag` or `branch` is replaced),
-in the root manifest and its uv workspace members. It also sets the `devkit` source to
-the revision app-common pins at that commit, because uv does not follow the sources of
-Git dependencies, and adds `devkit` to the root `dev` dependency group when the project
-does not declare it: uv applies a source only to a direct dependency. It then runs `uv lock`, `uv sync` and `uv run devkit sync`, which
+in the root manifest and its uv workspace members. It also sets the `devkit` and
+`devkit-advisory` sources to the revision app-common pins at that commit, because uv does
+not follow the sources of Git dependencies, and adds each to the root `dev` dependency
+group when the project does not declare it: uv applies a source only to a direct dependency. It then runs `uv lock`, `uv sync` and `uv run devkit sync`, which
 redeploys the app-common skill, rules and guidance from the new app-tools.
 
 - `--dry-run` reports the commit, the manifests and the commands without changing anything.

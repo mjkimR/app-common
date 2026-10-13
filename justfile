@@ -4,15 +4,17 @@ default:
 
 # There is deliberately no per-package variant: `uv sync --package` would strip the other
 # workspace members (and the bundles they ship) from the shared environment.
-# Initialize the whole workspace in the shared .venv and deploy the devkit bundles
+# `devkit sync --locked` restores the ignored managed copies from the committed receipt and never rewrites
+# committed files: it fails (RECEIPT_STALE) when a bundle source changed without `just sync-agents`.
+# Initialize the whole workspace in the shared .venv and restore the deployed devkit bundles
 init:
     uv sync --no-active
-    uv run --no-active --no-sync devkit sync
+    uv run --no-active --no-sync devkit sync --locked
 
 # Initialize the whole workspace with all optional dependencies
 init-dev:
     uv sync --no-active --all-extras
-    uv run --no-active --no-sync devkit sync
+    uv run --no-active --no-sync devkit sync --locked
 
 # Format and fix with Ruff, redeploy the devkit bundles, then run the devkit rules (architecture included)
 lint module="all":

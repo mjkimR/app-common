@@ -90,6 +90,18 @@ class HygieneVisitor(ast.NodeVisitor):
 
     def check_dependency(self, node: ast.AST, module: str) -> None:
         root = module.split(".")[0]
+        if module == "devkit.advisory" or module.startswith("devkit.advisory."):
+            # devkit.advisory is the devkit-advisory distribution (standard library only), the runtime
+            # dependency; devkit, the development tooling, depends on the same version and satisfies it too.
+            if self.package and not {"devkit-advisory", "devkit"} & self.enabled:
+                self.report(
+                    node,
+                    "RULE-app-undeclared-dependency",
+                    f"devkit-advisory is imported but not declared by {self.package}.",
+                    "Declare devkit-advisory (not devkit, which is development tooling) in this package's "
+                    "project.dependencies with the Git source app-common pins in [tool.uv.sources].",
+                )
+            return
         # Restrict this rule to app-common's known public import roots, and devkit: through app-common
         # it arrives transitively, but uv applies its Git source only to a direct dependency.
         packages = {

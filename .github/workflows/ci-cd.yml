@@ -20,17 +20,8 @@ jobs:
         with:
           python-version: '3.13'
 
-      # `just init-dev` ran `devkit sync`; a committed receipt or projection it had to change
-      # means a bundle source was edited without `just sync-agents`.
-      - name: Check deployed devkit bundles
-        run: |
-          changed=$(git status --porcelain -- .devkit AGENTS.md .agents/skills .claude/skills)
-          if [ -n "$changed" ]; then
-            echo "$changed"
-            echo "Bundle sources changed without a sync: run 'just sync-agents' and commit the result." >&2
-            exit 1
-          fi
-
+      # `just init-dev` (in setup-ci) runs `devkit sync --locked`, which already fails (RECEIPT_STALE)
+      # when a bundle source was edited without `just sync-agents`.
       - name: Run Lint
         run: |
           just lint-check

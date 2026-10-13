@@ -5,7 +5,7 @@ description = "FastMCP integration and policy boundary for FastAPI applications"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "devkit>=0.1,<0.2",
+    "devkit-advisory>=0.1,<0.2",
     "fastmcp>=4.0.3,<5",
     "pydantic>=2.11.1",
 ]

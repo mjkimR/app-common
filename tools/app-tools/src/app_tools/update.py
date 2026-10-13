@@ -1,4 +1,4 @@
-"""Move a consumer project's app-common dependencies, and the devkit pin they need, to one app-common commit."""
+"""Move a consumer project's app-common dependencies, and the devkit pins they need, to one app-common commit."""
 
 from __future__ import annotations
 
@@ -25,6 +25,9 @@ REQUIREMENT_URL = re.compile(
 )
 COMMIT = re.compile(r"[0-9a-f]{40}")
 REF_KEYS = ("rev", "tag", "branch")
+# devkit (the tooling app-tools builds on) and devkit-advisory (the devkit.advisory library app-common's runtime
+# packages import), both pinned by app-common at one devkit revision.
+DEVKIT_PACKAGES = ("devkit", "devkit-advisory")
 
 Runner = Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
 Fetcher = Callable[[str], bytes]
@@ -43,7 +46,7 @@ def fetch_url(url: str) -> bytes:
 class ManifestChange:
     path: Path
     app_common: int  # dependency URLs and uv sources moved to the commit
-    devkit: bool  # the devkit source was set to app-common's pin
+    devkit: bool  # a devkit source (or its direct declaration) was set to app-common's pin
 
     def to_dict(self) -> dict[str, Any]:
         return {"path": str(self.path), "app_common": self.app_common, "devkit": self.devkit}
@@ -53,7 +56,7 @@ class ManifestChange:
 class UpdateResult:
     ref: str
     commit: str
-    devkit: dict[str, Any] | None
+    pins: dict[str, dict[str, Any]]  # app-common's uv source per DEVKIT_PACKAGES name it pins
     changes: list[ManifestChange]
     commands: list[str]
     dry_run: bool
@@ -63,7 +66,8 @@ class UpdateResult:
         return {
             "ref": self.ref,
             "commit": self.commit,
-            "devkit": self.devkit,
+            "devkit": self.pins.get("devkit"),
+            "devkit_advisory": self.pins.get("devkit-advisory"),
             "manifests": [change.to_dict() for change in self.changes],
             "commands": self.commands,
             "dry_run": self.dry_run,
@@ -98,8 +102,8 @@ def resolve_commit(ref: str, run: Runner, cwd: Path) -> str:
     )
 
 
-def devkit_pin(commit: str, fetch: Fetcher) -> dict[str, Any] | None:
-    """The ``devkit`` uv source app-common pins at ``commit``; ``None`` for a commit from before devkit."""
+def devkit_pins(commit: str, fetch: Fetcher) -> dict[str, dict[str, Any]]:
+    """The uv sources app-common pins at ``commit`` for ``DEVKIT_PACKAGES``; empty for a commit from before devkit."""
     url = RAW_PYPROJECT.format(sha=commit)
     try:
         manifest = tomllib.loads(fetch(url).decode("utf-8"))
@@ -107,8 +111,8 @@ def devkit_pin(commit: str, fetch: Fetcher) -> dict[str, Any] | None:
         raise unavailable(f"Cannot read {url}: {exc}", code="APP_UPDATE_REMOTE_UNAVAILABLE") from exc
     except (UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
         raise unavailable(f"{url} is not a TOML document: {exc}", code="APP_UPDATE_REMOTE_UNAVAILABLE") from exc
-    source = manifest.get("tool", {}).get("uv", {}).get("sources", {}).get("devkit")
-    return dict(source) if isinstance(source, dict) else None
+    sources = manifest.get("tool", {}).get("uv", {}).get("sources", {})
+    return {name: dict(sources[name]) for name in DEVKIT_PACKAGES if isinstance(sources.get(name), dict)}
 
 
 def _pin_entry(entry: Any, commit: str) -> bool:
@@ -128,37 +132,40 @@ def _devkit_table(source: dict[str, Any]) -> InlineTable:
 
 
 def rewrite_manifest(
-    text: str, commit: str, devkit_source: dict[str, Any] | None, *, declares_devkit: bool
+    text: str, commit: str, pins: dict[str, dict[str, Any]], *, declares_devkit: bool
 ) -> tuple[str, int, bool]:
-    """``text`` with every app-common reference at ``commit`` and, where devkit is pinned, its source.
+    """``text`` with every app-common reference at ``commit`` and, where a devkit package is pinned, its source.
 
-    ``declares_devkit`` marks the manifest that must pin and declare devkit (the workspace root of a
-    project with app-common dependencies); any other manifest that already pins devkit is kept in step.
+    ``declares_devkit`` marks the manifest that must pin and declare every package of ``pins`` (the
+    workspace root of a project with app-common dependencies); any other manifest that already pins one
+    is kept in step.
     """
     text, count = REQUIREMENT_URL.subn(lambda match: f"{match[1]}{commit}{match[3]}", text)
     document = tomlkit.parse(text)
     sources = document.get("tool", {}).get("uv", {}).get("sources")
     if sources is not None:
         for name, source in list(sources.items()):
-            if name == "devkit":
+            if name in DEVKIT_PACKAGES:
                 continue
             entries = source if isinstance(source, (Array, AoT, list)) else [source]
             count += sum(_pin_entry(entry, commit) for entry in entries)
     devkit = False
-    if devkit_source is not None and ((sources is not None and "devkit" in sources) or declares_devkit):
+    for name, source in pins.items():
+        if not ((sources is not None and name in sources) or declares_devkit):
+            continue
         if sources is None:
             tool = document.setdefault("tool", tomlkit.table(is_super_table=True))
             uv = tool.setdefault("uv", tomlkit.table(is_super_table=True))
             sources = uv.setdefault("sources", tomlkit.table())
-        current = sources.get("devkit")
-        if current is None or dict(current) != devkit_source:
-            sources["devkit"] = _devkit_table(devkit_source)
+        current = sources.get(name)
+        if current is None or dict(current) != source:
+            sources[name] = _devkit_table(source)
             devkit = True
-        # uv applies a source only to a direct dependency; through app-tools alone, devkit would
-        # resolve from PyPI, where an unrelated project owns the name.
-        if declares_devkit and "devkit" not in {dependency_name(spec) for spec in declared_requirements(document)}:
+        # uv applies a project's source only to its direct dependencies, so the pin is declared too;
+        # without one, devkit could resolve from PyPI, where an unrelated project owns the name.
+        if declares_devkit and name not in {dependency_name(spec) for spec in declared_requirements(document)}:
             groups = document.setdefault("dependency-groups", tomlkit.table())
-            groups.setdefault("dev", tomlkit.array()).append("devkit")
+            groups.setdefault("dev", tomlkit.array()).append(name)
             devkit = True
     return tomlkit.dumps(document), count, devkit
 
@@ -194,12 +201,12 @@ def update_project(
             f"{root} has no pyproject.toml.", code="APP_MANIFEST_MISSING", fix="Run the command from the project root."
         )
     commit = resolve_commit(ref, run, root)
-    devkit_source = devkit_pin(commit, fetch)
+    pins = devkit_pins(commit, fetch)
     notices: list[AppToolsError] = []
-    if devkit_source is None:
+    if not pins:
         notices.append(
             notice(
-                f"app-common {commit[:12]} does not pin devkit; the devkit source was left as it is.",
+                f"app-common {commit[:12]} does not pin devkit; the devkit sources were left as they are.",
                 code="APP_UPDATE_DEVKIT_UNPINNED",
             )
         )
@@ -208,15 +215,13 @@ def update_project(
         for folder in project_roots(root)
     }
     # Members may declare the app-common sources; the root pins devkit whenever any manifest uses app-common.
-    uses_app_common = any(rewrite_manifest(text, commit, None, declares_devkit=False)[1] for text in manifests.values())
+    uses_app_common = any(rewrite_manifest(text, commit, {}, declares_devkit=False)[1] for text in manifests.values())
     originals: dict[Path, str] = {}
     rewritten: dict[Path, str] = {}
     changes: list[ManifestChange] = []
     for path, text in manifests.items():
         is_root = path.parent == root
-        updated, count, devkit = rewrite_manifest(
-            text, commit, devkit_source, declares_devkit=is_root and uses_app_common
-        )
+        updated, count, devkit = rewrite_manifest(text, commit, pins, declares_devkit=is_root and uses_app_common)
         if count or devkit:
             changes.append(ManifestChange(path, count, devkit))
         if updated != text:
@@ -236,7 +241,7 @@ def update_project(
         notices.append(apm)
     elif sync:
         commands.append(["uv", "run", "--no-sync", "devkit", "sync"])
-    result = UpdateResult(ref, commit, devkit_source, changes, [" ".join(c) for c in commands], dry_run, notices)
+    result = UpdateResult(ref, commit, pins, changes, [" ".join(c) for c in commands], dry_run, notices)
     if dry_run:
         return result
     for path, text in rewritten.items():
