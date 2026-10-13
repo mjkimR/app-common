@@ -1056,7 +1056,7 @@
     },
     ".devkit/managed/devkit/instructions/consumption.md": {
       "mode": 420,
-      "sha256": "e5a72cab2850af8ce630a14034dd4dbbc1bb7da5fb6a51e59886bdc0569fe061"
+      "sha256": "e531c61244a604e11875e3ada6608beb15f296dbfcae1653ea924bbce36bf35b"
     },
     ".devkit/managed/devkit/instructions/devkit-run.md": {
       "mode": 420,
@@ -1064,7 +1064,7 @@
     },
     ".devkit/managed/devkit/instructions/in-repo-bundle.md": {
       "mode": 420,
-      "sha256": "53e37eb168b05d8560ce99636c1f915d566a0f903b308561e32d44d71e15c9b8"
+      "sha256": "f697281b1a99ac12144fd01fa85ea9cd50e5d3cf5044ad4890c4060817814a98"
     },
     ".devkit/managed/devkit/instructions/resource-kinds.md": {
       "mode": 420,

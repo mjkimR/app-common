@@ -320,7 +320,7 @@ dev = [
 requires-dist = [
     { name = "aiobotocore", specifier = ">=3.1.1" },
     { name = "aiofiles", specifier = ">=25.1.0" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=263aad8874f3c7ad912a6547a579b047b8810318" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.11.1" },
@@ -398,7 +398,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", marker = "extra == 'testing'", specifier = ">=0.21.0" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=263aad8874f3c7ad912a6547a579b047b8810318" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "google-cloud-secret-manager", marker = "extra == 'secrets'", specifier = ">=2.24.0" },
@@ -437,7 +437,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=263aad8874f3c7ad912a6547a579b047b8810318" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6" },
     { name = "fastmcp", specifier = ">=4.0.3,<5" },
     { name = "pydantic", specifier = ">=2.11.1" },
 ]
@@ -554,7 +554,7 @@ dev = [
 requires-dist = [
     { name = "app-layer-base", editable = "packages/base/app-layer-base" },
     { name = "app-vector-store", editable = "packages/adapters/app-vector-store" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=263aad8874f3c7ad912a6547a579b047b8810318" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6" },
     { name = "fastembed", marker = "extra == 'fastembed'", specifier = ">=0.7.0" },
     { name = "pydantic", specifier = ">=2.11.1" },
     { name = "qdrant-client", specifier = ">=1.16.2" },
@@ -631,7 +631,7 @@ requires-dist = [
     { name = "app-prebuilt-auth", marker = "extra == 'env-spec'", editable = "packages/prebuilt/app-prebuilt-auth" },
     { name = "app-vector-store", marker = "extra == 'env-spec'", editable = "packages/adapters/app-vector-store" },
     { name = "click", specifier = ">=8.3.1" },
-    { name = "devkit", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=263aad8874f3c7ad912a6547a579b047b8810318" },
+    { name = "devkit", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6" },
     { name = "tomlkit", specifier = ">=0.13" },
 ]
 provides-extras = ["env-spec"]
@@ -1302,7 +1302,7 @@ wheels = [
 [[package]]
 name = "devkit"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=263aad8874f3c7ad912a6547a579b047b8810318#263aad8874f3c7ad912a6547a579b047b8810318" }
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6#0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
@@ -1313,7 +1313,7 @@ dependencies = [
 [[package]]
 name = "devkit-advisory"
 version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=263aad8874f3c7ad912a6547a579b047b8810318#263aad8874f3c7ad912a6547a579b047b8810318" }
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6#0a39c3dcfdc2735bdb3677366d62d50fdaf7a1e6" }
 
 [[package]]
 name = "distro"
