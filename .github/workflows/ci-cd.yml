@@ -20,8 +20,7 @@ jobs:
         with:
           python-version: '3.13'
 
-      # `just init-dev` (in setup-ci) runs `devkit sync --locked`, which already fails (RECEIPT_STALE)
-      # when a bundle source was edited without `just sync-agents`.
+      # `just init-dev` installs the workspace and generates local devkit assets.
       - name: Run Lint
         run: |
           just lint-check

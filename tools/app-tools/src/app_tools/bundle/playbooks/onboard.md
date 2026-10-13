@@ -17,7 +17,7 @@ commit (`<commit>` below); never use a local path or an unpinned branch.
 Before writing code or running commands, ask the developer:
 
 1. **Database backend**: PostgreSQL (`psycopg 3`) or SQLite (`aiosqlite`)?
-2. **Object storage**: AWS S3, MinIO, local filesystem, or none?
+2. **Object storage**: AWS S3, SeaweedFS, local filesystem, or none?
 3. **Vector database / RAG**: is Qdrant required?
 4. **AI models**: LiteLLM model router and catalog (`catalog.yml`) required?
 5. **Prebuilt modules**: user authentication and JWT login (`app-prebuilt-auth`),

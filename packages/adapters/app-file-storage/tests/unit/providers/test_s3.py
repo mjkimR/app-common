@@ -41,7 +41,7 @@ async def test_from_env_success(mock_aiobotocore_client):
             mock_settings_instance.access_key.get_secret_value.return_value = "test_access_key"
             mock_settings_instance.secret_key.get_secret_value.return_value = "test_secret_key"
             mock_settings_instance.region_name = "us-east-1"
-            mock_settings_instance.endpoint_url = "http://localhost:9000"
+            mock_settings_instance.endpoint_url = "http://localhost:8333"
             mock_settings_instance.bucket_name = "test-bucket"
             mock_settings_class.return_value = mock_settings_instance
 
@@ -53,7 +53,7 @@ async def test_from_env_success(mock_aiobotocore_client):
             aws_access_key_id="test_access_key",
             aws_secret_access_key="test_secret_key",
             region_name="us-east-1",
-            endpoint_url="http://localhost:9000",
+            endpoint_url="http://localhost:8333",
         )
         assert provider.client == mock_aiobotocore_client
         assert provider.bucket_name == "test-bucket"

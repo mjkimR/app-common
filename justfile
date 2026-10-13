@@ -4,17 +4,16 @@ default:
 
 # There is deliberately no per-package variant: `uv sync --package` would strip the other
 # workspace members (and the bundles they ship) from the shared environment.
-# `devkit sync --locked` restores the ignored managed copies from the committed receipt and never rewrites
-# committed files: it fails (RECEIPT_STALE) when a bundle source changed without `just sync-agents`.
+# devkit generates ignored local assets from the installed bundles.
 # Initialize the whole workspace in the shared .venv and restore the deployed devkit bundles
 init:
     uv sync --no-active
-    uv run --no-active --no-sync devkit sync --locked
+    uv run --no-active --no-sync devkit sync --preset advisory:core --preset advisory:python
 
 # Initialize the whole workspace with all optional dependencies
 init-dev:
     uv sync --no-active --all-extras
-    uv run --no-active --no-sync devkit sync --locked
+    uv run --no-active --no-sync devkit sync --preset advisory:core --preset advisory:python
 
 # Format and fix with Ruff, redeploy the devkit bundles, then run the devkit rules (architecture included)
 lint module="all":
@@ -86,7 +85,7 @@ lint-check module="all":
 
     # Fails when a bundle source changed without `just sync-agents`.
     if ! uv run --no-active --no-sync devkit sync --check >/dev/null; then
-        echo "Bundle sources changed without a sync: run 'just sync-agents' and commit the result." >&2
+        echo "Bundle sources changed without a sync: run 'just sync-agents'." >&2
         exit 1
     fi
     if [ "$target" = "all" ]; then
@@ -123,7 +122,7 @@ test-integration module="all":
 test-pg +paths="":
     @bash ./scripts/run-tests.sh postgres all {{ paths }}
 
-# Also run the container-backed tests, e.g. the S3 contract against a real MinIO (needs Docker)
+# Also run the container-backed tests, e.g. the S3 contract against a real SeaweedFS (needs Docker)
 test-docker +paths="":
     @DOCKER=1 bash ./scripts/run-tests.sh sqlite all {{ paths }}
 

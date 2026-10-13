@@ -30,12 +30,9 @@ htmlcov/
 !.env.example
 !.python-version
 !.github
-!.devkit
 
-# Skills devkit projects from the bundles; committed so a fresh checkout or a cloud agent has them.
-!.agents
-.agents/*
-!.agents/skills
-!.claude
-.claude/*
-!.claude/skills
+# Generated agent assets are installed by devkit.
+.devkit/
+.agents/
+.claude/
+.codex/

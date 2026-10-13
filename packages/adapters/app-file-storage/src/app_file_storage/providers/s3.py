@@ -14,7 +14,7 @@ class S3FileStorageSettings(BaseSettings):
     """Settings for when the file storage provider is 's3'."""
 
     endpoint_url: str = Field(
-        default="http://localhost:9000", description="S3-compatible endpoint URL (e.g. MinIO or AWS S3)"
+        default="http://localhost:8333", description="S3-compatible endpoint URL (e.g. SeaweedFS or AWS S3)"
     )
     access_key: SecretStr = Field(description="S3 access key ID for authentication")
     secret_key: SecretStr = Field(description="S3 secret access key for authentication")

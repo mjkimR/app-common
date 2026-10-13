@@ -1,6 +1,6 @@
 # app-file-storage
 
-Asynchronous object storage client (`FileStorageClient`) with interchangeable backends (AWS S3, MinIO, Local FS).
+Asynchronous object storage client (`FileStorageClient`) with interchangeable backends (AWS S3, SeaweedFS, Local FS).
 
 > For package installation and environment variables, see [setup.md](./setup.md).
 

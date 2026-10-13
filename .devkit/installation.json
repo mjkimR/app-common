@@ -352,7 +352,7 @@
   "files": {
     ".agents/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "cbfeb696c04a8d33d550a11bd11117dcfda57ca50ecc6c02432fb23802182bc0"
+      "sha256": "811f37c5dfac0450c9e9d7adf08acba193606e778e87bd6a91c11986fd365a8c"
     },
     ".agents/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -420,7 +420,7 @@
     },
     ".agents/skills/app-common/references/local-dev/index.md": {
       "mode": 420,
-      "sha256": "ebaed8c2eb739bc531040c14e0544df14bb860d41784d78b1b8fc39a6a95c5ae"
+      "sha256": "f4887a9a2486789002f593650bb4024048f8beb76f29d60ee5ba50c60dec34ec"
     },
     ".agents/skills/app-common/references/mcp/index.md": {
       "mode": 420,
@@ -440,11 +440,11 @@
     },
     ".agents/skills/app-common/references/storage/index.md": {
       "mode": 420,
-      "sha256": "9cab8fd0a21f6ed476dd3536c77d93da690c28e6bc6f8df2f7648403be6c5c3b"
+      "sha256": "597e6c9d33a4b881f387b9795e9666bfdae6485a3dce428751e32aa36a41b678"
     },
     ".agents/skills/app-common/references/storage/setup.md": {
       "mode": 420,
-      "sha256": "67ceef61b440e56d2c15434f5c0d0e969ca0984316ed76b2528e00e4b37d7f0e"
+      "sha256": "071cd710c62fa67370f128d5b7ebededd6b653682ee67bb1ec0aa65773a0e0ec"
     },
     ".agents/skills/app-common/references/testing/examples.md": {
       "mode": 420,
@@ -516,7 +516,7 @@
     },
     ".claude/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "cbfeb696c04a8d33d550a11bd11117dcfda57ca50ecc6c02432fb23802182bc0"
+      "sha256": "811f37c5dfac0450c9e9d7adf08acba193606e778e87bd6a91c11986fd365a8c"
     },
     ".claude/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -584,7 +584,7 @@
     },
     ".claude/skills/app-common/references/local-dev/index.md": {
       "mode": 420,
-      "sha256": "ebaed8c2eb739bc531040c14e0544df14bb860d41784d78b1b8fc39a6a95c5ae"
+      "sha256": "f4887a9a2486789002f593650bb4024048f8beb76f29d60ee5ba50c60dec34ec"
     },
     ".claude/skills/app-common/references/mcp/index.md": {
       "mode": 420,
@@ -604,11 +604,11 @@
     },
     ".claude/skills/app-common/references/storage/index.md": {
       "mode": 420,
-      "sha256": "9cab8fd0a21f6ed476dd3536c77d93da690c28e6bc6f8df2f7648403be6c5c3b"
+      "sha256": "597e6c9d33a4b881f387b9795e9666bfdae6485a3dce428751e32aa36a41b678"
     },
     ".claude/skills/app-common/references/storage/setup.md": {
       "mode": 420,
-      "sha256": "67ceef61b440e56d2c15434f5c0d0e969ca0984316ed76b2528e00e4b37d7f0e"
+      "sha256": "071cd710c62fa67370f128d5b7ebededd6b653682ee67bb1ec0aa65773a0e0ec"
     },
     ".claude/skills/app-common/references/testing/examples.md": {
       "mode": 420,
@@ -700,7 +700,7 @@
     },
     ".devkit/managed/app-common-dev/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "cbfeb696c04a8d33d550a11bd11117dcfda57ca50ecc6c02432fb23802182bc0"
+      "sha256": "811f37c5dfac0450c9e9d7adf08acba193606e778e87bd6a91c11986fd365a8c"
     },
     ".devkit/managed/app-common/bundle.toml": {
       "mode": 420,
@@ -712,7 +712,7 @@
     },
     ".devkit/managed/app-common/playbooks/onboard.md": {
       "mode": 420,
-      "sha256": "d9917de7cca3b23d1cc5de564412bbe2c9521d2c4161a23a9b37b6d459866662"
+      "sha256": "0e376dc9734dc5f3c15721d6ea64a4d43e1a7247bd9ce4b2801b71b8bbb2a545"
     },
     ".devkit/managed/app-common/rules/adapter_dependency/guide.md": {
       "mode": 420,
@@ -960,7 +960,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/local-dev/index.md": {
       "mode": 420,
-      "sha256": "ebaed8c2eb739bc531040c14e0544df14bb860d41784d78b1b8fc39a6a95c5ae"
+      "sha256": "f4887a9a2486789002f593650bb4024048f8beb76f29d60ee5ba50c60dec34ec"
     },
     ".devkit/managed/app-common/skills/app-common/references/mcp/index.md": {
       "mode": 420,
@@ -980,11 +980,11 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/storage/index.md": {
       "mode": 420,
-      "sha256": "9cab8fd0a21f6ed476dd3536c77d93da690c28e6bc6f8df2f7648403be6c5c3b"
+      "sha256": "597e6c9d33a4b881f387b9795e9666bfdae6485a3dce428751e32aa36a41b678"
     },
     ".devkit/managed/app-common/skills/app-common/references/storage/setup.md": {
       "mode": 420,
-      "sha256": "67ceef61b440e56d2c15434f5c0d0e969ca0984316ed76b2528e00e4b37d7f0e"
+      "sha256": "071cd710c62fa67370f128d5b7ebededd6b653682ee67bb1ec0aa65773a0e0ec"
     },
     ".devkit/managed/app-common/skills/app-common/references/testing/examples.md": {
       "mode": 420,

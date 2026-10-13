@@ -30,7 +30,7 @@ uv run devkit app dev link --target-path ../app-common
 ### Step 2: Develop and Test
 1. Make your code changes in your local `app-common` repository clone.
 2. Run downstream application tests to verify the behavior immediately.
-3. For multi-database testing (PostgreSQL row-locking, MinIO/Docker contracts) and package contribution standards, use the `app-common-contributor` skill that devkit deploys inside the app-common checkout.
+3. For multi-database testing (PostgreSQL row-locking, SeaweedFS/Docker contracts) and package contribution standards, use the `app-common-contributor` skill that devkit deploys inside the app-common checkout.
 
 ### Step 3: Unlink and Restore
 Once changes are verified and committed/pushed to `app-common`, **always restore the consumer repository**:

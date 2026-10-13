@@ -1,6 +1,6 @@
 """The FileStorageClient contract, enforced against every real implementation.
 
-Each test here runs twice -- once on the local filesystem, once on a real S3 (MinIO).
+Each test here runs twice -- once on the local filesystem, once on a real S3 (SeaweedFS).
 A provider is meant to be swappable, so any behaviour that differs between the two is a
 bug in one of them, and this file is where that shows up.
 

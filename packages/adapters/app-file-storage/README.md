@@ -1,6 +1,6 @@
 # app-file-storage
 
-A standalone object-storage adapter exposing one async interface (`FileStorageClient`) over multiple backends. Ships with a Local filesystem provider and an S3-compatible provider (AWS S3 / MinIO).
+A standalone object-storage adapter exposing one async interface (`FileStorageClient`) over multiple backends. Ships with a Local filesystem provider and an S3-compatible provider (AWS S3 / SeaweedFS).
 
 ## Installation
 
@@ -22,11 +22,11 @@ Select the backend with `FS_PROVIDER`, then set the provider-specific variables.
 |---|---|---|
 | `FS_LOCAL_BUCKET_NAME` | — | Base directory used as the storage root |
 
-**S3 / MinIO (`FS_PROVIDER=s3`)**
+**S3 / SeaweedFS (`FS_PROVIDER=s3`)**
 
 | Variable | Default | Description |
 |---|---|---|
-| `FS_S3_ENDPOINT_URL` | — | S3 endpoint (omit for AWS, set for MinIO) |
+| `FS_S3_ENDPOINT_URL` | `http://localhost:8333` | S3-compatible endpoint URL |
 | `FS_S3_ACCESS_KEY` | — | Access key ID |
 | `FS_S3_SECRET_KEY` | — | Secret access key |
 | `FS_S3_BUCKET_NAME` | `my-bucket` | Target bucket |
@@ -82,13 +82,16 @@ loss. Async callers must keep their resource scope alive until thread work finis
 
 ```bash
 just test          # unit + the local-filesystem half of the contract suite. No Docker.
-just test-docker   # ...plus the S3 half, against a real MinIO. Needs Docker.
+just test-docker   # ...plus the S3 half, against a real SeaweedFS. Needs Docker.
 ```
 
 The S3 tests are marked `docker` and deselected by default, so the everyday run stays fast. **CI runs `just test-docker` on every push**, so they are still verified before anything merges — deselecting them locally is a convenience, not a gap.
 
-Set `APP_TEST_MINIO_IMAGE` to test another explicit MinIO version. Readiness is checked
-through `/minio/health/ready`, independently of version-specific startup log messages.
+The S3 contract suite uses the pinned `chrislusf/seaweedfs:4.48` image and
+authenticated `weed mini` on port 8333. Set `APP_TEST_SEAWEEDFS_IMAGE` to test
+another explicit SeaweedFS image. Readiness requires the unsigned S3 request to
+return 403; the suite checks authenticated access, denied credentials, versioning,
+and pagination against the running server.
 
 Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on the default config, and denied credentials being reported as "file not found"), all while the code was 100% line-covered. That is what these run against a real backend for.
 
@@ -100,5 +103,5 @@ Mocked aiobotocore hid three real bugs here (a path-traversal hole, a crash on t
 
 ## See also
 
-- [App File Storage Skill](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/storage/index.md) — S3, MinIO, and Local storage integration.
+- [App File Storage Skill](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/storage/index.md) — S3, SeaweedFS, and Local storage integration.
 - [App Backend Core Skill](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/backend/index.md) — how adapters fit into the layered app.

@@ -30,7 +30,7 @@ Always run the appropriate test target before finalizing code changes:
 |---|---|---|
 | `just test` | **SQLite (in-memory)** | Full local unit and integration coverage. Container-backed tests are automatically deselected. No Docker required. |
 | `just test-pg` | **PostgreSQL (Testcontainers, Docker)** | Row-locking mechanics. `SELECT ... FOR UPDATE SKIP LOCKED` is a no-op on SQLite; this run verifies the Outbox concurrency guarantees. |
-| `just test-docker` | **MinIO / Real Containers (Docker)** | Multi-backend storage contract tests. Mocked tests hid real bugs in the past; contract tests against real MinIO prevent regressions. |
+| `just test-docker` | **SeaweedFS / Real Containers (Docker)** | Multi-backend storage contract tests. Mocked tests hid real bugs in the past; contract tests against real SeaweedFS prevent regressions. |
 | `just test-cov` | **All backends + Coverage** | Generates detailed coverage report in `htmlcov/`. |
 
 ### Test Plugin Conventions
@@ -59,8 +59,8 @@ The rule logic lives in `tools/app-tools/src/app_tools/architecture/`; each rule
 package under the bundle's `rules/<slug>/` (`rule.py` declares the class, `guide.md` is its
 guide, `tests/` its tests; see the app-tools README). After editing anything under
 `tools/app-tools/src/app_tools/bundle/` or `tools/app-common-dev/`, run `just sync-agents`
-and commit `.devkit/installation.json`, `AGENTS.md` and the projected skills with the
-source change; never edit `.devkit/managed/`, `.agents/skills/` or `.claude/skills/`.
+to generate local assets from the canonical source change. Receipts and projected
+skills remain Git-ignored; never edit `.devkit/managed/`, `.agents/skills/` or `.claude/skills/`.
 
 Before submitting changes, all checks must pass with zero errors:
 

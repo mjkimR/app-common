@@ -17,22 +17,22 @@ from .conftest import s3_client
 class TestErrorCodesAreWhatTheProviderExpects:
     """`get_object` and `head_object` report a missing key differently. Both are handled."""
 
-    async def test_get_object_reports_a_missing_key_as_NoSuchKey(self, minio_endpoint, bucket):
-        async with s3_client(minio_endpoint) as client:
+    async def test_get_object_reports_a_missing_key_as_NoSuchKey(self, s3_endpoint, bucket):
+        async with s3_client(s3_endpoint) as client:
             with pytest.raises(ClientError) as exc:
                 await client.get_object(Bucket=bucket, Key="nope.txt")
 
         assert exc.value.response["Error"]["Code"] == "NoSuchKey"
 
-    async def test_head_object_reports_a_missing_key_as_404(self, minio_endpoint, bucket):
-        async with s3_client(minio_endpoint) as client:
+    async def test_head_object_reports_a_missing_key_as_404(self, s3_endpoint, bucket):
+        async with s3_client(s3_endpoint) as client:
             with pytest.raises(ClientError) as exc:
                 await client.head_object(Bucket=bucket, Key="nope.txt")
 
         assert exc.value.response["Error"]["Code"] == "404"
 
-    async def test_head_bucket_reports_a_missing_bucket_as_404(self, minio_endpoint):
-        async with s3_client(minio_endpoint) as client:
+    async def test_head_bucket_reports_a_missing_bucket_as_404(self, s3_endpoint):
+        async with s3_client(s3_endpoint) as client:
             with pytest.raises(ClientError) as exc:
                 await client.head_bucket(Bucket="no-such-bucket-here")
 
@@ -47,11 +47,11 @@ class TestFileExistsDoesNotSwallowFailures:
     could not see, or report a missing file to a user, when the real fault was config.
     """
 
-    async def test_denied_credentials_raise_instead_of_reporting_absence(self, minio_endpoint, bucket, s3_provider):
+    async def test_denied_credentials_raise_instead_of_reporting_absence(self, s3_endpoint, bucket, s3_provider):
         await s3_provider.upload_file("real.txt", b"i am here")
         assert await s3_provider.file_exists("real.txt") is True
 
-        async with s3_client(minio_endpoint, access_key="wrong", secret_key="alsowrong") as bad_client:
+        async with s3_client(s3_endpoint, access_key="wrong", secret_key="alsowrong") as bad_client:
             denied = S3StorageProvider(context=None, client=bad_client, bucket_name=bucket)
 
             with pytest.raises(ClientError) as exc:
@@ -61,8 +61,8 @@ class TestFileExistsDoesNotSwallowFailures:
 
 
 class TestEnsureBucket:
-    async def test_creates_the_bucket_when_auto_create_is_on(self, minio_endpoint):
-        async with s3_client(minio_endpoint) as client:
+    async def test_creates_the_bucket_when_auto_create_is_on(self, s3_endpoint):
+        async with s3_client(s3_endpoint) as client:
             provider = S3StorageProvider(context=None, client=client, bucket_name="auto-created-bucket")
 
             await provider._ensure_bucket(auto_create=True, region_name=None)
@@ -70,8 +70,8 @@ class TestEnsureBucket:
             await client.head_bucket(Bucket="auto-created-bucket")  # raises if absent
             await client.delete_bucket(Bucket="auto-created-bucket")
 
-    async def test_raises_a_clear_error_when_auto_create_is_off(self, minio_endpoint):
-        async with s3_client(minio_endpoint) as client:
+    async def test_raises_a_clear_error_when_auto_create_is_off(self, s3_endpoint):
+        async with s3_client(s3_endpoint) as client:
             provider = S3StorageProvider(context=None, client=client, bucket_name="absent-bucket")
 
             with pytest.raises(RuntimeError, match="FS_S3_AUTO_CREATE_BUCKET"):
@@ -93,14 +93,14 @@ class TestVersioning:
     at all and there is nothing to pass back in.
     """
 
-    async def test_without_versioning_there_is_no_version_to_ask_for(self, minio_endpoint, bucket):
-        async with s3_client(minio_endpoint) as client:
+    async def test_without_versioning_there_is_no_version_to_ask_for(self, s3_endpoint, bucket):
+        async with s3_client(s3_endpoint) as client:
             response = await client.put_object(Bucket=bucket, Key="v.txt", Body=b"only")
 
         assert response.get("VersionId") is None
 
-    async def test_an_old_version_is_still_readable_once_versioning_is_on(self, minio_endpoint, bucket, s3_provider):
-        async with s3_client(minio_endpoint) as client:
+    async def test_an_old_version_is_still_readable_once_versioning_is_on(self, s3_endpoint, bucket, s3_provider):
+        async with s3_client(s3_endpoint) as client:
             await client.put_bucket_versioning(Bucket=bucket, VersioningConfiguration={"Status": "Enabled"})
             first = await client.put_object(Bucket=bucket, Key="v.txt", Body=b"OLD")
             await client.put_object(Bucket=bucket, Key="v.txt", Body=b"NEW")
@@ -110,7 +110,7 @@ class TestVersioning:
 
 
 class TestListFilesPagination:
-    async def test_paginates_past_the_1000_key_limit(self, minio_endpoint, bucket, s3_provider):
+    async def test_paginates_past_the_1000_key_limit(self, s3_endpoint, bucket, s3_provider):
         """S3 caps `list_objects_v2` at 1000 keys per page, so the provider paginates.
 
         A mock returning one page can never show whether that works; this is the only way
@@ -118,7 +118,7 @@ class TestListFilesPagination:
         """
         total = 1050
 
-        async with s3_client(minio_endpoint) as client:
+        async with s3_client(s3_endpoint) as client:
             for start in range(0, total, 100):
                 await asyncio.gather(
                     *(

@@ -115,8 +115,8 @@ Install `just` with `scripts/install-just.sh` (macOS/Linux) or
 and arguments; start with `just init` or `just init-dev` for optional dependencies. Both
 sync the whole workspace into the shared `.venv` (there is no per-package init: a partial
 sync would remove the other members and the bundles they ship) and run
-`devkit sync --locked`, which restores the repository's deployed agent bundles from the
-installation receipt; devkit supports macOS and Linux only. After editing a bundle
+`devkit sync`, which generates the ignored local receipts and projected agent assets
+from the installed bundles; devkit supports macOS and Linux only. After editing a bundle
 source, run `just sync-agents` to redeploy it before running checks.
 
 ```bash

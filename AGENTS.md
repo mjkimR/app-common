@@ -23,6 +23,8 @@ Both are devkit bundles deployed by `just init` (`devkit sync`).
 - Keep justfile recipes thin; shared shell logic belongs in `scripts/`.
 - Make only requested changes. Do not commit `.env`, log secrets/PII, or commit/push
   without explicit instructions. No emojis in commits, comments, or documentation.
+- `.devkit/` and projected agent directories are generated and Git-ignored. Deploy
+  them with `devkit sync`; never add tracking exceptions or commit generated assets.
 
 ## Verification
 
@@ -32,7 +34,7 @@ and relevant tests before finishing code changes; add behavior tests when needed
 | Change | Checks |
 | --- | --- |
 | Python package | `just lint <module>`, `just check <module>`, package tests |
-| app-common devkit bundle (skill, rules, playbook, guidance) | `just sync-agents`, then `just rules-check`; commit the re-synced `.devkit/installation.json`, `AGENTS.md` and projected skills (`just lint-check` and CI fail otherwise) |
+| app-common devkit bundle (skill, rules, playbook, guidance) | `just sync-agents`, then `just rules-check`; change canonical bundle sources, never generated receipts or projected skills |
 | PostgreSQL locking/outbox | `just test-pg` (Docker required; SQLite does not verify row locking) |
 | External storage contracts | `just test-docker` (Docker required) |
 | UI library | `just check-ui`, `just build-ui` after `just init-ui` |
