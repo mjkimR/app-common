@@ -54,14 +54,10 @@ the name. `uv run devkit app update` keeps all of this in step afterwards.
 app-tools registers the `app-common` devkit bundle, deployed automatically by
 `uv run devkit sync`: the `app-common` skill for Claude Code, Codex and Antigravity, the
 architecture rules run by `uv run devkit rules check`, a line in the root `AGENTS.md`, and
-the onboarding playbook (`/devkit-playbook app-common onboarding`). Commit
-`.devkit/config.toml` (once created), `.devkit/installation.json`, `.devkit/.gitignore`,
-`AGENTS.md` and the projected skills under `.agents/skills/` and `.claude/skills/`, so a
-fresh checkout or a cloud agent has them without a sync. A fresh clone and CI then run
-`uv sync` and `uv run devkit sync --locked`: it restores the Git-ignored managed copies the
-rules and playbooks are read from, and fails with `RECEIPT_STALE` instead of rewriting
-committed files. Run a plain `uv run devkit sync` only after changing dependencies or the
-selection, and commit what it changes. Projects that raise app-common
+the onboarding playbook (`/devkit-playbook app-common onboarding`). A fresh checkout,
+cloud agent, or CI environment runs `uv sync` and `uv run devkit sync` to deploy the
+assets from installed packages. Run `uv run devkit sync` again after changing
+dependencies or the selection. Projects that raise app-common
 errors also select devkit's advisory library guide once: `uv run devkit add advisory:python`.
 
 | Command | Purpose |
@@ -87,8 +83,7 @@ does not describe devkit. Move once by hand; `uv run devkit app update` takes ov
    `apm_modules/` too when it was the only one) and delete `.agents/skills/app-common` and
    `.claude/skills/app-common`.
 3. **Environment and agents.** `uv lock`, `uv sync`, `uv run devkit sync`,
-   `uv run devkit add advisory:python`. Commit `.devkit/`, `AGENTS.md` and the projected
-   skills (un-ignore them if `.gitignore` hides dot-directories).
+   `uv run devkit add advisory:python` to deploy the development assets.
 4. **Code.** `from app_error import AppError, Actor, Retry` becomes
    `from devkit.advisory import AdvisoryError, Actor, Retry`, and `AppError` becomes
    `AdvisoryError`; `render_mcp()` is `render()`, `ToolResult.from_app_error` is
@@ -121,9 +116,8 @@ and arguments; start with `just init` or `just init-dev` for optional dependenci
 sync the whole workspace into the shared `.venv` (there is no per-package init: a partial
 sync would remove the other members and the bundles they ship) and run
 `devkit sync --locked`, which restores the repository's deployed agent bundles from the
-committed receipt; devkit supports macOS and Linux only. After editing a bundle source,
-run `just sync-agents`; `just init`, `just lint-check` and CI fail until the redeployed
-files are committed.
+installation receipt; devkit supports macOS and Linux only. After editing a bundle
+source, run `just sync-agents` to redeploy it before running checks.
 
 ```bash
 just lint
