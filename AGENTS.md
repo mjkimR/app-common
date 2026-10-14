@@ -40,9 +40,11 @@ and relevant tests before finishing code changes; add behavior tests when needed
 | Frontend API generator | `just init-api-codegen`, `just test-api-codegen` |
 
 `just lint` runs Ruff and `devkit rules check`, which includes the app-common
-architecture rules (`RULE-app-*`) and Markdown link checks. For bounded output, wrap
-long commands as `uv run devkit run -- just test`. `just test` runs SQLite tests without Docker. For a focused package, use
-`uv run pytest packages/base/app-layer-base/tests`. Each package owns its pytest
+architecture rules (`RULE-app-*`) and Markdown link checks. The verification recipes
+run their tools through `devkit run` (bounded output, full log path); run them as they
+are, without wrapping them again. `just test` runs SQLite tests without Docker. For a
+focused run, pass paths from the repository root:
+`just test packages/base/app-layer-base/tests/unit`. Each package owns its pytest
 configuration; there is no workspace-wide `pythonpath`. Load shared fixtures with
 `pytest_plugins = ["app_testing_base.plugin"]` in the top-level conftest; never copy
 DB fixtures or share a `tests/` directory through `sys.path`.

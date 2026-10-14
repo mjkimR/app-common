@@ -72,14 +72,13 @@ run_pytest() {
             updated_paths+=("tests")
         fi
     else
+        # Only the paths inside this package; the caller skips packages that own none.
         local item
         for item in "$@"; do
             if [[ "$item" == "$path/"* ]]; then
                 updated_paths+=("${item#"$path"/}")
             elif [[ "$item" == "$path" ]]; then
                 updated_paths+=(".")
-            else
-                updated_paths+=("$item")
             fi
         done
     fi
@@ -107,15 +106,51 @@ run_pytest() {
     fi
 
     # Each package runs from its own directory, so its own pytest configuration applies.
-    local status=0
-    uv run --no-active --no-sync --directory "$path" pytest $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}" || status=$?
+    # devkit run keeps the full output in a log and prints a bounded view of it.
+    local status=0 output
+    output=$(uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync --directory "$path" pytest $PYTEST_OPTIONS ${db_args[@]+"${db_args[@]}"} ${marker_args[@]+"${marker_args[@]}"} ${cov_args[@]+"${cov_args[@]}"} "${updated_paths[@]}") || status=$?
 
-    if [ "$status" -eq 5 ]; then
+    # devkit run exits 1 for any failure; pytest's own code is the `exit=` field of its
+    # first line, and 5 means every test was deselected or none exist.
+    if [ "$status" -eq 1 ] && [[ "${output%%$'\n'*}" == *" outcome=failed exit=5 "* ]]; then
         echo "No tests collected for $module."
-        status=0
+        return 0
     fi
+    printf '%s\n' "$output"
     return "$status"
 }
+
+MODULES="app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp"
+
+# owns_path <module> <path>: whether the path is inside the package.
+owns_path() {
+    local path
+    path=$(resolve_module_path "$1")
+    [[ "$2" == "$path" || "$2" == "$path/"* ]]
+}
+
+# With explicit paths, only the packages that contain one of them run.
+selected() {
+    local item
+    [ "${#PATHS[@]}" -eq 0 ] && return 0
+    for item in "${PATHS[@]}"; do
+        owns_path "$1" "$item" && return 0
+    done
+    return 1
+}
+
+for item in ${PATHS[@]+"${PATHS[@]}"}; do
+    owned=false
+    for m in $MODULES; do
+        if owns_path "$m" "$item"; then
+            owned=true
+        fi
+    done
+    if ! "$owned"; then
+        echo "Not inside a package: $item (pass paths from the repository root, e.g. packages/base/app-layer-base/tests)" >&2
+        exit 2
+    fi
+done
 
 status=0
 pids=()
@@ -141,8 +176,8 @@ wait_batch() {
     pending_modules=()
 }
 
-for m in app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
-    if should_run "$MODULE" "$m"; then
+for m in $MODULES; do
+    if should_run "$MODULE" "$m" && selected "$m"; then
         echo "Testing $m..."
         if [ "$TEST_JOBS" -gt 1 ]; then
             run_pytest "$m" ${PATHS[@]+"${PATHS[@]}"} >"$test_logs/$m.log" 2>&1 &

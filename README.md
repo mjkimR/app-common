@@ -141,8 +141,9 @@ its lint, type checks and generation/CLI tests.
 SQLite package suites run in separate processes, up to four at a time. Use
 `TEST_JOBS=1 just test` for serial execution; PostgreSQL, Docker, and coverage runs
 remain serial. All selected packages finish before a failing exit status is returned.
-`uv run devkit run -- just test` prints a bounded view and keeps the complete output in
-a log file. Contribution rules and test selection are in [AGENTS.md](AGENTS.md).
+The verification recipes run each tool through `devkit run`, which prints a bounded view
+and keeps the complete output in a log file. `just test <path>...` runs only the packages
+that contain the given paths. Contribution rules and test selection are in [AGENTS.md](AGENTS.md).
 
 ## Releases
 

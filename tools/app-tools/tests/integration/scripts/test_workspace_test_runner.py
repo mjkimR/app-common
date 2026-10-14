@@ -14,20 +14,30 @@ MANIFESTS = [
     if (manifest.parent / "tests").is_dir()
 ]
 MODULES = {manifest.parent.name for manifest in MANIFESTS}
+# Stands in for `uv run devkit run -- uv run --directory <package> pytest ...`: like devkit run,
+# it prints the [RUN] line first, then the output, and exits 1 for any failure.
 STUB = r"""#!/bin/bash
 previous=""
 module=""
+wrapped=false
 for arg in "$@"; do
+    if [ "$previous" = "devkit" ] && [ "$arg" = "run" ]; then wrapped=true; fi
     if [ "$previous" = "--directory" ]; then module="${arg##*/}"; break; fi
     previous="$arg"
 done
 [ -n "$module" ] || exit 0
+"$wrapped" || { echo "pytest not run through devkit run" >&2; exit 3; }
 printf '%s\n' "$@" > "$RUNNER_EVENTS/$module-start"
 sleep 0.02
 printf '%s\n' "$@" > "$RUNNER_EVENTS/$module-end"
+code=0
+[ "$module" != "${FAIL_MODULE:-}" ] || code=7
+[ "$module" != "${EMPTY_MODULE:-}" ] || code=5
+outcome=passed
+[ "$code" -eq 0 ] || outcome=failed
+echo "[RUN: \"pytest\" outcome=$outcome exit=$code log=/tmp/run.log]"
 echo "finished $module"
-[ "$module" != "${FAIL_MODULE:-}" ] || exit 7
-[ "$module" != "${EMPTY_MODULE:-}" ] || exit 5
+[ "$code" -eq 0 ] || exit 1
 exit 0
 """
 
@@ -96,7 +106,8 @@ def concurrency(records):
 
 def test_parallel_packages_are_bounded_and_all_finish_after_a_failure(runner):
     result, records = runner(TEST_JOBS="3", FAIL_MODULE="app-tools", EMPTY_MODULE="app-mcp")
-    assert result.returncode == 7, result.stdout + result.stderr
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "outcome=failed exit=7" in result.stdout
     assert {r["module"] for r in records if r["phase"] == "end"} == MODULES
     assert 1 < concurrency(records) <= 3
     assert "No tests collected for app-mcp" in result.stdout
@@ -121,6 +132,21 @@ def test_focused_package_preserves_paths_with_spaces(runner):
     assert result.returncode == 0, result.stdout + result.stderr
     assert len(records) == 2
     assert records[0]["args"][-1] == "tests/a file.py::test_case"
+
+
+def test_paths_run_only_the_packages_that_contain_them(runner):
+    path = "packages/base/app-layer-base/tests/unit"
+    result, records = runner(paths=(path,))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert {r["module"] for r in records} == {"app-layer-base"}
+    assert records[0]["args"][-1] == "tests/unit"
+
+
+def test_path_outside_every_package_fails_before_launch(runner):
+    result, records = runner(paths=("docs/missing",))
+    assert result.returncode == 2
+    assert "Not inside a package: docs/missing" in result.stderr
+    assert records == []
 
 
 @pytest.mark.parametrize("jobs", ["0", "-1", "many"])
