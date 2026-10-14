@@ -2,7 +2,7 @@
 
 app-common errors are `devkit.advisory.AdvisoryError` subclasses: each carries a stable
 code and advisory fields saying who acts next, whether a retry is safe, and how to fix
-it. `devkit` is a dependency of every app-common package that raises errors, so the
+it. `devkit-advisory` is a dependency of every app-common package that raises errors, so the
 module is always installed with them. The protocol itself (fields, modes, the
 `[ACTION]` texts) is specified by devkit's `advisory` guide; this page covers its use
 in applications.

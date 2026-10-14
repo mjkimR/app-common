@@ -8,7 +8,7 @@ aliases: [new app-common project, app-common setup, fastapi project bootstrap]
 
 A one-time procedure for a new or existing FastAPI project. It assumes the tooling step
 of the [app-common README](https://github.com/mjkimR/app-common#use-in-a-project) is
-done: `app-tools` and `devkit` are dev dependencies and `uv run devkit sync` has deployed
+done: `app-tools` and `devkit-agt` are dev dependencies and `uv run devkit sync` has deployed
 the `app-common` bundle. Every app-common package is pinned to the same app-common
 commit (`<commit>` below); never use a local path or an unpinned branch.
 
@@ -49,12 +49,12 @@ uv add "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory=packa
 ```
 
 Pin every app-common package the project declares to the same commit: uv resolves their
-own dependencies (other app-common packages, `devkit`, `devkit-advisory`) from app-common's
-sources at that commit, and two commits are a conflicting-URL error. Copy the `devkit` and
+own dependencies (other app-common packages, `devkit-agt`, `devkit-advisory`) from app-common's
+sources at that commit, and two commits are a conflicting-URL error. Copy the `devkit-agt` and
 `devkit-advisory` entries of app-common's root `[tool.uv.sources]` into the project's at
 the same revision and list both as dependencies (a dev dependency is enough): a project's
-source applies only to its direct dependencies, and a declared `devkit` that nothing brings
-from Git resolves from PyPI, where an unrelated project owns the name.
+source applies only to its direct dependencies, and a declared `devkit-agt` that nothing brings
+from Git does not resolve: no package index hosts it.
 `uv run devkit app update` moves all of them together later.
 
 ## Phase 3: Project Skeleton and Lifespan

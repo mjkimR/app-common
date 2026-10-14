@@ -28,20 +28,20 @@ lint module="all":
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
-                echo "Linting $m ($path)..."
-                uv run --no-active --no-sync ruff format "$path"
-                uv run --no-active --no-sync ruff check --fix "$path"
                 paths+=("$path")
             fi
         fi
     done
 
+    uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync ruff format "${paths[@]}"
+    uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync ruff check --fix --output-format=concise "${paths[@]}"
+
     # Ruff also formats code blocks in the bundles' Markdown sources: redeploy before the rules load them.
     uv run --no-active --no-sync devkit sync >/dev/null
     if [ "$target" = "all" ]; then
-        uv run --no-active --no-sync devkit rules check
+        uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync devkit rules check
     else
-        uv run --no-active --no-sync devkit rules check "${paths[@]}"
+        uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync devkit rules check "${paths[@]}"
     fi
 
 # Run pyright static type checking for a module (default: all)
@@ -52,15 +52,17 @@ check module="all":
     target=$(resolve_module "{{ module }}")
     validate_module "$target"
 
+    paths=()
     for m in app-prebuilt-auth app-prebuilt-outbox app-prebuilt-search app-tools app-layer-base app-testing-base app-file-storage app-document-store app-vector-store app-http-client app-ai-catalog app-mcp; do
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
-                echo "Type checking $m ($path)..."
-                uv run --no-active --no-sync pyright "$path/src"
+                paths+=("$path/src")
             fi
         fi
     done
+
+    uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync pyright "${paths[@]}"
 
 # Check formatting, Ruff lint, the deployed bundles and the devkit rules (architecture included) without modifying files
 lint-check module="all":
@@ -75,13 +77,13 @@ lint-check module="all":
         if should_run "$target" "$m"; then
             path=$(resolve_module_path "$m")
             if [ -d "$path" ]; then
-                echo "Checking lint for $m ($path)..."
-                uv run --no-active --no-sync ruff format --check "$path"
-                uv run --no-active --no-sync ruff check "$path"
                 paths+=("$path")
             fi
         fi
     done
+
+    uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync ruff format --check "${paths[@]}"
+    uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync ruff check --output-format=concise "${paths[@]}"
 
     # Fails when a bundle source changed without `just sync-agents`.
     if ! uv run --no-active --no-sync devkit sync --check >/dev/null; then
@@ -89,14 +91,14 @@ lint-check module="all":
         exit 1
     fi
     if [ "$target" = "all" ]; then
-        uv run --no-active --no-sync devkit rules check
+        uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync devkit rules check
     else
-        uv run --no-active --no-sync devkit rules check "${paths[@]}"
+        uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync devkit rules check "${paths[@]}"
     fi
 
 # Run the devkit rules (app-common architecture, Markdown links, ...) on the repository or specific paths
 rules-check +paths="":
-    uv run --no-active --no-sync devkit rules check {{ paths }}
+    uv run --no-active --no-sync devkit run -- uv run --no-active --no-sync devkit rules check {{ paths }}
 
 # Run the tests in each deployed rule's folder (devkit rules test [RULE-ID...] [-- PYTEST-ARGS...])
 rules-test *args:
@@ -140,17 +142,17 @@ init-ui:
 
 # Enforce file-size limits and type check UI package
 check-ui:
-    npm --prefix packages/ui/app-ui-base run lint
-    npm --prefix packages/ui/app-ui-base run check
+    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-base run lint
+    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-base run check
 
 # Verify the shared frontend file-size preset
 test-eslint:
-    npm run check
-    npm test
+    uv run --no-active --no-sync devkit run -- npm run check
+    uv run --no-active --no-sync devkit run -- npm test
 
 # Build UI package into dist/
 build-ui:
-    npm --prefix packages/ui/app-ui-base run build
+    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-base run build
 
 # Initialize standalone frontend API generation tooling
 init-api-codegen:
@@ -159,6 +161,6 @@ init-api-codegen:
 
 # Lint, type check and test shared tag-based API generation
 test-api-codegen:
-    npm --prefix packages/ui/app-ui-api-codegen run lint
-    npm --prefix packages/ui/app-ui-api-codegen run check
-    npm --prefix packages/ui/app-ui-api-codegen test
+    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-api-codegen run lint
+    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-api-codegen run check
+    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-api-codegen test

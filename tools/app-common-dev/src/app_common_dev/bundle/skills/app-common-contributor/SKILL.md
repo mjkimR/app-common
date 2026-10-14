@@ -12,7 +12,7 @@ This skill guides engineers and agents working directly on the codebase of `app-
 ## 1. Workspace Boundaries & Architectural Constraints
 
 1. **Strict Package Isolation**:
-   - Errors are `devkit.advisory.AdvisoryError` subclasses. A package that raises them declares `devkit>=0.1,<0.2`; the root `pyproject.toml` pins devkit's Git revision for the whole workspace, and moving it is a release note for consumers.
+   - Errors are `devkit.advisory.AdvisoryError` subclasses. A package that raises them declares `devkit-advisory>=0.1,<0.2`; the root `pyproject.toml` pins devkit's Git revision for the whole workspace, and moving it is a release note for consumers.
    - Adapters (`packages/adapters/*`) must **never depend on each other**. For example, `app-file-storage` cannot import `app-vector-store`.
    - Settings are strictly decentralized. Each package owns its own `Settings` class inheriting from `pydantic_settings.BaseSettings`. There is no central settings aggregator.
 2. **Git-Based Package Releases**:

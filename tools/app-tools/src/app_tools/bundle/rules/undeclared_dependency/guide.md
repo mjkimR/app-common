@@ -11,7 +11,7 @@ breaks when that dependency changes. Every package declares what it imports.
   (`RULE-app-architecture-config`). The
   checked imports are app-common's public packages (`app_layer_base`, `app_http_client`, `app_mcp`, ...,
   `app_tools`) and devkit: `devkit.advisory` (also `from devkit import advisory`) needs `devkit-advisory`, or
-  `devkit`, which depends on it; any other `devkit` module needs `devkit`. Declarations are read from
+  `devkit-agt`, which depends on it; any other `devkit` module needs `devkit-agt`. Declarations are read from
   `project.dependencies` and every optional dependency, with names normalized.
 
 ## 2. Cause of Violation
@@ -21,7 +21,7 @@ breaks when that dependency changes. Every package declares what it imports.
 ## 3. Remediation
 
 Declare the distribution in the package's `project.dependencies` (or the optional dependency that uses it).
-Library and service code declares `devkit-advisory`, never `devkit`, which is development tooling. app-common
+Library and service code declares `devkit-advisory`, never `devkit-agt`, which is development tooling. app-common
 and devkit are not on a package index: declare them with the Git source and revision app-common pins in
 `[tool.uv.sources]`. See the `app-common` skill's `references/local-dev/index.md` and
 `references/backend/setup.md`.

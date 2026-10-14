@@ -28,7 +28,7 @@ def test_devkit_advisory_must_be_declared_where_it_is_imported(tmp_path: Path) -
     files = {**project(["app-layer-base"]), "src/consumer/main.py": "from devkit.advisory import AdvisoryError"}
     [violation] = check(RULE, tmp_path, files)
     assert violation.message.startswith("devkit-advisory is imported") and "Git source" in violation.remediation
-    for declared in ("devkit-advisory>=0.1", "devkit>=0.1"):  # devkit depends on devkit-advisory
+    for declared in ("devkit-advisory>=0.1", "devkit-agt>=0.1"):  # devkit-agt depends on devkit-advisory
         files = {**project(["app-layer-base", declared]), "src/consumer/main.py": "import devkit.advisory"}
         assert check(RULE, tmp_path, files) == []
 
@@ -38,15 +38,19 @@ def test_from_devkit_import_advisory_is_devkit_advisory(tmp_path: Path) -> None:
     assert check(RULE, tmp_path, files) == []
     files["src/consumer/main.py"] = "from devkit import advisory, cli"
     [violation] = check(RULE, tmp_path, files)
-    assert violation.message.startswith("devkit is imported")
+    assert violation.message.startswith("devkit-agt is imported")
     [violation] = check(RULE, tmp_path, {**project([]), "src/consumer/main.py": "from devkit import advisory"})
     assert violation.message.startswith("devkit-advisory is imported")
 
 
-def test_other_devkit_modules_need_devkit(tmp_path: Path) -> None:
+def test_other_devkit_modules_need_devkit_agt(tmp_path: Path) -> None:
     files = {**project(["devkit-advisory>=0.1"]), "src/consumer/main.py": "from devkit.rules import Severity"}
     [violation] = check(RULE, tmp_path, files)
-    assert violation.message.startswith("devkit is imported")
+    assert violation.message.startswith("devkit-agt is imported")
+    assert check(RULE, tmp_path, {**files, **project(["devkit-agt>=0.1"])}) == []
+    # The distribution named devkit on PyPI is an unrelated project.
+    [violation] = check(RULE, tmp_path, {**files, **project(["devkit>=0.1"])})
+    assert violation.message.startswith("devkit-agt is imported")
 
 
 @pytest.mark.parametrize("declared", ["App_HTTP.Client[extra]>=1; python_version >= '3.12'", "app-http-client"])

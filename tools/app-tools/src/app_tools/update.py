@@ -25,9 +25,9 @@ REQUIREMENT_URL = re.compile(
 )
 COMMIT = re.compile(r"[0-9a-f]{40}")
 REF_KEYS = ("rev", "tag", "branch")
-# devkit (the tooling app-tools builds on) and devkit-advisory (the devkit.advisory library app-common's runtime
-# packages import), both pinned by app-common at one devkit revision.
-DEVKIT_PACKAGES = ("devkit", "devkit-advisory")
+# devkit-agt (the tooling app-tools builds on) and devkit-advisory (the devkit.advisory library app-common's
+# runtime packages import), both pinned by app-common at one devkit revision.
+DEVKIT_PACKAGES = ("devkit-agt", "devkit-advisory")
 
 Runner = Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
 Fetcher = Callable[[str], bytes]
@@ -66,7 +66,7 @@ class UpdateResult:
         return {
             "ref": self.ref,
             "commit": self.commit,
-            "devkit": self.pins.get("devkit"),
+            "devkit": self.pins.get("devkit-agt"),
             "devkit_advisory": self.pins.get("devkit-advisory"),
             "manifests": [change.to_dict() for change in self.changes],
             "commands": self.commands,

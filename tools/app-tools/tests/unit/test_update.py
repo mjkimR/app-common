@@ -17,7 +17,7 @@ OLD = "b" * 40
 DEVKIT = {"git": "https://github.com/mjkimR/devkit", "subdirectory": "packages/devkit", "rev": "c" * 40}
 ADVISORY = {**DEVKIT, "subdirectory": "packages/devkit-advisory"}
 DEVKIT_SOURCE = (
-    f'devkit = {{ git = "{DEVKIT["git"]}", subdirectory = "{DEVKIT["subdirectory"]}", rev = "{DEVKIT["rev"]}" }}'
+    f'devkit-agt = {{ git = "{DEVKIT["git"]}", subdirectory = "{DEVKIT["subdirectory"]}", rev = "{DEVKIT["rev"]}" }}'
 )
 ADVISORY_SOURCE = f'devkit-advisory = {{ git = "{ADVISORY["git"]}", subdirectory = "{ADVISORY["subdirectory"]}", rev = "{ADVISORY["rev"]}" }}'
 APP_COMMON_PYPROJECT = f"""
@@ -85,9 +85,9 @@ def test_uv_sources_form_is_pinned_with_devkit_and_synced(tmp_path: Path):
     assert sources["app-layer-base"]["rev"] == COMMIT
     assert sources["app-tools"]["rev"] == COMMIT and "tag" not in sources["app-tools"]
     assert sources["other"]["rev"] == OLD
-    assert sources["devkit"] == DEVKIT and sources["devkit-advisory"] == ADVISORY
+    assert sources["devkit-agt"] == DEVKIT and sources["devkit-advisory"] == ADVISORY
     # Sources apply to direct dependencies only.
-    assert manifest["dependency-groups"]["dev"] == ["app-tools", "devkit", "devkit-advisory"]
+    assert manifest["dependency-groups"]["dev"] == ["app-tools", "devkit-agt", "devkit-advisory"]
     assert "# app-common packages are pinned by commit." in (tmp_path / "pyproject.toml").read_text()
     assert result.commit == COMMIT
     assert [(c.app_common, c.devkit) for c in result.changes] == [(2, True)]
@@ -99,14 +99,14 @@ def test_requirement_url_form_is_pinned(tmp_path: Path):
     update_project(tmp_path, ref=COMMIT, sync=False, run=Recorder(), fetch=fetch)
     text = (tmp_path / "pyproject.toml").read_text()
     assert f"app-common.git@{COMMIT}#subdirectory=packages/base/app-layer-base" in text
-    assert tomllib.loads(text)["tool"]["uv"]["sources"]["devkit"] == DEVKIT
-    assert tomllib.loads(text)["dependency-groups"]["dev"] == ["devkit", "devkit-advisory"]
+    assert tomllib.loads(text)["tool"]["uv"]["sources"]["devkit-agt"] == DEVKIT
+    assert tomllib.loads(text)["dependency-groups"]["dev"] == ["devkit-agt", "devkit-advisory"]
 
 
 def test_a_direct_devkit_declaration_is_kept(tmp_path: Path):
     sources_manifest(tmp_path)
     manifest = tmp_path / "pyproject.toml"
-    manifest.write_text(manifest.read_text().replace('dev = ["app-tools"]', 'dev = ["app-tools", "devkit>=0.1"]'))
+    manifest.write_text(manifest.read_text().replace('dev = ["app-tools"]', 'dev = ["app-tools", "devkit-agt>=0.1"]'))
     manifest.write_text(
         manifest.read_text().replace(
             "[dependency-groups]", '[project]\ndependencies = ["devkit-advisory>=0.1"]\n\n[dependency-groups]'
@@ -114,7 +114,7 @@ def test_a_direct_devkit_declaration_is_kept(tmp_path: Path):
     )
     update_project(tmp_path, sync=False, run=Recorder(), fetch=fetch)
     document = tomllib.loads(manifest.read_text())
-    assert document["dependency-groups"]["dev"] == ["app-tools", "devkit>=0.1"]
+    assert document["dependency-groups"]["dev"] == ["app-tools", "devkit-agt>=0.1"]
     assert document["project"]["dependencies"] == ["devkit-advisory>=0.1"]
 
 
@@ -132,10 +132,10 @@ app-layer-base = {{ git = "https://github.com/mjkimR/app-common", subdirectory =
     update_project(tmp_path, sync=False, run=Recorder(), fetch=fetch)
     root = tomllib.loads((tmp_path / "pyproject.toml").read_text())
     assert root["tool"]["uv"]["sources"]["devkit-advisory"] == ADVISORY
-    assert root["dependency-groups"]["dev"] == ["devkit", "devkit-advisory"]
+    assert root["dependency-groups"]["dev"] == ["devkit-agt", "devkit-advisory"]
     hub = tomllib.loads((member / "pyproject.toml").read_text())
     assert hub["tool"]["uv"]["sources"]["app-layer-base"]["rev"] == COMMIT
-    assert "devkit" not in hub["tool"]["uv"]["sources"] and "devkit-advisory" not in hub["tool"]["uv"]["sources"]
+    assert "devkit-agt" not in hub["tool"]["uv"]["sources"] and "devkit-advisory" not in hub["tool"]["uv"]["sources"]
 
 
 def test_branch_and_tag_resolve_to_commits(tmp_path: Path):
@@ -203,8 +203,8 @@ def test_commit_pinning_devkit_only_leaves_devkit_advisory_alone(tmp_path: Path)
     old = f"[tool.uv.sources]\n{DEVKIT_SOURCE}\n".encode()
     update_project(tmp_path, ref=COMMIT, sync=False, run=Recorder(), fetch=lambda url: old)
     manifest = tomllib.loads((tmp_path / "pyproject.toml").read_text())
-    assert manifest["tool"]["uv"]["sources"] == {"devkit": DEVKIT}
-    assert manifest["dependency-groups"]["dev"] == ["devkit"]
+    assert manifest["tool"]["uv"]["sources"] == {"devkit-agt": DEVKIT}
+    assert manifest["dependency-groups"]["dev"] == ["devkit-agt"]
 
 
 def test_project_without_app_common_dependencies(tmp_path: Path):

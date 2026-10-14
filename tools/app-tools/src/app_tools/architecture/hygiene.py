@@ -92,13 +92,13 @@ class HygieneVisitor(ast.NodeVisitor):
         root = module.split(".")[0]
         if module == "devkit.advisory" or module.startswith("devkit.advisory."):
             # devkit.advisory is the devkit-advisory distribution (standard library only), the runtime
-            # dependency; devkit, the development tooling, depends on the same version and satisfies it too.
-            if self.package and not {"devkit-advisory", "devkit"} & self.enabled:
+            # dependency; devkit-agt, the development tooling, depends on the same version and satisfies it too.
+            if self.package and not {"devkit-advisory", "devkit-agt"} & self.enabled:
                 self.report(
                     node,
                     "RULE-app-undeclared-dependency",
                     f"devkit-advisory is imported but not declared by {self.package}.",
-                    "Declare devkit-advisory (not devkit, which is development tooling) in this package's "
+                    "Declare devkit-advisory (not devkit-agt, which is development tooling) in this package's "
                     "project.dependencies with the Git source app-common pins in [tool.uv.sources].",
                 )
             return
@@ -119,16 +119,17 @@ class HygieneVisitor(ast.NodeVisitor):
             "app_prebuilt_search",
             "app_tools",
         }
-        name = root.replace("_", "-")
+        # Every other devkit module ships in the devkit-agt distribution.
+        name = "devkit-agt" if root == "devkit" else root.replace("_", "-")
         if self.package and root in packages and name not in self.enabled:
             self.report(
                 node,
                 "RULE-app-undeclared-dependency",
                 f"{name} is imported but not declared by {self.package}.",
                 (
-                    "Declare devkit in this package's project.dependencies with the Git source app-common pins in "
-                    "[tool.uv.sources]; the devkit project on PyPI is unrelated."
-                    if name == "devkit"
+                    "Declare devkit-agt in this package's project.dependencies with the Git source app-common pins "
+                    "in [tool.uv.sources]; the devkit project on PyPI is unrelated."
+                    if name == "devkit-agt"
                     else f"Declare {name} in this package's project.dependencies or an appropriate optional dependency."
                 ),
             )
@@ -148,7 +149,7 @@ class HygieneVisitor(ast.NodeVisitor):
         module = node.module or ""
         if module == "devkit":
             # `devkit` is a namespace package shared by two distributions: `from devkit import advisory`
-            # imports devkit-advisory, any other name devkit itself.
+            # imports devkit-advisory, any other name devkit-agt.
             targets = dict.fromkeys("devkit.advisory" if alias.name == "advisory" else "devkit" for alias in node.names)
             for target in targets:
                 self.check_dependency(node, target)

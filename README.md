@@ -37,17 +37,16 @@ uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory
 
 Errors and agent advisories come from [devkit](https://github.com/mjkimR/devkit)'s
 `devkit-advisory` package (`devkit.advisory`, standard library only), the runtime
-dependency of the packages; `devkit` itself is development tooling that app-tools brings.
+dependency of the packages; `devkit-agt` itself is development tooling that app-tools brings.
 Pin every app-common package the project declares to one commit. uv resolves what those
-packages depend on (other app-common packages, and `devkit` and `devkit-advisory` at the
+packages depend on (other app-common packages, and `devkit-agt` and `devkit-advisory` at the
 revision this repository's root `pyproject.toml` pins) from app-common's own sources at
-that commit, so two different commits are a conflicting-URL error. Still copy the `devkit`
+that commit, so two different commits are a conflicting-URL error. Still copy the `devkit-agt`
 and `devkit-advisory` entries of that root `[tool.uv.sources]` into the project's, with the
 same revision, and list both as dependencies (a dev dependency is enough; a package that
 imports `devkit.advisory` lists `devkit-advisory` in `project.dependencies`, never
-`devkit`): a project's source applies only to its direct dependencies, and a declared
-`devkit` that nothing brings from Git resolves from PyPI, where an unrelated project owns
-the name. `uv run devkit app update` keeps all of this in step afterwards.
+`devkit-agt`): a project's source applies only to its direct dependencies, and a declared
+`devkit-agt` that nothing brings from Git does not resolve: no package index hosts it. `uv run devkit app update` keeps all of this in step afterwards.
 
 ## Use in a project
 
@@ -75,7 +74,7 @@ its `update` reads only requirement URLs and GitHub releases, and the skill APM 
 does not describe devkit. Move once by hand; `uv run devkit app update` takes over after.
 
 1. **Pins.** Set every app-common reference (`[tool.uv.sources]` `rev`, or the `@<ref>` of
-   a requirement URL) to the new app-common commit. Copy the `devkit` and
+   a requirement URL) to the new app-common commit. Copy the `devkit-agt` and
    `devkit-advisory` entries of this repository's root `[tool.uv.sources]` at that commit
    into the project's, and add both to the `dev` dependency group (`devkit-advisory` to
    `project.dependencies` of every package that imports `devkit.advisory`). Drop `app-error` from dependencies and sources.
@@ -135,8 +134,9 @@ its lint, type checks and generation/CLI tests.
 SQLite package suites run in separate processes, up to four at a time. Use
 `TEST_JOBS=1 just test` for serial execution; PostgreSQL, Docker, and coverage runs
 remain serial. All selected packages finish before a failing exit status is returned.
-`uv run devkit run -- just test` prints a bounded view and keeps the complete output in
-a log file. Contribution rules and test selection are in [AGENTS.md](AGENTS.md).
+The verification recipes run each tool through `devkit run`, which prints a bounded view
+and keeps the complete output in a log file. `just test <path>...` runs only the packages
+that contain the given paths. Contribution rules and test selection are in [AGENTS.md](AGENTS.md).
 
 ## Releases
 
@@ -145,7 +145,7 @@ all package `pyproject.toml` files, root/UI/tooling npm manifests and locks, the
 catalog and both bundle manifests (`bundle.toml`). After updating versions, run
 `just sync-agents`, tag and push `vX.Y.Z`; CI creates the GitHub Release only after lint,
 type checks, and all three Python test legs pass. Consumers pin a commit rather than
-`main`. Moving the devkit pins (`devkit` and `devkit-advisory`, always one devkit
+`main`. Moving the devkit pins (`devkit-agt` and `devkit-advisory`, always one devkit
 commit) is a release note: consumers receive them through
 `devkit app update`.
 

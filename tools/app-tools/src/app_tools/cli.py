@@ -127,7 +127,7 @@ def update(ref: str, dry_run: bool, no_sync: bool, output_format: str) -> None:
     if is_json(output_format):
         echo_json(result.to_dict())
         return
-    devkit_rev = result.pins.get("devkit", {}).get("rev")
+    devkit_rev = result.pins.get("devkit-agt", {}).get("rev")
     echo_fact("UPDATE", result.commit, ref=result.ref, devkit=devkit_rev, dry_run=result.dry_run)
     for change in result.changes:
         echo_fact("MANIFEST", str(change.path), app_common=change.app_common, devkit=change.devkit)

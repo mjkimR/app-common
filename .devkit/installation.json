@@ -352,7 +352,7 @@
   "files": {
     ".agents/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "811f37c5dfac0450c9e9d7adf08acba193606e778e87bd6a91c11986fd365a8c"
+      "sha256": "529926fa28609ebca203c6ea6a5361d296223ceb9df96e0df5d7f0a31050e831"
     },
     ".agents/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -384,7 +384,7 @@
     },
     ".agents/skills/app-common/references/backend/errors.md": {
       "mode": 420,
-      "sha256": "f31a0c59c5d6d6d91b7aceb21fcf9771231a52390a73bd16b995bc5c1a5b3834"
+      "sha256": "e1cf6fc693134cd4aa2c612dd9440bbca90c1ce0d0a11e42bb012bcb295d1907"
     },
     ".agents/skills/app-common/references/backend/hooks.md": {
       "mode": 420,
@@ -400,7 +400,7 @@
     },
     ".agents/skills/app-common/references/backend/setup.md": {
       "mode": 420,
-      "sha256": "083e527f5ebd756bdbf1e271e4b782692a764fabc712f5d267388dac4f85d851"
+      "sha256": "b8ba1299774661c2ed09acc8c9beae728a03605213679ed3d89586591f1a67b9"
     },
     ".agents/skills/app-common/references/backend/time.md": {
       "mode": 420,
@@ -484,7 +484,7 @@
     },
     ".agents/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "3e4126f9f1f97b8bd879e42a33c23df74a85a2f26ac06ac4a5c00ced3de1ce82"
+      "sha256": "3ba0c40beff6554f8e0c33ebe69adb1ffdaa798b743ce264ac0a9d9e302e81b3"
     },
     ".agents/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -516,7 +516,7 @@
     },
     ".claude/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "811f37c5dfac0450c9e9d7adf08acba193606e778e87bd6a91c11986fd365a8c"
+      "sha256": "529926fa28609ebca203c6ea6a5361d296223ceb9df96e0df5d7f0a31050e831"
     },
     ".claude/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -548,7 +548,7 @@
     },
     ".claude/skills/app-common/references/backend/errors.md": {
       "mode": 420,
-      "sha256": "f31a0c59c5d6d6d91b7aceb21fcf9771231a52390a73bd16b995bc5c1a5b3834"
+      "sha256": "e1cf6fc693134cd4aa2c612dd9440bbca90c1ce0d0a11e42bb012bcb295d1907"
     },
     ".claude/skills/app-common/references/backend/hooks.md": {
       "mode": 420,
@@ -564,7 +564,7 @@
     },
     ".claude/skills/app-common/references/backend/setup.md": {
       "mode": 420,
-      "sha256": "083e527f5ebd756bdbf1e271e4b782692a764fabc712f5d267388dac4f85d851"
+      "sha256": "b8ba1299774661c2ed09acc8c9beae728a03605213679ed3d89586591f1a67b9"
     },
     ".claude/skills/app-common/references/backend/time.md": {
       "mode": 420,
@@ -648,7 +648,7 @@
     },
     ".claude/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "3e4126f9f1f97b8bd879e42a33c23df74a85a2f26ac06ac4a5c00ced3de1ce82"
+      "sha256": "3ba0c40beff6554f8e0c33ebe69adb1ffdaa798b743ce264ac0a9d9e302e81b3"
     },
     ".claude/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -688,7 +688,7 @@
     },
     ".devkit/managed/advisory/instructions/agent-advisory-python.md": {
       "mode": 420,
-      "sha256": "bd5b7dec34cf56c17a9ceda57cb5e1c0c51d8f82e4e7921a5c95c87f8b74d958"
+      "sha256": "80771a11ac7130587dee372f3900b964a887d5e1257ae4f4eb97340961e8cb4f"
     },
     ".devkit/managed/advisory/instructions/agent-advisory.md": {
       "mode": 420,
@@ -700,7 +700,7 @@
     },
     ".devkit/managed/app-common-dev/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
-      "sha256": "811f37c5dfac0450c9e9d7adf08acba193606e778e87bd6a91c11986fd365a8c"
+      "sha256": "529926fa28609ebca203c6ea6a5361d296223ceb9df96e0df5d7f0a31050e831"
     },
     ".devkit/managed/app-common/bundle.toml": {
       "mode": 420,
@@ -712,7 +712,7 @@
     },
     ".devkit/managed/app-common/playbooks/onboard.md": {
       "mode": 420,
-      "sha256": "0e376dc9734dc5f3c15721d6ea64a4d43e1a7247bd9ce4b2801b71b8bbb2a545"
+      "sha256": "a6ef8da2384b652745851b43c1fa050c4d7a2a23224dfd680a8cb4ba7aac0b4d"
     },
     ".devkit/managed/app-common/rules/adapter_dependency/guide.md": {
       "mode": 420,
@@ -884,7 +884,7 @@
     },
     ".devkit/managed/app-common/rules/undeclared_dependency/guide.md": {
       "mode": 420,
-      "sha256": "ae8007280fa45a2b4cdffda9549ba6df6bf7f24eeead898918735148a1516ee2"
+      "sha256": "0a520082ac5da6d9e9731925970f7e063a4174e05d37d6e3a5af55c45b7061ad"
     },
     ".devkit/managed/app-common/rules/undeclared_dependency/rule.py": {
       "mode": 420,
@@ -892,7 +892,7 @@
     },
     ".devkit/managed/app-common/rules/undeclared_dependency/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "6191fcac4384fca9088e2d8e180db3e94577eeb5f4c44f7b3e06b5aca090e1f7"
+      "sha256": "2ead51f1780ddc4af912adb007af6a2f4b3f4db0e42283e3347550eb5eca9a66"
     },
     ".devkit/managed/app-common/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -924,7 +924,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/backend/errors.md": {
       "mode": 420,
-      "sha256": "f31a0c59c5d6d6d91b7aceb21fcf9771231a52390a73bd16b995bc5c1a5b3834"
+      "sha256": "e1cf6fc693134cd4aa2c612dd9440bbca90c1ce0d0a11e42bb012bcb295d1907"
     },
     ".devkit/managed/app-common/skills/app-common/references/backend/hooks.md": {
       "mode": 420,
@@ -940,7 +940,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/backend/setup.md": {
       "mode": 420,
-      "sha256": "083e527f5ebd756bdbf1e271e4b782692a764fabc712f5d267388dac4f85d851"
+      "sha256": "b8ba1299774661c2ed09acc8c9beae728a03605213679ed3d89586591f1a67b9"
     },
     ".devkit/managed/app-common/skills/app-common/references/backend/time.md": {
       "mode": 420,
@@ -1024,7 +1024,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "3e4126f9f1f97b8bd879e42a33c23df74a85a2f26ac06ac4a5c00ced3de1ce82"
+      "sha256": "3ba0c40beff6554f8e0c33ebe69adb1ffdaa798b743ce264ac0a9d9e302e81b3"
     },
     ".devkit/managed/app-common/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -1056,7 +1056,7 @@
     },
     ".devkit/managed/devkit/instructions/consumption.md": {
       "mode": 420,
-      "sha256": "e531c61244a604e11875e3ada6608beb15f296dbfcae1653ea924bbce36bf35b"
+      "sha256": "60bb5ea5d64a6cc76114133bdf8144a80c7abf7f99e954e76d8ec090e819f6ad"
     },
     ".devkit/managed/devkit/instructions/devkit-run.md": {
       "mode": 420,
@@ -1064,7 +1064,7 @@
     },
     ".devkit/managed/devkit/instructions/in-repo-bundle.md": {
       "mode": 420,
-      "sha256": "f697281b1a99ac12144fd01fa85ea9cd50e5d3cf5044ad4890c4060817814a98"
+      "sha256": "503688267d190ce23021df0648c40ef2baef7474c4de2c85b4c7addf91232861"
     },
     ".devkit/managed/devkit/instructions/resource-kinds.md": {
       "mode": 420,
@@ -1076,7 +1076,7 @@
     {
       "bundle": "advisory",
       "bundle_version": "0.1.0",
-      "package": "devkit",
+      "package": "devkit-agt",
       "package_version": "0.1.0"
     },
     {
@@ -1094,7 +1094,7 @@
     {
       "bundle": "devkit",
       "bundle_version": "0.1.0",
-      "package": "devkit",
+      "package": "devkit-agt",
       "package_version": "0.1.0"
     }
   ],
@@ -1122,7 +1122,7 @@
     }
   },
   "tool": {
-    "package": "devkit",
+    "package": "devkit-agt",
     "version": "0.1.0"
   }
 }

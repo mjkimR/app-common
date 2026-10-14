@@ -30,9 +30,10 @@ htmlcov/
 !.env.example
 !.python-version
 !.github
+# devkit keeps its own .devkit/.gitignore for the generated parts.
+!.devkit
 
 # Generated agent assets are installed by devkit.
-.devkit/
 .agents/
 .claude/
 .codex/
