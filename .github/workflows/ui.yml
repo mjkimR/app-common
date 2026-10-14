@@ -2,25 +2,7 @@ name: UI package
 
 on:
   push:
-    branches: [main]
-    paths:
-      - "packages/ui/app-ui-base/**"
-      - "packages/ui/app-ui-api-codegen/**"
-      - "packages/tooling/eslint-config/**"
-      - "package.json"
-      - "package-lock.json"
-      - "justfile"
-      - ".github/workflows/ui.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "packages/ui/app-ui-base/**"
-      - "packages/ui/app-ui-api-codegen/**"
-      - "packages/tooling/eslint-config/**"
-      - "package.json"
-      - "package-lock.json"
-      - "justfile"
-      - ".github/workflows/ui.yml"
+    tags: [ "v*.*.*" ]
 
 jobs:
   api-codegen:
