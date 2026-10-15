@@ -21,8 +21,8 @@ Both are devkit bundles deployed by `just init` (`devkit sync`).
   the opt-in architecture and registry/scope contracts.
 - Use `Annotated[T, Depends(...)]` for FastAPI dependencies.
 - Keep justfile recipes thin; shared shell logic belongs in `scripts/`.
-- Make only requested changes. Do not commit `.env`, log secrets/PII, or commit/push
-  without explicit instructions. No emojis in commits, comments, or documentation.
+- Make only requested changes. Do not commit `.env` or log secrets/PII. No emojis in
+  commits, comments, or documentation.
 
 ## Verification
 
