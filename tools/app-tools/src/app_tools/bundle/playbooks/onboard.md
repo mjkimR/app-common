@@ -1,7 +1,6 @@
 ---
 name: app-common-onboarding
 description: Bootstrap a FastAPI project on app-common packages, from the requirements interview to the first scaffolded feature.
-aliases: [new app-common project, app-common setup, fastapi project bootstrap]
 ---
 
 # app-common Project Onboarding
