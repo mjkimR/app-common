@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from devkit.advisory import AdvisoryError
-from devkit.core.receipt import load_receipt
+from devkit_dist.features.project.repositories.receipt import load_receipt
 
 from app_tools.errors import AppToolsError, invalid_input, notice, warning
 from app_tools.guide import load_catalog

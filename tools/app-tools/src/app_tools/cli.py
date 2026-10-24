@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 import click
-from devkit.core.cli import (
+from devkit_dist.adapters.cli import (
     FORMAT_OPTION,
     boundary,
     echo_json,
