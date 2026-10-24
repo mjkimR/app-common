@@ -5,7 +5,7 @@ from pathlib import Path
 
 from app_tools.doctor import diagnose
 from click.testing import CliRunner
-from devkit.cli import cli as devkit_cli
+from devkit_dist.cli import cli as devkit_cli
 
 RECEIPT = {
     "schema": 1,

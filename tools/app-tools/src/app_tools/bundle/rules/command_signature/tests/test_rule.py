@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from devkit.rules.testing import check, load_rule
+from devkit_agt.features.rules.services.testing import check, load_rule
 
 RULE = load_rule(__file__)
 

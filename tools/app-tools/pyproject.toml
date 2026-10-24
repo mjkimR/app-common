@@ -5,8 +5,8 @@ description = "app-common guides, rules, scaffolding and dependency updates as t
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "devkit-agt>=0.1,<0.2",
-    "devkit-dist>=0.1,<0.2",
+    "devkit-agt>=0.1.3,<0.2",
+    "devkit-dist>=0.1.3,<0.2",
     "click>=8.3.1",
     "tomlkit>=0.13",
 ]

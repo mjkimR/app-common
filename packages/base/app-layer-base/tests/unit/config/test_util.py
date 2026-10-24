@@ -93,7 +93,9 @@ def test_get_project_root_raises_error_if_not_found(monkeypatch, tmp_path):
     monkeypatch.delenv("APP_HOME", raising=False)
     monkeypatch.setattr(util, "get_env_file_path", lambda: None)
 
-    # Run from directory without .git in its hierarchy
+    # A test runner may place temporary files beneath an existing repository.
+    exists = Path.exists
+    monkeypatch.setattr(Path, "exists", lambda path: False if path.name == ".git" else exists(path))
     monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
     util.get_project_root.cache_clear()
 

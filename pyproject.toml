@@ -16,7 +16,7 @@ members = [
     "tools/*",
 ]
 
-# devkit-agt (tooling, for app-tools) and devkit-advisory (devkit.advisory, for the runtime packages) are pinned at
+# devkit-agt and devkit-dist (app-tools APIs), and devkit-advisory (runtime errors), are pinned at
 # one devkit commit; consumers declare the same sources and rev in their own [tool.uv.sources]
 # (`devkit app update` keeps them in step with app-common).
 [tool.uv.sources]
