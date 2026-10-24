@@ -7,10 +7,10 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
-from app_tools.update import update_project
+from app_tools.update import devkit_pins, rewrite_manifest, update_project
 from click.testing import CliRunner
 from devkit.advisory import AdvisoryError
-from devkit.cli import cli as devkit_cli
+from devkit_dist.cli import cli as devkit_cli
 
 COMMIT = "a" * 40
 OLD = "b" * 40
@@ -224,3 +224,39 @@ def test_cli_reports_the_plan(tmp_path: Path, monkeypatch):
     report = json.loads(result.stdout)
     assert report["commit"] == COMMIT and report["dry_run"] is True
     assert report["devkit"] == DEVKIT and report["devkit_advisory"] == ADVISORY
+
+
+def test_split_devkit_packages_are_updated_together(tmp_path: Path):
+    sources_manifest(tmp_path)
+    manifest = tmp_path / "pyproject.toml"
+    manifest.write_text(
+        manifest.read_text()
+        + f'devkit-core = {{ git = "{DEVKIT["git"]}.git", subdirectory = "packages/devkit-core", rev = "{OLD}" }}\n'
+        + f'devkit-spec = {{ git = "{DEVKIT["git"]}", subdirectory = "packages/devkit-spec", tag = "v0.1.0" }}\n'
+    )
+    dist = {**DEVKIT, "subdirectory": "packages/devkit-dist"}
+    upstream = (
+        APP_COMMON_PYPROJECT
+        + (
+            f'devkit-dist = {{ git = "{dist["git"]}", subdirectory = "{dist["subdirectory"]}", rev = "{dist["rev"]}" }}\n'
+        ).encode()
+    )
+    update_project(tmp_path, ref=COMMIT, sync=False, run=Recorder(), fetch=lambda _: upstream)
+    document = tomllib.loads(manifest.read_text())
+    sources = document["tool"]["uv"]["sources"]
+    assert sources["devkit-dist"] == dist
+    assert "devkit-dist" in document["dependency-groups"]["dev"]
+    assert sources["devkit-core"]["rev"] == DEVKIT["rev"]
+    assert sources["devkit-core"]["git"] == DEVKIT["git"]
+    assert sources["devkit-core"]["subdirectory"] == "packages/devkit-core"
+    assert sources["devkit-spec"]["rev"] == DEVKIT["rev"]
+    assert "tag" not in sources["devkit-spec"]
+
+
+def test_unrelated_devkit_source_is_preserved():
+    text = f'''[tool.uv.sources]
+devkit-custom = {{ git = "https://github.com/example/custom", rev = "{OLD}" }}
+'''
+    pins = devkit_pins(COMMIT, fetch)
+    updated, _, _ = rewrite_manifest(text, COMMIT, pins, declares_devkit=False)
+    assert updated == text

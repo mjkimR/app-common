@@ -320,7 +320,7 @@ dev = [
 requires-dist = [
     { name = "aiobotocore", specifier = ">=3.1.1" },
     { name = "aiofiles", specifier = ">=25.1.0" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0c82c55c21f0768941a9d7656f310d7b52c9c69f" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.11.1" },
@@ -398,7 +398,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", marker = "extra == 'testing'", specifier = ">=0.21.0" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0c82c55c21f0768941a9d7656f310d7b52c9c69f" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "google-cloud-secret-manager", marker = "extra == 'secrets'", specifier = ">=2.24.0" },
@@ -437,7 +437,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0c82c55c21f0768941a9d7656f310d7b52c9c69f" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
     { name = "fastmcp", specifier = ">=4.0.3,<5" },
     { name = "pydantic", specifier = ">=2.11.1" },
 ]
@@ -554,7 +554,7 @@ dev = [
 requires-dist = [
     { name = "app-layer-base", editable = "packages/base/app-layer-base" },
     { name = "app-vector-store", editable = "packages/adapters/app-vector-store" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0c82c55c21f0768941a9d7656f310d7b52c9c69f" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
     { name = "fastembed", marker = "extra == 'fastembed'", specifier = ">=0.7.0" },
     { name = "pydantic", specifier = ">=2.11.1" },
     { name = "qdrant-client", specifier = ">=1.16.2" },
@@ -605,6 +605,7 @@ source = { editable = "tools/app-tools" }
 dependencies = [
     { name = "click" },
     { name = "devkit-agt" },
+    { name = "devkit-dist" },
     { name = "tomlkit" },
 ]
 
@@ -631,7 +632,8 @@ requires-dist = [
     { name = "app-prebuilt-auth", marker = "extra == 'env-spec'", editable = "packages/prebuilt/app-prebuilt-auth" },
     { name = "app-vector-store", marker = "extra == 'env-spec'", editable = "packages/adapters/app-vector-store" },
     { name = "click", specifier = ">=8.3.1" },
-    { name = "devkit-agt", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=0c82c55c21f0768941a9d7656f310d7b52c9c69f" },
+    { name = "devkit-agt", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
+    { name = "devkit-dist", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-dist&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
     { name = "tomlkit", specifier = ">=0.13" },
 ]
 provides-extras = ["env-spec"]
@@ -1300,20 +1302,54 @@ wheels = [
 ]
 
 [[package]]
+name = "devkit-advisory"
+version = "0.1.3"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+
+[[package]]
 name = "devkit-agt"
-version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=0c82c55c21f0768941a9d7656f310d7b52c9c69f#0c82c55c21f0768941a9d7656f310d7b52c9c69f" }
+version = "0.1.3"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
+    { name = "devkit-core" },
+    { name = "devkit-dist" },
     { name = "pyyaml" },
     { name = "tomlkit" },
 ]
 
 [[package]]
-name = "devkit-advisory"
-version = "0.1.0"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=0c82c55c21f0768941a9d7656f310d7b52c9c69f#0c82c55c21f0768941a9d7656f310d7b52c9c69f" }
+name = "devkit-cli"
+version = "0.1.3"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-cli&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+dependencies = [
+    { name = "click" },
+    { name = "devkit-advisory" },
+]
+
+[[package]]
+name = "devkit-core"
+version = "0.1.3"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-core&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+dependencies = [
+    { name = "devkit-advisory" },
+    { name = "pyyaml" },
+]
+
+[[package]]
+name = "devkit-dist"
+version = "0.1.3"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-dist&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+dependencies = [
+    { name = "click" },
+    { name = "devkit-advisory" },
+    { name = "devkit-cli" },
+    { name = "devkit-core" },
+    { name = "jinja2" },
+    { name = "pyyaml" },
+    { name = "tomlkit" },
+]
 
 [[package]]
 name = "distro"

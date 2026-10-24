@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from click.testing import CliRunner
-from devkit.cli import cli as devkit_cli
+from devkit_dist.cli import cli as devkit_cli
 
 BUNDLE = Path(__file__).resolve().parents[3] / "src/app_tools/bundle"
 BUNDLE_RULES = BUNDLE / "rules"

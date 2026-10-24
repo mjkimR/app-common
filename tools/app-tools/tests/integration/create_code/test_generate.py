@@ -8,7 +8,7 @@ import pytest
 from app_tools.create_code import create_feature, create_web_feature
 from click.testing import CliRunner
 from devkit.advisory import AdvisoryError
-from devkit.cli import cli as devkit_cli
+from devkit_dist.cli import cli as devkit_cli
 
 # app-common workspace root: .../app-common/tools/app-tools/tests/integration/create_code/test_generate.py
 REPO_ROOT = Path(__file__).resolve().parents[5]

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from app_tools.guide import CHECKOUT_SKILL, SKILL
 from click.testing import CliRunner
-from devkit.cli import cli as devkit_cli
+from devkit_dist.cli import cli as devkit_cli
 
 TOOL = Path(__file__).resolve().parents[2]
 

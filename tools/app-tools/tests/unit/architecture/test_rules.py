@@ -9,8 +9,8 @@ from pathlib import Path
 
 from app_tools.architecture import RULES
 from click.testing import CliRunner
-from devkit.cli import cli as devkit_cli
-from devkit.rules import RuleRegistry
+from devkit_agt.features.rules import RuleRegistry
+from devkit_dist.cli import cli as devkit_cli
 
 from tests.unit.architecture.support import BUNDLE, BUNDLE_RULES, app_violations, rules_check
 

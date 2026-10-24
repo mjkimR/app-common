@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from app_tools.devlink import find_app_common_root, is_app_common_root, node_packages, python_packages
 from click.testing import CliRunner
-from devkit.cli import cli as devkit_cli
+from devkit_dist.cli import cli as devkit_cli
 
 
 def dev(*args: str):

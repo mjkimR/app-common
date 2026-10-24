@@ -25,9 +25,9 @@ REQUIREMENT_URL = re.compile(
 )
 COMMIT = re.compile(r"[0-9a-f]{40}")
 REF_KEYS = ("rev", "tag", "branch")
-# devkit-agt (the tooling app-tools builds on) and devkit-advisory (the devkit.advisory library app-common's
-# runtime packages import), both pinned by app-common at one devkit revision.
-DEVKIT_PACKAGES = ("devkit-agt", "devkit-advisory")
+# The harness, advisory library and distribution API app-tools imports are pinned
+# by app-common at one devkit revision.
+DEVKIT_PACKAGES = ("devkit-agt", "devkit-advisory", "devkit-dist")
 
 Runner = Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
 Fetcher = Callable[[str], bytes]
@@ -149,6 +149,24 @@ def rewrite_manifest(
                 continue
             entries = source if isinstance(source, (Array, AoT, list)) else [source]
             count += sum(_pin_entry(entry, commit) for entry in entries)
+    pins = dict(pins)
+    anchor = pins.get("devkit-agt")
+    if anchor is not None and sources is not None:
+        # Consumers can also select core, CLI, spec, catalog or MCP from the same
+        # repository. Their exact-version dependencies must share the harness ref.
+        for name, source in sources.items():
+            if (
+                name in pins
+                or not name.startswith("devkit-")
+                or not isinstance(source, (InlineTable, Table))
+                or str(source.get("git", "")).rstrip("/").removesuffix(".git")
+                != str(anchor.get("git", "")).rstrip("/").removesuffix(".git")
+            ):
+                continue
+            aligned = {key: value for key, value in source.items() if key not in REF_KEYS}
+            aligned["git"] = anchor["git"]
+            aligned.update({key: anchor[key] for key in REF_KEYS if key in anchor})
+            pins[name] = aligned
     devkit = False
     for name, source in pins.items():
         if not ((sources is not None and name in sources) or declares_devkit):

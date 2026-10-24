@@ -86,7 +86,7 @@ UI labels, and the configured language of planning artifacts.
 This repository installs agent assets with `devkit`. `.devkit/config.toml` selects
 bundles; `.devkit/installation.json` records what is deployed.
 
-- Before work that touches a bundle's assets, run `uv run devkit get-context <bundle>` once per bundle in the current agent context. Installed bundles: `advisory`, `app-common`, `app-common-dev`, `devkit`.
+- Before work that touches a bundle's assets, run `uv run devkit get-context <bundle>` once per bundle in the current agent context. Installed bundles: `advisory`, `app-common`, `app-common-dev`, `devkit`, `harness`.
 - Entry skill `devkit-playbook`: find and run an operational playbook (explicit user invocation only).
 - Never edit `.devkit/managed/` or projected agent files; change the source bundle or use `devkit override`.
 - app-common packages: read the `app-common` skill before changing code that uses them; its architecture rules run in `devkit rules check`, and `devkit app guide list` lists the topics for this project.

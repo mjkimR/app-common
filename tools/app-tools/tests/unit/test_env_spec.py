@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from click.testing import CliRunner
-from devkit.cli import cli as devkit_cli
+from devkit_dist.cli import cli as devkit_cli
 
 
 def env_spec(settings_type: str):

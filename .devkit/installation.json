@@ -17,6 +17,18 @@
       ]
     },
     {
+      "bundle": "advisory",
+      "id": "unique-code",
+      "kind": "rule",
+      "paths": [
+        ".devkit/managed/advisory/rules/unique_code/facts.py",
+        ".devkit/managed/advisory/rules/unique_code/guide.md",
+        ".devkit/managed/advisory/rules/unique_code/index.py",
+        ".devkit/managed/advisory/rules/unique_code/rule.py",
+        ".devkit/managed/advisory/rules/unique_code/tests/test_rule.py"
+      ]
+    },
+    {
       "bundle": "app-common",
       "id": "app-common",
       "kind": "skill",
@@ -341,14 +353,31 @@
       ]
     },
     {
-      "bundle": "devkit",
+      "bundle": "harness",
+      "id": "harness-consumption",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/harness/instructions/harness-consumption.md"
+      ]
+    },
+    {
+      "bundle": "harness",
+      "id": "harness-assets",
+      "kind": "instruction",
+      "paths": [
+        ".devkit/managed/harness/instructions/harness-assets.md"
+      ]
+    },
+    {
+      "bundle": "harness",
       "id": "devkit-run",
       "kind": "instruction",
       "paths": [
-        ".devkit/managed/devkit/instructions/devkit-run.md"
+        ".devkit/managed/harness/instructions/devkit-run.md"
       ]
     }
   ],
+  "execution_environment": "local",
   "files": {
     ".agents/skills/app-common-contributor/SKILL.md": {
       "mode": 420,
@@ -484,7 +513,7 @@
     },
     ".agents/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "3ba0c40beff6554f8e0c33ebe69adb1ffdaa798b743ce264ac0a9d9e302e81b3"
+      "sha256": "02aab1528d4aa0edf718bc762b22b7e3c04bfef62964527dbbd2370d703a82b1"
     },
     ".agents/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -508,7 +537,7 @@
     },
     ".agents/skills/devkit-playbook/SKILL.md": {
       "mode": 420,
-      "sha256": "eb2926a6c126471a57fe552209158d46e0243293b6ace07d7f92d3b31980a05c"
+      "sha256": "c53c603465b7f6f261094dfdf20f343d5059be58b65327b7ffe8e4d2b5067230"
     },
     ".agents/skills/devkit-playbook/agents/openai.yaml": {
       "mode": 420,
@@ -648,7 +677,7 @@
     },
     ".claude/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "3ba0c40beff6554f8e0c33ebe69adb1ffdaa798b743ce264ac0a9d9e302e81b3"
+      "sha256": "02aab1528d4aa0edf718bc762b22b7e3c04bfef62964527dbbd2370d703a82b1"
     },
     ".claude/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -672,11 +701,11 @@
     },
     ".claude/skills/devkit-playbook/SKILL.md": {
       "mode": 420,
-      "sha256": "ee0bc59240c360ede46d87cdd2575779ddd9b553f613b8088adc635040886a2e"
+      "sha256": "753188c41f76b385551bf7a4d577c3a09dd96dbb561fa819f23ec0a07fabb3e7"
     },
     ".devkit/managed/_devkit/skills/devkit-playbook/SKILL.md": {
       "mode": 420,
-      "sha256": "eb2926a6c126471a57fe552209158d46e0243293b6ace07d7f92d3b31980a05c"
+      "sha256": "c53c603465b7f6f261094dfdf20f343d5059be58b65327b7ffe8e4d2b5067230"
     },
     ".devkit/managed/_devkit/skills/devkit-playbook/agents/openai.yaml": {
       "mode": 420,
@@ -684,15 +713,35 @@
     },
     ".devkit/managed/advisory/bundle.toml": {
       "mode": 420,
-      "sha256": "a8ba8cfe0b1b6f8a3e55af6aa935a7395bdf075625ffc9dd461af657a66871cc"
+      "sha256": "621b80736e39a50c9e79a1a7ce2c6da8de02b893ce284b13526042ae01f4a864"
     },
     ".devkit/managed/advisory/instructions/agent-advisory-python.md": {
       "mode": 420,
-      "sha256": "80771a11ac7130587dee372f3900b964a887d5e1257ae4f4eb97340961e8cb4f"
+      "sha256": "ebeae55746bbc921256aa85b7d3c8f04e58948136680b594c839a6970602cd58"
     },
     ".devkit/managed/advisory/instructions/agent-advisory.md": {
       "mode": 420,
-      "sha256": "d6a5e93bfe6dba0f9b55ca33e16ab5bbf37f232856f26d71e4e57880cf139866"
+      "sha256": "e7ac044dec0a502936c99a225c039dbb0698acf8d18fe5e24480c8d595383093"
+    },
+    ".devkit/managed/advisory/rules/unique_code/facts.py": {
+      "mode": 420,
+      "sha256": "1363998d3f21c78fa5b67379a6ff2984ef79ddf43fdfd72f1a7deeb8cdee5574"
+    },
+    ".devkit/managed/advisory/rules/unique_code/guide.md": {
+      "mode": 420,
+      "sha256": "63251543f1e99f713bfb2a827e907353577a4b35ecd2e008fad7ec28b69263ed"
+    },
+    ".devkit/managed/advisory/rules/unique_code/index.py": {
+      "mode": 420,
+      "sha256": "2284218e70a84a0ac7eeb21e5f2c12bca702c91700289e2151fb35a392f603b0"
+    },
+    ".devkit/managed/advisory/rules/unique_code/rule.py": {
+      "mode": 420,
+      "sha256": "bac4b5f0cedfb82d0e662a5f112b86c581100d902fbbaf6b100a237224ba1c10"
+    },
+    ".devkit/managed/advisory/rules/unique_code/tests/test_rule.py": {
+      "mode": 420,
+      "sha256": "c929c0eb34d33804f9193b42cae41a21bf9c52f1e72ab6169ce4ec9b64ee36d7"
     },
     ".devkit/managed/app-common-dev/bundle.toml": {
       "mode": 420,
@@ -712,7 +761,7 @@
     },
     ".devkit/managed/app-common/playbooks/onboard.md": {
       "mode": 420,
-      "sha256": "a6ef8da2384b652745851b43c1fa050c4d7a2a23224dfd680a8cb4ba7aac0b4d"
+      "sha256": "bb27fe31e5f084b19beba18ba0cfe4a2fbc94b206e2a90083a7c9f4d9c05c344"
     },
     ".devkit/managed/app-common/rules/adapter_dependency/guide.md": {
       "mode": 420,
@@ -724,7 +773,7 @@
     },
     ".devkit/managed/app-common/rules/adapter_dependency/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "909565fc1db8bb6bf03c52705a85ca5012b48efb08c8b1bbcfba034e971ad44f"
+      "sha256": "5fc5e64838eec5fe15745bb36065153741403ac0275699d32f7328b28c97e1cf"
     },
     ".devkit/managed/app-common/rules/architecture_config/guide.md": {
       "mode": 420,
@@ -736,7 +785,7 @@
     },
     ".devkit/managed/app-common/rules/architecture_config/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "71df600f4b231c44c59a1bdecebf5c0ec74a2988720677f1d793f6e7fe60a56b"
+      "sha256": "c5b305b3f4d79ac369734ac1473724f4680499999e4e51eab1e43102cb898fef"
     },
     ".devkit/managed/app-common/rules/command_signature/guide.md": {
       "mode": 420,
@@ -748,7 +797,7 @@
     },
     ".devkit/managed/app-common/rules/command_signature/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "8251a4154965525263bb16504c166df705d7c5b00e39e53c7051ebf4355ff912"
+      "sha256": "a98341880b980c63f81960157666617a5de4d0e0607cb272a59a8dcb2382171b"
     },
     ".devkit/managed/app-common/rules/command_transaction/guide.md": {
       "mode": 420,
@@ -760,7 +809,7 @@
     },
     ".devkit/managed/app-common/rules/command_transaction/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "7e36258aea96b9a605e1469e8e4ed19c8832e9cfd992b895121e9d1b9487f880"
+      "sha256": "f6ea3dacb2f883898d67ecf8534932418d68e821f6e2df2cc094fea93aa2d16d"
     },
     ".devkit/managed/app-common/rules/db_factory_in_layer/guide.md": {
       "mode": 420,
@@ -772,7 +821,7 @@
     },
     ".devkit/managed/app-common/rules/db_factory_in_layer/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "49b26bd60aae334459e93e7d7995e70689f09f7f73f5055aba417e43dd9d6935"
+      "sha256": "4de000598f8a563a945d42603c430de6b9ebfd4ffbb6cc37a49833f7a9894c61"
     },
     ".devkit/managed/app-common/rules/direct_current_time/guide.md": {
       "mode": 420,
@@ -784,7 +833,7 @@
     },
     ".devkit/managed/app-common/rules/direct_current_time/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "0539f2c282ff7442f8e39affac129e1dc3556e31eb31898f28f5af3b0d9bdf7c"
+      "sha256": "4d984483927fc41c33a525925ba28f3a486571d034e5fb769a41be62e376685e"
     },
     ".devkit/managed/app-common/rules/forbidden_import/guide.md": {
       "mode": 420,
@@ -796,7 +845,7 @@
     },
     ".devkit/managed/app-common/rules/forbidden_import/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "7bd28bd7da57f7ed5f8d05097dd2a6113203af753bb98d26fa282276908d14b4"
+      "sha256": "f7f2357a362d0e629b743733b87c24c9689347b5064e50038d7b58fed83010c4"
     },
     ".devkit/managed/app-common/rules/hook_super_call/guide.md": {
       "mode": 420,
@@ -808,7 +857,7 @@
     },
     ".devkit/managed/app-common/rules/hook_super_call/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "39952717bf8407600846c3d49974ab2a3beed06d0b2e8883127b53bf3df3391a"
+      "sha256": "09606860beacdd0d25e8fc370e0fb7485bb2933c4ed369342f4cc2bd697405b1"
     },
     ".devkit/managed/app-common/rules/http_client_construction/guide.md": {
       "mode": 420,
@@ -820,7 +869,7 @@
     },
     ".devkit/managed/app-common/rules/http_client_construction/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "af3d1eceddc78d4a811b650d1a8b14b7678413460a085a20ea97fad6682f3995"
+      "sha256": "6104d36c9689d54878aa64ab9e56750e8ad78305c0954636331a8f301a891192"
     },
     ".devkit/managed/app-common/rules/invalid_suppression/guide.md": {
       "mode": 420,
@@ -832,7 +881,7 @@
     },
     ".devkit/managed/app-common/rules/invalid_suppression/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "3cf722461e5a6a9bce5a46fbdc99f096a4b81a031426adba003fd35e9af3f42b"
+      "sha256": "81676b368da95f19032327f9e36dd3c7fbc77ab5e7e9ccb263bc5e5f262efd2c"
     },
     ".devkit/managed/app-common/rules/parse_error/guide.md": {
       "mode": 420,
@@ -844,7 +893,7 @@
     },
     ".devkit/managed/app-common/rules/parse_error/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "abedcd2f059ffc5e0c59b616eba041cdf1c1c2edc7cb43e4da8d38656357591c"
+      "sha256": "8fa1344596d71add7ce6b715df565d5ac609d8639f38b5a0783f01b00282e7fd"
     },
     ".devkit/managed/app-common/rules/router_repo_import/guide.md": {
       "mode": 420,
@@ -856,7 +905,7 @@
     },
     ".devkit/managed/app-common/rules/router_repo_import/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "b0c67633145ebb51eb97185098b8114a6db8185ba20f1300996f75b686bd7ace"
+      "sha256": "2ef01921e414b7701d04cb133982fa0fe60e0d314c073dbdca0a26aeb5026c7b"
     },
     ".devkit/managed/app-common/rules/service_commit/guide.md": {
       "mode": 420,
@@ -868,7 +917,7 @@
     },
     ".devkit/managed/app-common/rules/service_commit/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "960182eb90774d43d61b4e79d78a765e0389d26dca65a84a8150ff4593cfee74"
+      "sha256": "d45a0e87c86b2f835e9dd66f138f68af09bda4d7d21e36d075c4c1a51321ed4a"
     },
     ".devkit/managed/app-common/rules/shared_client_close/guide.md": {
       "mode": 420,
@@ -880,7 +929,7 @@
     },
     ".devkit/managed/app-common/rules/shared_client_close/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "e22c03bc0a518fa0b9222d85965fe8c7a8bda0c16c4a66bab56797a5b2f0d5eb"
+      "sha256": "9b861b655ca30a1de6b0e551410fa6dd709521ed559d694377a9bca2028f58f8"
     },
     ".devkit/managed/app-common/rules/undeclared_dependency/guide.md": {
       "mode": 420,
@@ -892,7 +941,7 @@
     },
     ".devkit/managed/app-common/rules/undeclared_dependency/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "2ead51f1780ddc4af912adb007af6a2f4b3f4db0e42283e3347550eb5eca9a66"
+      "sha256": "d6cedc9c818c02257d926d18fed8962cc5b5512e68ce9e9ab3e536b5447c3807"
     },
     ".devkit/managed/app-common/skills/app-common/SKILL.md": {
       "mode": 420,
@@ -1024,7 +1073,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/update/index.md": {
       "mode": 420,
-      "sha256": "3ba0c40beff6554f8e0c33ebe69adb1ffdaa798b743ce264ac0a9d9e302e81b3"
+      "sha256": "02aab1528d4aa0edf718bc762b22b7e3c04bfef62964527dbbd2370d703a82b1"
     },
     ".devkit/managed/app-common/skills/app-common/references/user/google-auth.md": {
       "mode": 420,
@@ -1048,36 +1097,52 @@
     },
     ".devkit/managed/devkit/AGENTS.md": {
       "mode": 420,
-      "sha256": "0b941ff21b95a3f3509e7d6632059a06be5c0896a6082e676d484d1ffad6e6ad"
+      "sha256": "efddbb9f28f23a46ab901ebb13754a306983842a10869adc76446c85bcb82a16"
     },
     ".devkit/managed/devkit/bundle.toml": {
       "mode": 420,
-      "sha256": "103f47ead60b1095de359e4e06ca871b40103a2c86dc918ab3d8e660abc036b3"
+      "sha256": "d5bb845ba127ead2dba9ed988a191e7dcb893ef867aeb57504c605bdc7c0ffc5"
     },
     ".devkit/managed/devkit/instructions/consumption.md": {
       "mode": 420,
-      "sha256": "60bb5ea5d64a6cc76114133bdf8144a80c7abf7f99e954e76d8ec090e819f6ad"
-    },
-    ".devkit/managed/devkit/instructions/devkit-run.md": {
-      "mode": 420,
-      "sha256": "9c1271816f3b02c4c7da0d3c0fbd56728b09f0382c154a49ab0861b7a4dae854"
+      "sha256": "b8b6904252fc4b73d406aad1184285c55b734930b5eb26ef3bb879a8505c8a12"
     },
     ".devkit/managed/devkit/instructions/in-repo-bundle.md": {
       "mode": 420,
-      "sha256": "503688267d190ce23021df0648c40ef2baef7474c4de2c85b4c7addf91232861"
+      "sha256": "1f913e10bdb3be077861c90ca58bd32e8bbebd9863e2f350732de3ae766e6666"
     },
     ".devkit/managed/devkit/instructions/resource-kinds.md": {
       "mode": 420,
-      "sha256": "c023fc9441653e5c51680682bef381b5e113cae41f7d79e6a911ef4ce6c05a2e"
+      "sha256": "dc4f2df707e983d1653b97339e5dfc1a3039d61b3dd87b8d29563b4a5d9f4a44"
+    },
+    ".devkit/managed/harness/AGENTS.md": {
+      "mode": 420,
+      "sha256": "5c06ba1f129c72fe030344e20d96538ea6528ee159b3562e9d7288b02ff125de"
+    },
+    ".devkit/managed/harness/bundle.toml": {
+      "mode": 420,
+      "sha256": "9dba7381b5cbf98e07c75a0f4ca511138435cc8899f66284445e40b38fe495b7"
+    },
+    ".devkit/managed/harness/instructions/devkit-run.md": {
+      "mode": 420,
+      "sha256": "61e095d80566dc773fd22f70c0d2359b448f9a8ad2b30db7c2db7086f5e63d3c"
+    },
+    ".devkit/managed/harness/instructions/harness-assets.md": {
+      "mode": 420,
+      "sha256": "81c35f391adf51eeb1204f40e7dab7f95ab2adcabfb038756e52d7dca1e7e4e2"
+    },
+    ".devkit/managed/harness/instructions/harness-consumption.md": {
+      "mode": 420,
+      "sha256": "e7cde687f0cfde87c37c72c93858c3bd1f941fa037a7237b9e23172a403674de"
     }
   },
-  "guidance_block": "4af1a3e3f435c38d90fa47f4b588ee3ecf75b147bc70165086f52c4bfedae1b2",
+  "guidance_block": "a75757ee9a2ca38d7bf523b39c62ea8ea7a20749aadf1575ff958b55602e1080",
   "packages": [
     {
       "bundle": "advisory",
-      "bundle_version": "0.1.0",
-      "package": "devkit-agt",
-      "package_version": "0.1.0"
+      "bundle_version": "0.1.3",
+      "package": "devkit-dist",
+      "package_version": "0.1.3"
     },
     {
       "bundle": "app-common",
@@ -1093,9 +1158,15 @@
     },
     {
       "bundle": "devkit",
-      "bundle_version": "0.1.0",
+      "bundle_version": "0.1.3",
+      "package": "devkit-dist",
+      "package_version": "0.1.3"
+    },
+    {
+      "bundle": "harness",
+      "bundle_version": "0.1.3",
       "package": "devkit-agt",
-      "package_version": "0.1.0"
+      "package_version": "0.1.3"
     }
   ],
   "schema": 1,
@@ -1118,11 +1189,14 @@
       ],
       "devkit": [
         "core"
+      ],
+      "harness": [
+        "core"
       ]
     }
   },
   "tool": {
-    "package": "devkit-agt",
-    "version": "0.1.0"
+    "package": "devkit-dist",
+    "version": "0.1.3"
   }
 }

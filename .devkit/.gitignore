@@ -2,3 +2,4 @@
 # Generated content: `devkit sync` rebuilds it from the installed packages.
 /managed/
 /transient/
+/config.local.toml

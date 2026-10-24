@@ -11,12 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar
 
-try:
-    from devkit_agt.features.rules import Phase, RuleContext, Severity, Violation
-    from devkit_agt.features.rules.services.builtins import BaseRule
-except ImportError:
-    from devkit.rules import Phase, RuleContext, Severity, Violation  # type: ignore
-    from devkit.rules.rules import BaseRule  # type: ignore
+from devkit_agt.features.rules import Phase, RuleContext, Severity, Violation
+from devkit_agt.features.rules.services.builtins import BaseRule
 
 from app_tools.architecture.model import RULES, ArchViolation
 from app_tools.architecture.scan import scan_files
