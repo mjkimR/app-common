@@ -320,7 +320,7 @@ dev = [
 requires-dist = [
     { name = "aiobotocore", specifier = ">=3.1.1" },
     { name = "aiofiles", specifier = ">=25.1.0" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=96f34f89b689bf73a5cf225224d93583249c3bf3" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.11.1" },
@@ -398,7 +398,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", marker = "extra == 'testing'", specifier = ">=0.21.0" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=96f34f89b689bf73a5cf225224d93583249c3bf3" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "google-cloud-secret-manager", marker = "extra == 'secrets'", specifier = ">=2.24.0" },
@@ -437,7 +437,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=96f34f89b689bf73a5cf225224d93583249c3bf3" },
     { name = "fastmcp", specifier = ">=4.0.3,<5" },
     { name = "pydantic", specifier = ">=2.11.1" },
 ]
@@ -554,7 +554,7 @@ dev = [
 requires-dist = [
     { name = "app-layer-base", editable = "packages/base/app-layer-base" },
     { name = "app-vector-store", editable = "packages/adapters/app-vector-store" },
-    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
+    { name = "devkit-advisory", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=96f34f89b689bf73a5cf225224d93583249c3bf3" },
     { name = "fastembed", marker = "extra == 'fastembed'", specifier = ">=0.7.0" },
     { name = "pydantic", specifier = ">=2.11.1" },
     { name = "qdrant-client", specifier = ">=1.16.2" },
@@ -632,8 +632,8 @@ requires-dist = [
     { name = "app-prebuilt-auth", marker = "extra == 'env-spec'", editable = "packages/prebuilt/app-prebuilt-auth" },
     { name = "app-vector-store", marker = "extra == 'env-spec'", editable = "packages/adapters/app-vector-store" },
     { name = "click", specifier = ">=8.3.1" },
-    { name = "devkit-agt", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
-    { name = "devkit-dist", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-dist&rev=fe490af1001d080f36bbb19156014dfb476740ef" },
+    { name = "devkit-agt", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=96f34f89b689bf73a5cf225224d93583249c3bf3" },
+    { name = "devkit-dist", git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-dist&rev=96f34f89b689bf73a5cf225224d93583249c3bf3" },
     { name = "tomlkit", specifier = ">=0.13" },
 ]
 provides-extras = ["env-spec"]
@@ -1303,13 +1303,13 @@ wheels = [
 
 [[package]]
 name = "devkit-advisory"
-version = "0.1.3"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+version = "0.1.5"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-advisory&rev=96f34f89b689bf73a5cf225224d93583249c3bf3#96f34f89b689bf73a5cf225224d93583249c3bf3" }
 
 [[package]]
 name = "devkit-agt"
-version = "0.1.3"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+version = "0.1.5"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit&rev=96f34f89b689bf73a5cf225224d93583249c3bf3#96f34f89b689bf73a5cf225224d93583249c3bf3" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
@@ -1321,8 +1321,8 @@ dependencies = [
 
 [[package]]
 name = "devkit-cli"
-version = "0.1.3"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-cli&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+version = "0.1.5"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-cli&rev=96f34f89b689bf73a5cf225224d93583249c3bf3#96f34f89b689bf73a5cf225224d93583249c3bf3" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
@@ -1330,8 +1330,8 @@ dependencies = [
 
 [[package]]
 name = "devkit-core"
-version = "0.1.3"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-core&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+version = "0.1.5"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-core&rev=96f34f89b689bf73a5cf225224d93583249c3bf3#96f34f89b689bf73a5cf225224d93583249c3bf3" }
 dependencies = [
     { name = "devkit-advisory" },
     { name = "pyyaml" },
@@ -1339,8 +1339,8 @@ dependencies = [
 
 [[package]]
 name = "devkit-dist"
-version = "0.1.3"
-source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-dist&rev=fe490af1001d080f36bbb19156014dfb476740ef#fe490af1001d080f36bbb19156014dfb476740ef" }
+version = "0.1.5"
+source = { git = "https://github.com/mjkimR/devkit?subdirectory=packages%2Fdevkit-dist&rev=96f34f89b689bf73a5cf225224d93583249c3bf3#96f34f89b689bf73a5cf225224d93583249c3bf3" }
 dependencies = [
     { name = "click" },
     { name = "devkit-advisory" },
