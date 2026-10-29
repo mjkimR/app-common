@@ -246,6 +246,7 @@ def test_split_devkit_packages_are_updated_together(tmp_path: Path):
     sources = document["tool"]["uv"]["sources"]
     assert sources["devkit-dist"] == dist
     assert "devkit-dist" in document["dependency-groups"]["dev"]
+    assert not {"devkit-core", "devkit-spec"} & set(document["dependency-groups"]["dev"])
     assert sources["devkit-core"]["rev"] == DEVKIT["rev"]
     assert sources["devkit-core"]["git"] == DEVKIT["git"]
     assert sources["devkit-core"]["subdirectory"] == "packages/devkit-core"
@@ -260,3 +261,72 @@ devkit-custom = {{ git = "https://github.com/example/custom", rev = "{OLD}" }}
     pins = devkit_pins(COMMIT, fetch)
     updated, _, _ = rewrite_manifest(text, COMMIT, pins, declares_devkit=False)
     assert updated == text
+
+
+def test_transitive_devkit_sources_are_aligned_but_never_declared(tmp_path: Path):
+    """devkit-core, devkit-cli and devkit-docs reach a project through devkit-agt and devkit-dist: a source keeps
+    their ref in step, a dependency entry is not needed."""
+    sources_manifest(tmp_path)
+    manifest = tmp_path / "pyproject.toml"
+    manifest.write_text(
+        manifest.read_text().replace('dev = ["app-tools"]', 'dev = ["app-tools", "devkit-agt", "devkit-advisory"]')
+        + "".join(
+            f'{name} = {{ git = "{DEVKIT["git"]}", subdirectory = "packages/{name}", rev = "{OLD}" }}\n'
+            for name in ("devkit-core", "devkit-cli", "devkit-docs")
+        )
+    )
+    update_project(tmp_path, sync=False, run=Recorder(), fetch=fetch)
+    document = tomllib.loads(manifest.read_text())
+    assert document["dependency-groups"]["dev"] == ["app-tools", "devkit-agt", "devkit-advisory"]
+    sources = document["tool"]["uv"]["sources"]
+    assert all(sources[name]["rev"] == DEVKIT["rev"] for name in ("devkit-core", "devkit-cli", "devkit-docs"))
+
+
+def test_a_current_project_is_left_unchanged(tmp_path: Path):
+    sources_manifest(tmp_path)
+    update_project(tmp_path, sync=False, run=Recorder(), fetch=fetch)
+    manifest = tmp_path / "pyproject.toml"
+    manifest.write_text(
+        manifest.read_text()
+        + f'devkit-core = {{ git = "{DEVKIT["git"]}", subdirectory = "packages/devkit-core", rev = "{DEVKIT["rev"]}" }}\n'
+    )
+    before = manifest.read_text()
+    result = update_project(tmp_path, sync=False, run=Recorder(), fetch=fetch)
+    assert manifest.read_text() == before
+    assert [change.devkit for change in result.changes] == [False]
+
+
+def test_devkit_override_urls_follow_the_pins():
+    rev = DEVKIT["rev"]
+    text = f"""[tool.uv]
+# Same devkit commit as the sources.
+override-dependencies = [
+    "devkit-agt @ git+https://github.com/mjkimR/devkit@{OLD}#subdirectory=packages/devkit",
+    "devkit-advisory @ git+https://github.com/mjkimR/devkit.git#subdirectory=packages/devkit-advisory&rev={OLD}",
+    "devkit-core[x] @ git+https://github.com/mjkimR/devkit.git@v0.1.0#subdirectory=packages/devkit-core ; python_version >= '3.12'",
+    "devkit-cli @ git+https://github.com/mjkimR/devkit#subdirectory=packages/devkit-cli",
+    "devkit-custom @ git+https://github.com/example/custom@{OLD}",
+    "requests>=2",
+]
+
+[tool.uv.sources]
+{DEVKIT_SOURCE}
+"""
+    updated, _, devkit = rewrite_manifest(text, COMMIT, devkit_pins(COMMIT, fetch), declares_devkit=False)
+    assert devkit
+    assert "# Same devkit commit as the sources." in updated
+    assert tomllib.loads(updated)["tool"]["uv"]["override-dependencies"] == [
+        f"devkit-agt @ git+https://github.com/mjkimR/devkit@{rev}#subdirectory=packages/devkit",
+        f"devkit-advisory @ git+https://github.com/mjkimR/devkit.git#subdirectory=packages/devkit-advisory&rev={rev}",
+        f"devkit-core[x] @ git+https://github.com/mjkimR/devkit.git@{rev}#subdirectory=packages/devkit-core ; python_version >= '3.12'",
+        "devkit-cli @ git+https://github.com/mjkimR/devkit#subdirectory=packages/devkit-cli",
+        f"devkit-custom @ git+https://github.com/example/custom@{OLD}",
+        "requests>=2",
+    ]
+    again, _, devkit = rewrite_manifest(updated, COMMIT, devkit_pins(COMMIT, fetch), declares_devkit=False)
+    assert again == updated and not devkit
+
+
+def test_override_urls_are_left_alone_when_app_common_pins_no_devkit():
+    text = f'[tool.uv]\noverride-dependencies = ["devkit-agt @ git+https://github.com/mjkimR/devkit@{OLD}"]\n'
+    assert rewrite_manifest(text, COMMIT, {}, declares_devkit=False)[0] == text

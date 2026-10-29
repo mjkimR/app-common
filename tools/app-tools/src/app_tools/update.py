@@ -25,6 +25,14 @@ REQUIREMENT_URL = re.compile(
 )
 COMMIT = re.compile(r"[0-9a-f]{40}")
 REF_KEYS = ("rev", "tag", "branch")
+# A direct-URL requirement on a Git repository: ``name @ git+<repo>[@<ref>][#<fragment>]``; uv also reads
+# ``rev=<ref>`` inside the fragment.
+GIT_REQUIREMENT = re.compile(
+    r"(?P<head>\s*(?P<name>[A-Za-z0-9._-]+)\s*(?:\[[^\]]*\])?\s*@\s*git\+)"
+    r"(?P<repo>[^@#\s;]+)(?:@(?P<ref>[^#\s;]+))?(?P<fragment>#[^\s;]*)?(?P<tail>.*)",
+    re.DOTALL,
+)
+FRAGMENT_REV = re.compile(r"((?:^#|&)rev=)[^&]*")
 # The harness, advisory library and distribution API app-tools imports are pinned
 # by app-common at one devkit revision.
 DEVKIT_PACKAGES = ("devkit-agt", "devkit-advisory", "devkit-dist")
@@ -125,6 +133,41 @@ def _pin_entry(entry: Any, commit: str) -> bool:
     return True
 
 
+def _repository(url: object) -> str:
+    return str(url or "").removeprefix("git+").rstrip("/").removesuffix(".git")
+
+
+def _source_ref(source: dict[str, Any]) -> str | None:
+    return next((str(source[key]) for key in REF_KEYS if key in source), None)
+
+
+def _pin_override(spec: str, pins: dict[str, dict[str, Any]], anchor: dict[str, Any] | None) -> str:
+    """``spec`` with the ref of a devkit direct URL set to its pin; any other requirement as it is.
+
+    A package of ``pins`` takes its own pin's ref; another ``devkit-*`` package of the anchor's repository takes the
+    anchor's, since every devkit wheel requires its siblings at one exact version.
+    """
+    match = GIT_REQUIREMENT.fullmatch(spec)
+    if match is None:
+        return spec
+    name = dependency_name(match["name"])
+    source = pins.get(name)
+    if source is None and anchor is not None and name.startswith("devkit-"):
+        source = anchor
+    if source is None or _repository(match["repo"]) != _repository(source.get("git")):
+        return spec
+    ref = _source_ref(source)
+    fragment = match["fragment"] or ""
+    if ref is None:
+        return spec
+    if match["ref"] is not None:
+        return f"{match['head']}{match['repo']}@{ref}{fragment}{match['tail']}"
+    if FRAGMENT_REV.search(fragment):
+        fragment = FRAGMENT_REV.sub(lambda found: f"{found[1]}{ref}", fragment)
+        return f"{match['head']}{match['repo']}{fragment}{match['tail']}"
+    return spec  # an unpinned URL stays unpinned
+
+
 def _devkit_table(source: dict[str, Any]) -> InlineTable:
     table = tomlkit.inline_table()
     table.update(source)
@@ -138,7 +181,9 @@ def rewrite_manifest(
 
     ``declares_devkit`` marks the manifest that must pin and declare every package of ``pins`` (the
     workspace root of a project with app-common dependencies); any other manifest that already pins one
-    is kept in step.
+    is kept in step. Another devkit package the manifest already pins from the same repository (devkit-core,
+    devkit-cli, ...) is moved to the same ref but never declared: it arrives as a transitive dependency.
+    Devkit direct URLs in ``[tool.uv] override-dependencies`` are moved to the same refs.
     """
     text, count = REQUIREMENT_URL.subn(lambda match: f"{match[1]}{commit}{match[3]}", text)
     document = tomlkit.parse(text)
@@ -149,6 +194,7 @@ def rewrite_manifest(
                 continue
             entries = source if isinstance(source, (Array, AoT, list)) else [source]
             count += sum(_pin_entry(entry, commit) for entry in entries)
+    declared = set(pins)  # app-common's own pins, which a project lists as dependencies
     pins = dict(pins)
     anchor = pins.get("devkit-agt")
     if anchor is not None and sources is not None:
@@ -159,8 +205,7 @@ def rewrite_manifest(
                 name in pins
                 or not name.startswith("devkit-")
                 or not isinstance(source, (InlineTable, Table))
-                or str(source.get("git", "")).rstrip("/").removesuffix(".git")
-                != str(anchor.get("git", "")).rstrip("/").removesuffix(".git")
+                or _repository(source.get("git")) != _repository(anchor.get("git"))
             ):
                 continue
             aligned = {key: value for key, value in source.items() if key not in REF_KEYS}
@@ -182,10 +227,23 @@ def rewrite_manifest(
         # A project's source applies only to its direct dependencies, so the pin is declared too; a
         # declared devkit that nothing brings from Git would otherwise resolve from PyPI, where an
         # unrelated project owns the name. The revision is app-common's: uv rejects two URLs for one package.
-        if declares_devkit and name not in {dependency_name(spec) for spec in declared_requirements(document)}:
+        if (
+            declares_devkit
+            and name in declared
+            and name not in {dependency_name(spec) for spec in declared_requirements(document)}
+        ):
             groups = document.setdefault("dependency-groups", tomlkit.table())
             groups.setdefault("dev", tomlkit.array()).append(name)
             devkit = True
+    overrides = document.get("tool", {}).get("uv", {}).get("override-dependencies")
+    if pins and isinstance(overrides, Array):
+        for index, spec in enumerate(list(overrides)):
+            if not isinstance(spec, str):
+                continue
+            pinned = _pin_override(str(spec), pins, anchor)
+            if pinned != spec:
+                overrides[index] = pinned
+                devkit = True
     return tomlkit.dumps(document), count, devkit
 
 
