@@ -13,11 +13,13 @@ uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory
 ```
 
 uv resolves what these packages depend on, `devkit-advisory` included, from app-common's
-own sources at that commit. Copy the `devkit-agt` and `devkit-advisory` entries of app-common's
-root `[tool.uv.sources]` into the project's own `[tool.uv.sources]` at the same revision
-(uv rejects another) and list both as dependencies (a dev dependency is enough): a
+own sources at that commit. Copy the `devkit-agt`, `devkit-dist` and `devkit-advisory`
+entries of app-common's root `[tool.uv.sources]` (its `pyproject.toml` at that commit pins
+one devkit revision) into the project's own `[tool.uv.sources]` at the same revision (uv
+rejects another) and list all three as dependencies (a dev dependency is enough): a
 project's source applies only to its direct dependencies, and a declared `devkit-agt`
-without one does not resolve: no package index hosts it. Then run `uv sync` and
+without one does not resolve: no package index hosts it. Other devkit packages arrive
+transitively and need no declaration. Then run `uv sync` and
 `uv run devkit sync`; later clones and CI use `uv run devkit sync --locked`.
 
 ## Environment Specification & Config

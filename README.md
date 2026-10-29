@@ -37,16 +37,20 @@ uv add --dev "git+https://github.com/mjkimR/app-common.git@<commit>#subdirectory
 
 Errors and agent advisories come from [devkit](https://github.com/mjkimR/devkit)'s
 `devkit-advisory` package (`devkit.advisory`, standard library only), the runtime
-dependency of the packages; `devkit-agt` itself is development tooling that app-tools brings.
+dependency of the packages; `devkit-agt` and `devkit-dist` are development tooling that app-tools brings.
 Pin every app-common package the project declares to one commit. uv resolves what those
-packages depend on (other app-common packages, and `devkit-agt` and `devkit-advisory` at the
-revision this repository's root `pyproject.toml` pins) from app-common's own sources at
-that commit, so two different commits are a conflicting-URL error. Still copy the `devkit-agt`
-and `devkit-advisory` entries of that root `[tool.uv.sources]` into the project's, with the
-same revision, and list both as dependencies (a dev dependency is enough; a package that
-imports `devkit.advisory` lists `devkit-advisory` in `project.dependencies`, never
-`devkit-agt`): a project's source applies only to its direct dependencies, and a declared
-`devkit-agt` that nothing brings from Git does not resolve: no package index hosts it. `uv run devkit app update` keeps all of this in step afterwards.
+packages depend on (other app-common packages, and `devkit-agt`, `devkit-dist` and
+`devkit-advisory` at the one devkit revision this repository's root `pyproject.toml` pins;
+`uv.lock` records the resolved commit) from app-common's own sources at that commit, so two
+different commits are a conflicting-URL error. Still copy the three `devkit-agt`,
+`devkit-dist` and `devkit-advisory` entries of that root `[tool.uv.sources]` into the
+project's, with the same revision, and list all three as dependencies (a dev dependency is
+enough; a package that imports `devkit.advisory` lists `devkit-advisory` in
+`project.dependencies`, never `devkit-agt`): a project's source applies only to its direct
+dependencies, and a declared `devkit-agt` that nothing brings from Git does not resolve: no
+package index hosts it. Other devkit packages (`devkit-core`, `devkit-cli`, ...) arrive
+transitively and need no declaration. `uv run devkit app update` keeps all of this in step
+afterwards, including devkit URLs in `[tool.uv] override-dependencies`.
 
 ## Use in a project
 
@@ -74,9 +78,9 @@ its `update` reads only requirement URLs and GitHub releases, and the skill APM 
 does not describe devkit. Move once by hand; `uv run devkit app update` takes over after.
 
 1. **Pins.** Set every app-common reference (`[tool.uv.sources]` `rev`, or the `@<ref>` of
-   a requirement URL) to the new app-common commit. Copy the `devkit-agt` and
+   a requirement URL) to the new app-common commit. Copy the `devkit-agt`, `devkit-dist` and
    `devkit-advisory` entries of this repository's root `[tool.uv.sources]` at that commit
-   into the project's, and add both to the `dev` dependency group (`devkit-advisory` to
+   into the project's, and add all three to the `dev` dependency group (`devkit-advisory` to
    `project.dependencies` of every package that imports `devkit.advisory`). Drop `app-error` from dependencies and sources.
 2. **APM.** Remove the app-common entry from `apm.yml` (`apm.yml`, `apm.lock.yaml` and
    `apm_modules/` too when it was the only one) and delete `.agents/skills/app-common` and
@@ -145,8 +149,8 @@ all package `pyproject.toml` files, root/UI/tooling npm manifests and locks, the
 catalog and both bundle manifests (`bundle.toml`). After updating versions, run
 `just sync-agents`, tag and push `vX.Y.Z`; CI creates the GitHub Release only after lint,
 type checks, and all three Python test legs pass. Consumers pin a commit rather than
-`main`. Moving the devkit pins (`devkit-agt` and `devkit-advisory`, always one devkit
-commit) is a release note: consumers receive them through
+`main`. Moving the devkit pins (`devkit-agt`, `devkit-dist` and `devkit-advisory`, always
+one devkit commit) is a release note: consumers receive them through
 `devkit app update`.
 
 ## Agent guidance

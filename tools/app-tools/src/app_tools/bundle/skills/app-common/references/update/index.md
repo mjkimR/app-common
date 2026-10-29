@@ -21,7 +21,9 @@ its direct dependencies, and a declared `devkit-agt` without one does not resolv
 package index hosts it. It then runs `uv lock`, `uv sync` and `uv run devkit sync`, which
 redeploys the app-common skill, rules and guidance from the new app-tools. Existing
 `devkit-*` sources from the same Git repository, such as `devkit-core`, `devkit-cli`,
-`devkit-spec` and `devkit-catalog`, move to that revision together.
+`devkit-spec` and `devkit-catalog`, move to that revision together but are not added as
+dependencies (they arrive transitively), and so do devkit direct URLs in
+`[tool.uv] override-dependencies` (`@<ref>` or a `rev=` fragment).
 
 - `--dry-run` reports the commit, the manifests and the commands without changing anything.
 - `--no-sync` stops after `uv lock`.
