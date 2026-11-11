@@ -1,7 +1,7 @@
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
+import httpx2
 import pytest
 from app_http_client.instance import (
     close_http_client,
@@ -31,26 +31,26 @@ def reset_module_global_http_client():
 
 
 def test_set_http_client():
-    mock_client = MagicMock(spec=httpx.AsyncClient)
+    mock_client = MagicMock(spec=httpx2.AsyncClient)
     set_http_client(mock_client)
     assert get_http_client() == mock_client
 
 
 def test_set_http_client_already_initialized():
-    mock_client = MagicMock(spec=httpx.AsyncClient)
+    mock_client = MagicMock(spec=httpx2.AsyncClient)
     set_http_client(mock_client)
     with pytest.raises(RuntimeError, match=r"HTTP client is already initialized."):
         set_http_client(mock_client)
 
 
 def test_set_http_sync_client():
-    mock_client = MagicMock(spec=httpx.Client)
+    mock_client = MagicMock(spec=httpx2.Client)
     set_http_sync_client(mock_client)
     assert get_http_sync_client() == mock_client
 
 
 def test_set_http_sync_client_already_initialized():
-    mock_client = MagicMock(spec=httpx.Client)
+    mock_client = MagicMock(spec=httpx2.Client)
     set_http_sync_client(mock_client)
     with pytest.raises(RuntimeError, match=r"Synchronous HTTP client is already initialized."):
         set_http_sync_client(mock_client)
@@ -58,12 +58,12 @@ def test_set_http_sync_client_already_initialized():
 
 def test_get_http_client_lazy_initializes():
     client = get_http_client()
-    assert isinstance(client, httpx.AsyncClient)
+    assert isinstance(client, httpx2.AsyncClient)
 
 
 def test_get_http_sync_client_lazy_initializes():
     client = get_http_sync_client()
-    assert isinstance(client, httpx.Client)
+    assert isinstance(client, httpx2.Client)
 
 
 @pytest.fixture
@@ -82,12 +82,12 @@ async def test_setup_http_client(mock_get_settings, mock_http_settings):
     await setup_http_client()
 
     client = get_http_client()
-    assert isinstance(client, httpx.AsyncClient)
+    assert isinstance(client, httpx2.AsyncClient)
 
 
 @patch("app_http_client.instance.logger")
 async def test_setup_http_client_already_initialized(mock_logger):
-    mock_client = MagicMock(spec=httpx.AsyncClient)
+    mock_client = MagicMock(spec=httpx2.AsyncClient)
     set_http_client(mock_client)
 
     await setup_http_client()
@@ -100,12 +100,12 @@ def test_setup_http_sync_client(mock_get_settings, mock_http_settings):
     setup_http_sync_client()
 
     client = get_http_sync_client()
-    assert isinstance(client, httpx.Client)
+    assert isinstance(client, httpx2.Client)
 
 
 @patch("app_http_client.instance.logger")
 def test_setup_http_sync_client_already_initialized(mock_logger):
-    mock_client = MagicMock(spec=httpx.Client)
+    mock_client = MagicMock(spec=httpx2.Client)
     set_http_sync_client(mock_client)
 
     setup_http_sync_client()
@@ -113,7 +113,7 @@ def test_setup_http_sync_client_already_initialized(mock_logger):
 
 
 async def test_close_http_client():
-    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    mock_client = AsyncMock(spec=httpx2.AsyncClient)
     set_http_client(mock_client)
 
     await close_http_client()
@@ -132,7 +132,7 @@ async def test_close_http_client_not_initialized():
 
 
 def test_close_http_sync_client():
-    mock_client = MagicMock(spec=httpx.Client)
+    mock_client = MagicMock(spec=httpx2.Client)
     set_http_sync_client(mock_client)
 
     close_http_sync_client()

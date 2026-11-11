@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class HTTPClientSettings(BaseSettings):
     """
-    Settings for the global HTTP client (httpx).
-    Defaults match httpx standard defaults.
+    Settings for the global HTTP client (httpx2).
+    Defaults match httpx2 standard defaults.
     """
 
     timeout: float = Field(

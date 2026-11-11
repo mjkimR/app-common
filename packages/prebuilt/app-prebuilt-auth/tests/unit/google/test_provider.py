@@ -1,7 +1,7 @@
 import json
 import time
 
-import httpx
+import httpx2
 import jwt
 import pytest
 from app_prebuilt_auth.google import provider as provider_module
@@ -62,10 +62,10 @@ async def exercise(settings, monkeypatch, overrides, accepted):
     def respond(request):
         if request.url.path == "/token":
             assert b"code_verifier=verifier" in request.content
-            return httpx.Response(200, json={"id_token": token})
-        return httpx.Response(200, json={"keys": [key]})
+            return httpx2.Response(200, json={"id_token": token})
+        return httpx2.Response(200, json={"keys": [key]})
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as client:
         monkeypatch.setattr(provider_module, "get_http_client", lambda: client)
         monkeypatch.setattr(provider_module, "_keys", [])
         monkeypatch.setattr(provider_module, "_keys_until", 0)

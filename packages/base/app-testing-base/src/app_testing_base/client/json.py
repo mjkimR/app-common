@@ -8,7 +8,7 @@ from typing import Any
 from uuid import UUID
 
 import orjson
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pydantic import BaseModel
 
 
@@ -33,7 +33,7 @@ class AsyncClientWithJson(AsyncClient):
     """AsyncClient with custom JSON serialization for Enums, Dates, UUIDs, and Pydantic models."""
 
     async def request(self, *args: Any, **kwargs: Any) -> Any:
-        # httpx always passes `json`, as None when the caller sent a form, files, or raw content instead.
+        # httpx2 always passes `json`, as None when the caller sent a form, files, or raw content instead.
         if kwargs.get("json") is not None:
             payload = kwargs.pop("json")
             kwargs["content"] = orjson.dumps(payload, default=default_json_serializer)

@@ -59,7 +59,7 @@ are not checked.
 | `RULE-app-command-transaction` | error | A command module controls transactions |
 | `RULE-app-architecture-config` | error | `tool.app-tools.architecture` is malformed |
 | `RULE-app-parse-error` | error | A Python file cannot be parsed |
-| `RULE-app-http-client-construction` | warning | A package declaring app-http-client constructs httpx clients |
+| `RULE-app-http-client-construction` | warning | A package declaring app-http-client constructs httpx2 (or httpx) clients |
 | `RULE-app-shared-client-close` | warning | Application code closes the shared HTTP client |
 | `RULE-app-direct-current-time` | warning | A package declaring app-layer-base reads the clock directly |
 | `RULE-app-db-factory-in-layer` | warning | A router or service builds a DB engine or session factory |

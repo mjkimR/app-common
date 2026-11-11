@@ -1,11 +1,11 @@
 [project]
 name = "app-http-client"
 version = "0.1.0"
-description = "HTTP Client adapter package based on httpx"
+description = "HTTP Client adapter package based on httpx2"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "httpx>=0.28.1",
+    "httpx2>=2.13.1",
     "loguru>=0.7.3",
     "pydantic>=2.11.1",
     "pydantic-settings>=2.8.1",

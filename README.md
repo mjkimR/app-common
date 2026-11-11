@@ -15,7 +15,7 @@ Each package README covers its installation, public API, and usage.
 | Adapter | [app-file-storage](packages/adapters/app-file-storage/README.md) | Local and S3 object storage. |
 | Adapter | [app-document-store](packages/adapters/app-document-store/README.md) | Async Firestore documents with version-checked writes. |
 | Adapter | [app-vector-store](packages/adapters/app-vector-store/README.md) | Qdrant storage and filtering with caller-supplied embeddings. |
-| Adapter | [app-http-client](packages/adapters/app-http-client/README.md) | Async HTTP clients based on httpx. |
+| Adapter | [app-http-client](packages/adapters/app-http-client/README.md) | Async HTTP clients based on httpx2. |
 | Adapter | [app-ai-catalog](packages/adapters/app-ai-catalog/README.md) | Embedding/LLM factories and LiteLLM/LangChain clients. |
 | Prebuilt | [app-prebuilt-auth](packages/prebuilt/app-prebuilt-auth/README.md) | User and Google login, sessions, approval, administrators, and machine API keys. |
 | Prebuilt | [app-prebuilt-outbox](packages/prebuilt/app-prebuilt-outbox/README.md) | Transactional event capture and delivery. |

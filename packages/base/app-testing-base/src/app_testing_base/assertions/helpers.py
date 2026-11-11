@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from httpx import Response
+from httpx2 import Response
 from loguru import logger
 
 

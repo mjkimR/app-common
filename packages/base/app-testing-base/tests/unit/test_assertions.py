@@ -8,7 +8,7 @@ from app_testing_base.assertions import (
     assert_paginated_response,
     assert_status_code,
 )
-from httpx import Request, Response
+from httpx2 import Request, Response
 from pydantic import BaseModel
 
 

@@ -17,7 +17,7 @@ from app_prebuilt_auth.user.repos import UserRepository
 from app_prebuilt_auth.user.services import UserService
 from app_prebuilt_auth.user.throttle import FailedLoginThrottle
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from sqlalchemy import select, update
 
 pytestmark = pytest.mark.real_commit

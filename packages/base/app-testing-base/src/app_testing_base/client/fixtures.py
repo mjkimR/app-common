@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from httpx import ASGITransport
+from httpx2 import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_testing_base.client.json import AsyncClientWithJson

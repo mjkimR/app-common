@@ -7,7 +7,7 @@ from enum import StrEnum
 import pytest
 from app_testing_base.client import AsyncClientWithJson
 from fastapi import FastAPI, Request
-from httpx import ASGITransport
+from httpx2 import ASGITransport
 from pydantic import BaseModel
 
 
@@ -62,7 +62,7 @@ async def echo_body(request: Request):
 
 @pytest.mark.asyncio
 async def test_a_form_or_raw_body_is_sent_as_it_is():
-    """Regression: httpx always passes `json` (as None), which used to replace every other body with `null`."""
+    """Regression: httpx2 always passes `json` (as None), which used to replace every other body with `null`."""
     async with AsyncClientWithJson(transport=ASGITransport(app=app), base_url="http://testserver") as client:
         form = await client.post("/test-body", data={"username": "a@example.com", "password": "secret"})
         raw = await client.post("/test-body", content=b"plain", headers={"Content-Type": "text/plain"})

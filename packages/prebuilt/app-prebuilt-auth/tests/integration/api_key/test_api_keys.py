@@ -12,7 +12,7 @@ from app_prebuilt_auth.api_key.models import MachineKey
 from app_prebuilt_auth.api_key.schemas import MachinePrincipal
 from app_prebuilt_auth.api_key.usecases import get_machine_scopes
 from fastapi import Depends, FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 pytestmark = pytest.mark.real_commit

@@ -1,6 +1,6 @@
 # app-http-client
 
-A lightweight adapter that manages a single, shared `httpx` client (async and sync) behind a global singleton, so an application reuses one connection pool instead of creating clients ad hoc.
+A lightweight adapter that manages a single, shared `httpx2` client (async and sync) behind a global singleton, so an application reuses one connection pool instead of creating clients ad hoc.
 
 ## Installation
 
@@ -10,7 +10,7 @@ uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=
 
 ## Configuration
 
-All settings are optional and read from environment variables (defaults match httpx):
+All settings are optional and read from environment variables (defaults match httpx2):
 
 | Variable | Default | Description |
 |---|---|---|
@@ -31,13 +31,13 @@ app = FastAPI(lifespan=lifespan_http_client)
 
 
 async def call_upstream():
-    client = get_http_client()  # shared httpx.AsyncClient
+    client = get_http_client()  # shared httpx2.AsyncClient
     resp = await client.get("https://example.com")
     return resp.json()
 
 
 def call_upstream_sync():
-    client = get_http_sync_client()  # shared httpx.Client
+    client = get_http_sync_client()  # shared httpx2.Client
     return client.get("https://example.com").text
 ```
 
@@ -45,11 +45,11 @@ Getters lazily initialize the client on first use, so `get_http_client()` also w
 
 ## Public API
 
-- `get_http_client()` — shared `httpx.AsyncClient`
-- `get_http_sync_client()` — shared `httpx.Client`
+- `get_http_client()` — shared `httpx2.AsyncClient`
+- `get_http_sync_client()` — shared `httpx2.Client`
 - `lifespan_http_client` — FastAPI lifespan that initializes and closes both clients
 
 ## See also
 
-- [App HTTP Client Skill](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/http/index.md) — pooled httpx client usage and lifespan.
+- [App HTTP Client Skill](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/http/index.md) — pooled httpx2 client usage and lifespan.
 - [App Backend Core Skill](../../../tools/app-tools/src/app_tools/bundle/skills/app-common/references/backend/index.md) — how adapters fit into the layered app.

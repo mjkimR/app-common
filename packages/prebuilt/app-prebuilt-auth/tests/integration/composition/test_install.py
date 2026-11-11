@@ -13,7 +13,7 @@ from app_prebuilt_auth.user.config import AuthSettings
 from app_prebuilt_auth.user.repos import UserRepository
 from app_prebuilt_auth.user.services import UserService
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from sqlalchemy import inspect, select
 
 pytestmark = pytest.mark.real_commit

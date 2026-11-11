@@ -22,6 +22,8 @@ def project(dependencies: list[str], name: str = "consumer") -> dict[str, str]:
         "import httpx as hx\nhx.AsyncClient()",
         "from httpx import Client as C\nC()",
         "import httpx\nfactory = httpx.AsyncClient\nfactory()",
+        "import httpx2\nhttpx2.AsyncClient()",
+        "from httpx2 import Client as C\nC()",
     ],
 )
 def test_constructor_aliases_warn(tmp_path: Path, code: str) -> None:

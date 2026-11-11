@@ -1,21 +1,21 @@
 from threading import RLock
 
-import httpx
+import httpx2
 from loguru import logger
 
 from app_http_client.config import get_http_client_settings
 
-_http_client: httpx.AsyncClient | None = None
-_http_sync_client: httpx.Client | None = None
+_http_client: httpx2.AsyncClient | None = None
+_http_sync_client: httpx2.Client | None = None
 _http_client_lock = RLock()
 _http_sync_client_lock = RLock()
 
 
-def _create_http_client() -> httpx.AsyncClient:
+def _create_http_client() -> httpx2.AsyncClient:
     settings = get_http_client_settings()
-    return httpx.AsyncClient(
-        timeout=httpx.Timeout(settings.timeout),
-        limits=httpx.Limits(
+    return httpx2.AsyncClient(
+        timeout=httpx2.Timeout(settings.timeout),
+        limits=httpx2.Limits(
             max_connections=settings.max_connections,
             max_keepalive_connections=settings.max_keepalive_connections,
             keepalive_expiry=settings.keepalive_expiry,
@@ -23,11 +23,11 @@ def _create_http_client() -> httpx.AsyncClient:
     )
 
 
-def _create_http_sync_client() -> httpx.Client:
+def _create_http_sync_client() -> httpx2.Client:
     settings = get_http_client_settings()
-    return httpx.Client(
-        timeout=httpx.Timeout(settings.timeout),
-        limits=httpx.Limits(
+    return httpx2.Client(
+        timeout=httpx2.Timeout(settings.timeout),
+        limits=httpx2.Limits(
             max_connections=settings.max_connections,
             max_keepalive_connections=settings.max_keepalive_connections,
             keepalive_expiry=settings.keepalive_expiry,
@@ -35,7 +35,7 @@ def _create_http_sync_client() -> httpx.Client:
     )
 
 
-def set_http_client(client: httpx.AsyncClient) -> None:
+def set_http_client(client: httpx2.AsyncClient) -> None:
     """Set the global HTTP client instance."""
     global _http_client
     with _http_client_lock:
@@ -44,7 +44,7 @@ def set_http_client(client: httpx.AsyncClient) -> None:
         _http_client = client
 
 
-def set_http_sync_client(client: httpx.Client) -> None:
+def set_http_sync_client(client: httpx2.Client) -> None:
     """Set the global synchronous HTTP client instance."""
     global _http_sync_client
     with _http_sync_client_lock:
@@ -53,25 +53,25 @@ def set_http_sync_client(client: httpx.Client) -> None:
         _http_sync_client = client
 
 
-def get_http_client() -> httpx.AsyncClient:
+def get_http_client() -> httpx2.AsyncClient:
     """Get the global HTTP client instance."""
     global _http_client
     if _http_client is None:
         with _http_client_lock:
             if _http_client is None:
-                logger.info("Lazy initializing global httpx AsyncClient")
+                logger.info("Lazy initializing global httpx2 AsyncClient")
                 _http_client = _create_http_client()
                 logger.info("HTTP client initialized successfully.")
     return _http_client
 
 
-def get_http_sync_client() -> httpx.Client:
+def get_http_sync_client() -> httpx2.Client:
     """Get the global synchronous HTTP client instance."""
     global _http_sync_client
     if _http_sync_client is None:
         with _http_sync_client_lock:
             if _http_sync_client is None:
-                logger.info("Lazy initializing global httpx Client (Sync)")
+                logger.info("Lazy initializing global httpx2 Client (Sync)")
                 _http_sync_client = _create_http_sync_client()
                 logger.info("Synchronous HTTP client initialized successfully.")
     return _http_sync_client
@@ -83,7 +83,7 @@ async def setup_http_client() -> None:
         logger.info("HTTP client is already initialized.")
         return
 
-    logger.info("Initializing global httpx AsyncClient")
+    logger.info("Initializing global httpx2 AsyncClient")
     get_http_client()
     logger.info("HTTP client initialized successfully.")
 
@@ -94,7 +94,7 @@ def setup_http_sync_client() -> None:
         logger.info("Synchronous HTTP client is already initialized.")
         return
 
-    logger.info("Initializing global httpx Client (Sync)")
+    logger.info("Initializing global httpx2 Client (Sync)")
     get_http_sync_client()
     logger.info("Synchronous HTTP client initialized successfully.")
 
@@ -107,7 +107,7 @@ async def close_http_client() -> None:
         _http_client = None
     if client:
         await client.aclose()
-        logger.info("Global httpx AsyncClient closed.")
+        logger.info("Global httpx2 AsyncClient closed.")
 
 
 def close_http_sync_client() -> None:
@@ -118,4 +118,4 @@ def close_http_sync_client() -> None:
         _http_sync_client = None
     if client:
         client.close()
-        logger.info("Global httpx Client (Sync) closed.")
+        logger.info("Global httpx2 Client (Sync) closed.")

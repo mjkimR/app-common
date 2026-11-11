@@ -238,7 +238,7 @@ class HygieneVisitor(ast.NodeVisitor):
     def visit_Call(self, node: ast.Call) -> None:
         name = self.resolve(node.func)
         if "app-http-client" in self.enabled and self.package != "app-http-client":
-            if name in {"httpx.Client", "httpx.AsyncClient"}:
+            if name in {"httpx.Client", "httpx.AsyncClient", "httpx2.Client", "httpx2.AsyncClient"}:
                 getter = "get_http_client" if name.endswith("AsyncClient") else "get_http_sync_client"
                 self.report(
                     node,

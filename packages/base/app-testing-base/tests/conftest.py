@@ -5,4 +5,4 @@ import logging
 pytest_plugins = ["app_testing_base.plugin"]
 
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpx2").setLevel(logging.WARNING)

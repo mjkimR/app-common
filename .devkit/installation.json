@@ -441,11 +441,11 @@
     },
     ".agents/skills/app-common/references/http/index.md": {
       "mode": 420,
-      "sha256": "f083ccecf4b0b84bb6ea2ff19f126937122b062abc6df8df60204c3faa1119f5"
+      "sha256": "fd5060d0e65d8fcc99a375b7905aa71e4547a63a8b842a73a003bf59dec8b202"
     },
     ".agents/skills/app-common/references/http/setup.md": {
       "mode": 420,
-      "sha256": "9b4376363d90173da942a8b67e7c93c20bbc61439fd3316cec3e67e756643095"
+      "sha256": "3e094b66c5edc602ecc2e0416e5758e0bd69a347639184041950883f2121807a"
     },
     ".agents/skills/app-common/references/local-dev/index.md": {
       "mode": 420,
@@ -605,11 +605,11 @@
     },
     ".claude/skills/app-common/references/http/index.md": {
       "mode": 420,
-      "sha256": "f083ccecf4b0b84bb6ea2ff19f126937122b062abc6df8df60204c3faa1119f5"
+      "sha256": "fd5060d0e65d8fcc99a375b7905aa71e4547a63a8b842a73a003bf59dec8b202"
     },
     ".claude/skills/app-common/references/http/setup.md": {
       "mode": 420,
-      "sha256": "9b4376363d90173da942a8b67e7c93c20bbc61439fd3316cec3e67e756643095"
+      "sha256": "3e094b66c5edc602ecc2e0416e5758e0bd69a347639184041950883f2121807a"
     },
     ".claude/skills/app-common/references/local-dev/index.md": {
       "mode": 420,
@@ -861,7 +861,7 @@
     },
     ".devkit/managed/app-common/rules/http_client_construction/guide.md": {
       "mode": 420,
-      "sha256": "930cbb23a2aeeb1b5fba58bf4ac0cf3716d223d26d2bfa079b217708c6a307b7"
+      "sha256": "49e071e46ff19379ed2b56720a4e829177564151ef4f5583ab05c0415aa91d47"
     },
     ".devkit/managed/app-common/rules/http_client_construction/rule.py": {
       "mode": 420,
@@ -869,7 +869,7 @@
     },
     ".devkit/managed/app-common/rules/http_client_construction/tests/test_rule.py": {
       "mode": 420,
-      "sha256": "6104d36c9689d54878aa64ab9e56750e8ad78305c0954636331a8f301a891192"
+      "sha256": "26209bff87e475a71552ab7a3d7f58e8469ed078cd1f6be54da613da003c81d8"
     },
     ".devkit/managed/app-common/rules/invalid_suppression/guide.md": {
       "mode": 420,
@@ -1001,11 +1001,11 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/http/index.md": {
       "mode": 420,
-      "sha256": "f083ccecf4b0b84bb6ea2ff19f126937122b062abc6df8df60204c3faa1119f5"
+      "sha256": "fd5060d0e65d8fcc99a375b7905aa71e4547a63a8b842a73a003bf59dec8b202"
     },
     ".devkit/managed/app-common/skills/app-common/references/http/setup.md": {
       "mode": 420,
-      "sha256": "9b4376363d90173da942a8b67e7c93c20bbc61439fd3316cec3e67e756643095"
+      "sha256": "3e094b66c5edc602ecc2e0416e5758e0bd69a347639184041950883f2121807a"
     },
     ".devkit/managed/app-common/skills/app-common/references/local-dev/index.md": {
       "mode": 420,

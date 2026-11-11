@@ -7,7 +7,7 @@ uv add "git+https://github.com/mjkimR/app-common.git@<release-tag>#subdirectory=
 
 ## Configuration
 
-Settings are read from environment variables (defaults match standard `httpx` settings):
+Settings are read from environment variables (defaults match standard `httpx2` settings):
 
 | Variable | Default | Description |
 |---|---|---|

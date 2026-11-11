@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any, ClassVar
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
