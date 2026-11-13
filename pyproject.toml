@@ -20,9 +20,9 @@ members = [
 # one devkit commit; consumers declare the same sources and rev in their own [tool.uv.sources]
 # (`devkit app update` keeps them in step with app-common).
 [tool.uv.sources]
-devkit-agt = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit", rev = "a1ffedafd49ccd4bb6298bacacca1c25c0cf48ef" }
-devkit-dist = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit-dist", rev = "a1ffedafd49ccd4bb6298bacacca1c25c0cf48ef" }
-devkit-advisory = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit-advisory", rev = "a1ffedafd49ccd4bb6298bacacca1c25c0cf48ef" }
+devkit-agt = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit", rev = "614d58f1e1f66232982fc43d9d9cc58a130ba3fd" }
+devkit-dist = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit-dist", rev = "614d58f1e1f66232982fc43d9d9cc58a130ba3fd" }
+devkit-advisory = { git = "https://github.com/mjkimR/devkit", subdirectory = "packages/devkit-advisory", rev = "614d58f1e1f66232982fc43d9d9cc58a130ba3fd" }
 
 [tool.ruff]
 exclude = [".git", ".venv", "migrations"]
