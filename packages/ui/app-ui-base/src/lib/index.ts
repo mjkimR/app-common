@@ -8,6 +8,7 @@ export { default as PageHeader } from './components/shell/PageHeader.svelte';
 // Feedback Components
 export { default as EmptyState } from './components/feedback/EmptyState.svelte';
 export { default as StatusBadge } from './components/feedback/StatusBadge.svelte';
+export type { StatusBadgeVariant } from './components/feedback/status-icons.js';
 export { default as LoadingSpinner } from './components/feedback/LoadingSpinner.svelte';
 
 // Theme Components & Store

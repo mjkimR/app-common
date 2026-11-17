@@ -107,10 +107,40 @@ Centered placeholder when no data exists.
 
 ## 4. Semantic Color Tokens (Strict Rule)
 
-**NEVER use hardcoded hex values** (e.g. `text-[#333]`, `bg-[#f8f9fa]`).
-Always use Tailwind semantic variables defined in `layout.css`:
+**NEVER use hardcoded hex values** (e.g. `text-[#333]`, `bg-[#f8f9fa]`) or the raw
+Tailwind palette (`text-emerald-700`) for meaning. Always use Tailwind semantic variables
+defined in `layout.css`:
 
 - Backgrounds: `bg-background`, `bg-card`, `bg-muted`, `bg-accent`
 - Text: `text-foreground`, `text-card-foreground`, `text-muted-foreground`
 - Borders: `border-border`, `border-input`
 - Primary/Destructive: `bg-primary text-primary-foreground`, `bg-destructive text-destructive-foreground`
+- Status roles: `success`, `warning`, `info`, `destructive` describe an outcome;
+  `attention` means the person must act or decide. Use each as a fill with its
+  `-foreground` pair, or as text on its own tint (`border-success/30 bg-success/15
+  text-success`). Pair status color with a label or icon; color never carries it alone.
+
+### ui-base tokens
+
+With `@app-common/ui-base`, import its `styles` export (token values) and, unless the
+project keeps its own mapping, its `theme` export (Tailwind v4 `@theme inline`) after
+`tailwindcss`; add `@source` for `node_modules/@app-common/ui-base/dist`.
+
+- Each token holds a complete CSS color (`--primary: hsl(0 0% 9%)`). Map it as
+  `--color-primary: var(--primary)`, never `hsl(var(--primary))`.
+- Defaults live in `@layer base`; override any subset with unlayered `:root` / `.dark`
+  rules in any color format. Keep overridden status roles at WCAG AA both as text on
+  their 15% tint and under their `-foreground`.
+- A custom mapping must include every color the components use, status roles included.
+
+### ui-base feedback and button APIs
+
+- `StatusBadge`: `variant` (`default`, `outline`, `info`, `success`, `warning`,
+  `attention`, `destructive`; type `StatusBadgeVariant`), required visible `label`, and
+  `icon` (default `true`; status variants show a distinct `aria-hidden` shape).
+- `LoadingSpinner`: `size` (`sm`, `md`, `lg`) and `label` for the `role="status"`
+  announcement (default `Loading...`; pass a localized string). It stops rotating under
+  reduced motion.
+- `Button`: spaces icon and label (`gap-2`, `gap-1.5` for `sm`) and sizes icons without
+  their own `size-*` class (`size-4`, `size-3.5` for `sm`); add `size-*` to an icon only
+  to override.

@@ -20,6 +20,7 @@
       "default": "./dist/async.js"
     },
     "./styles": "./dist/styles/tokens.css",
+    "./theme": "./dist/styles/theme.css",
     "./package.json": "./package.json"
   },
   "files": [

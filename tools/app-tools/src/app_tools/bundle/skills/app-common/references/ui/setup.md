@@ -10,7 +10,7 @@ installation examples are not instructions to upgrade or downgrade dependencies.
 | --- | --- |
 | SvelteKit | Use `vitePreprocess()` and the project's deployment adapter. For a static SPA, use `adapter-static` with an `index.html` fallback. |
 | Vite | Register `sveltekit()` and `@tailwindcss/vite`. Preserve project ports, proxy routes, and backend URL configuration. |
-| Tailwind v4 | Keep CSS-first semantic tokens in the project's main stylesheet, commonly `src/routes/layout.css`. |
+| Tailwind v4 | Keep CSS-first semantic tokens in the project's main stylesheet, commonly `src/routes/layout.css`. With ui-base, import its `styles` and `theme` exports as described in [Components](components.md). |
 | shadcn-svelte | Match `components.json` aliases and stylesheet path to the project; use `@lucide/svelte` icons and existing primitives. |
 | API | Use `openapi-fetch` with tag-based types from `@app-common/api-codegen`; see [API binding](api.md). |
 | ESLint | Compose the shared [file-size preset](structure.md) with existing correctness and formatting rules. |

@@ -516,7 +516,7 @@
     },
     ".agents/skills/app-common/references/ui/components.md": {
       "mode": 420,
-      "sha256": "3ba319c21a68ea3f607c270045fe8120e694e73fadc8d16b1f62e8f7694d6f61"
+      "sha256": "3be2f7d3e7c33041bd28d2d2a721118a543437736c30d5a6da5660c263ebe282"
     },
     ".agents/skills/app-common/references/ui/index.md": {
       "mode": 420,
@@ -528,7 +528,7 @@
     },
     ".agents/skills/app-common/references/ui/setup.md": {
       "mode": 420,
-      "sha256": "fd6591b2e48e9471db3385f2749d657638a9b3e378a33d332a0389d6c2e3a35d"
+      "sha256": "1fcfafa6df6ab42a1ca6d0386f5d262f48003ffbce8e878003db55c9677aea4c"
     },
     ".agents/skills/app-common/references/ui/structure.md": {
       "mode": 420,
@@ -684,7 +684,7 @@
     },
     ".claude/skills/app-common/references/ui/components.md": {
       "mode": 420,
-      "sha256": "3ba319c21a68ea3f607c270045fe8120e694e73fadc8d16b1f62e8f7694d6f61"
+      "sha256": "3be2f7d3e7c33041bd28d2d2a721118a543437736c30d5a6da5660c263ebe282"
     },
     ".claude/skills/app-common/references/ui/index.md": {
       "mode": 420,
@@ -696,7 +696,7 @@
     },
     ".claude/skills/app-common/references/ui/setup.md": {
       "mode": 420,
-      "sha256": "fd6591b2e48e9471db3385f2749d657638a9b3e378a33d332a0389d6c2e3a35d"
+      "sha256": "1fcfafa6df6ab42a1ca6d0386f5d262f48003ffbce8e878003db55c9677aea4c"
     },
     ".claude/skills/app-common/references/ui/structure.md": {
       "mode": 420,
@@ -1084,7 +1084,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/ui/components.md": {
       "mode": 420,
-      "sha256": "3ba319c21a68ea3f607c270045fe8120e694e73fadc8d16b1f62e8f7694d6f61"
+      "sha256": "3be2f7d3e7c33041bd28d2d2a721118a543437736c30d5a6da5660c263ebe282"
     },
     ".devkit/managed/app-common/skills/app-common/references/ui/index.md": {
       "mode": 420,
@@ -1096,7 +1096,7 @@
     },
     ".devkit/managed/app-common/skills/app-common/references/ui/setup.md": {
       "mode": 420,
-      "sha256": "fd6591b2e48e9471db3385f2749d657638a9b3e378a33d332a0389d6c2e3a35d"
+      "sha256": "1fcfafa6df6ab42a1ca6d0386f5d262f48003ffbce8e878003db55c9677aea4c"
     },
     ".devkit/managed/app-common/skills/app-common/references/ui/structure.md": {
       "mode": 420,
