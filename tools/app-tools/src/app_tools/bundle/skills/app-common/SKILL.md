@@ -46,7 +46,7 @@ Architecture rules for these conventions run in `devkit rules check`; `devkit ru
 | Unified authentication and migration | [auth](references/auth/index.md) |
 | User authentication | [user](references/user/index.md); [user/setup](references/user/setup.md) |
 | Transactional outbox | [outbox](references/outbox/index.md); [outbox/setup](references/outbox/setup.md) |
-| Svelte UI and API binding | [ui](references/ui/index.md); file-size limits and bounded exceptions: [ui/structure](references/ui/structure.md) |
+| SvelteKit UI: owned primitives, token roles, contrast, API codegen template | [ui](references/ui/index.md); file-size limits and bounded exceptions: [ui/structure](references/ui/structure.md) |
 | Modify packages from a consumer project | [local-dev](references/local-dev/index.md) |
 | Update released dependencies | [update](references/update/index.md) |
 

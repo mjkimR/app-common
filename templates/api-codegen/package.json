@@ -1,0 +1,17 @@
+{
+  "name": "app-common-api-codegen-template",
+  "private": true,
+  "type": "module",
+  "description": "Verification harness for the copy-and-own API generator template; not distributed",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "lint": "eslint src",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test tests/unit/*.test.js tests/integration/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~5.9.0"
+  }
+}

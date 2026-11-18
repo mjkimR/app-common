@@ -21,8 +21,8 @@ Before writing code or running commands, ask the developer:
 4. **AI models**: LiteLLM model router and catalog (`catalog.yml`) required?
 5. **Prebuilt modules**: user authentication and JWT login (`app-prebuilt-auth`),
    transactional outbox (`app-prebuilt-outbox`), pooled HTTP client (`app-http-client`)?
-6. **Testing and frontend**: test foundation (`app-testing-base`)? Svelte 5 frontend on
-   `@app-common/ui-base`?
+6. **Testing and frontend**: test foundation (`app-testing-base`)? SvelteKit frontend
+   (Svelte 5, Tailwind v4, app-owned shadcn-svelte-style primitives)?
 
 ## Phase 2: Install Packages
 
@@ -57,6 +57,26 @@ enough): a project's source applies only to its direct dependencies, and a decla
 `devkit-agt` that nothing brings from Git does not resolve: no package index hosts it. Other
 devkit packages arrive transitively and need no declaration.
 `uv run devkit app update` moves all of them together later.
+
+For a SvelteKit frontend, follow `uv run devkit app guide show ui/setup`. app-common
+ships no UI library; the frontend uses two things from the same `<commit>`:
+
+```bash
+# In web/: the shared file-size preset, pinned by Git commit
+npm install --save-dev '@app-common/eslint-config@git+https://github.com/mjkimR/app-common.git#<commit>'
+
+# The API generator is a template: copy it once and own it
+mkdir -p web/scripts/api-codegen
+cp -R <app-common checkout>/templates/api-codegen/{src,tests,tsconfig.json} web/scripts/api-codegen/
+npm --prefix web install --save-dev openapi-typescript typescript @types/node
+```
+
+Replace `<commit>` in the header comment of every copied file
+(`Copied from app-common <commit> templates/api-codegen; owned and customized by this
+project`), wire `gen:api` and its `--check` mode, and run the copied tests in CI
+(`templates/api-codegen/README.md` in app-common lists the scripts). Copy UI primitives
+into `web/src/lib/components/ui/`, define the semantic token roles, and add a contrast
+test (`ui/components`).
 
 ## Phase 3: Project Skeleton and Lifespan
 

@@ -75,11 +75,14 @@ just check
 - Pyright checks `src/` directories.
 - Ensure strict type annotations on all public functions, classes, and parameters.
 
-For frontend work, `just init-ui` installs the root shared ESLint tooling and UI
-dependencies; `just check-ui` runs size checks and Svelte type checks. Changes to the
-shared preset also require `just test-eslint`. The root npm manifest exports
-`@app-common/eslint-config` from `packages/tooling/eslint-config/`; include its
-version when updating all packages for a release.
+app-common ships no UI component library. Frontend assets are the shared ESLint preset
+and copy-and-own templates. `just init-api-codegen` installs the root ESLint tooling and
+the API codegen template's dependencies. Changes to the shared preset require
+`just test-eslint`; the root npm manifest exports `@app-common/eslint-config` from
+`packages/tooling/eslint-config/`, so include its version when updating all packages for
+a release. Changes to `templates/api-codegen/` require `just test-api-codegen`; templates
+carry no version or publish metadata (a consumer copy records the source commit in its
+header comment), and a template change never reaches existing copies on its own.
 
 Follow the consumer `ui/structure` guide: split oversized files by responsibility,
 or record an exact path, rationale, and finite ceiling. Do not disable the rule or
@@ -127,7 +130,7 @@ Instead, run `devkit app dev` inside the consumer project to temporarily link it
    ```
    - Automatically searches for `app-common` across `-1 to +1 depth` (e.g. `../app-common`, sibling folders, child/parent folders).
    - Backs up installed packages in `.venv/lib/python*/site-packages/` and `node_modules/` as `*.bak`.
-   - Creates symlinks to `app-common/.../src/*` and `app-common/packages/ui/*`.
+   - Creates symlinks to `app-common/.../src/*` (Python packages only; frontend code is consumed through the git-pinned `@app-common/eslint-config` or copied from `templates/`).
    - Preserves `.dist-info` metadata so `uv` does not re-sync or overwrite the environment.
    - Entry points come from that preserved metadata: the consumer must already run an app-tools version that declares the `devkit.commands` and `devkit.bundles` entry points. A linked `app_tools` makes the checkout's bundle the deployed one after `uv run devkit sync`.
 

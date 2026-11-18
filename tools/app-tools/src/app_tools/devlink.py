@@ -1,12 +1,13 @@
-"""Point a consumer's installed app-common packages at a local checkout, and back.
+"""Point a consumer's installed app-common Python packages at a local checkout, and back.
 
 Installed package directories are moved aside as ``<name>.bak`` and replaced by symlinks into
-the checkout; the manifests and the lock file of the consumer are never touched.
+the checkout; the manifests and the lock file of the consumer are never touched. app-common
+has no linkable npm package: the ESLint preset is pinned by Git commit and templates are
+copied into the consumer, so frontend code is never linked.
 """
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 from dataclasses import dataclass, field
@@ -18,7 +19,7 @@ from app_tools.errors import AppToolsError, invalid_input, notice, warning
 APP_COMMON_SENTINEL = Path("packages") / "base" / "app-layer-base"
 BUNDLE_PACKAGE = "app_tools"  # ships the app-common devkit bundle
 
-Kind = Literal["python", "node"]
+Kind = Literal["python"]
 
 
 @dataclass(frozen=True)
@@ -119,20 +120,6 @@ def python_packages(root: Path) -> dict[str, Path]:
     return packages
 
 
-def node_packages(root: Path) -> dict[str, Path]:
-    """npm package name to package directory, for every package under packages/ui/."""
-    packages: dict[str, Path] = {}
-    ui = root / "packages" / "ui"
-    for directory in sorted(ui.iterdir()) if ui.is_dir() else []:
-        try:
-            name = json.loads((directory / "package.json").read_text(encoding="utf-8")).get("name")
-        except (OSError, ValueError):
-            continue
-        if name:
-            packages[name] = directory.resolve()
-    return packages
-
-
 def site_packages(project: Path) -> Path | None:
     venv = project / ".venv"
     if not venv.is_dir():
@@ -142,11 +129,6 @@ def site_packages(project: Path) -> Path | None:
         if candidate.is_dir():
             return candidate
     return None
-
-
-def node_modules(project: Path) -> Path | None:
-    directory = project / "node_modules"
-    return directory if directory.is_dir() else None
 
 
 def _bundle_notice(package: str, where: str) -> AppToolsError | None:
@@ -213,28 +195,6 @@ def link(project: Path, *, target_path: Path | None = None, dry_run: bool = Fals
                 bundle = _bundle_notice(package, str(source))
                 if bundle is not None:
                     notices.append(bundle)
-    modules = node_modules(project)
-    ui_packages = node_packages(root)
-    if modules is None:
-        if ui_packages:
-            notices.append(
-                notice(
-                    "No node_modules directory was found; UI packages were not linked.", code="APP_DEV_NO_NODE_MODULES"
-                )
-            )
-    else:
-        for package, source in ui_packages.items():
-            if (modules / package).exists() and not any((source / "dist").glob("*")):
-                notices.append(
-                    warning(
-                        f"{package} has no build output in {source / 'dist'}.",
-                        code="APP_DEV_UI_NOT_BUILT",
-                        fix=f"just --justfile {root / 'justfile'} build-ui",
-                    )
-                )
-            action = _link_one("node", modules, package, source, dry_run, notices)
-            if action is not None:
-                actions.append(action)
     return LinkResult(root, actions, dry_run, notices)
 
 
@@ -245,11 +205,7 @@ def _restore(kind: Kind, backup: Path, original: Path, dry_run: bool) -> LinkAct
         elif original.exists():
             shutil.rmtree(original)
         shutil.move(backup, original)
-    return LinkAction(kind, original.name if kind == "python" else _node_name(original), "restored")
-
-
-def _node_name(path: Path) -> str:
-    return f"{path.parent.name}/{path.name}" if path.parent.name.startswith("@") else path.name
+    return LinkAction(kind, original.name, "restored")
 
 
 def unlink(project: Path, *, dry_run: bool = False) -> LinkResult:
@@ -266,10 +222,6 @@ def unlink(project: Path, *, dry_run: bool = False) -> LinkResult:
             bundle = _bundle_notice(backup.stem, "the installed app-tools")
             if bundle is not None:
                 notices.append(bundle)
-    modules = node_modules(project)
-    if modules is not None:
-        for backup in sorted(modules.glob("**/*.bak")):
-            actions.append(_restore("node", backup, backup.with_name(backup.name.removesuffix(".bak")), dry_run))
     return LinkResult(None, actions, dry_run, notices)
 
 
@@ -293,9 +245,6 @@ def status(project: Path, *, target_path: Path | None = None) -> StatusResult:
         names = set(python_packages(root)) if root else set()
         names.update(backup.stem for backup in venv.glob("app_*.bak"))
         states += [_state("python", venv, name) for name in sorted(names)]
-    modules = node_modules(project)
-    if modules is not None and root is not None:
-        states += [_state("node", modules, name) for name in sorted(node_packages(root))]
     problems = [
         AppToolsError.interaction(
             f"{state.package}: "

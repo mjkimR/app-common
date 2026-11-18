@@ -1,12 +1,15 @@
 # Components & Styling Guidelines
 
-Standard atomic components, composite layouts, and styling tokens.
+App-owned primitives, composite layouts, semantic token roles and contrast.
 
 ---
 
 ## 1. Atomic Primitives (`$lib/components/ui/`)
 
-All base interactive elements must come from shadcn-svelte (`bits-ui`). **Never create bespoke `<button>` or `<input>` tags.**
+Primitives follow the shadcn-svelte model: their source is copied into the app (the
+shadcn-svelte CLI or by hand, on `bits-ui` where it fits) and owned there. No shared
+package supplies them; edit the copy instead of wrapping it. **Never create bespoke
+styled `<button>` or `<input>` tags**; extend the app's primitive.
 
 | Component | Import Path | Common Usage |
 |---|---|---|
@@ -20,6 +23,10 @@ All base interactive elements must come from shadcn-svelte (`bits-ui`). **Never 
 | **ScrollArea** | `$lib/components/ui/scroll-area` | Constrained scroll containers |
 | **Sonner** | `$lib/components/ui/sonner` | Toast notification provider (mount in `+layout.svelte`) |
 
+Use the paths the project already has. Copied primitives count as authored code for
+the [file-size policy](structure.md) unless the project deliberately keeps them as
+unmodified generator output and says so in its ignores.
+
 ---
 
 ## 2. Iconography: Lucide Svelte
@@ -29,52 +36,23 @@ All base interactive elements must come from shadcn-svelte (`bits-ui`). **Never 
 ```svelte
 <script lang="ts">
   import Plus from '@lucide/svelte/icons/plus';
-  import Trash2 from '@lucide/svelte/icons/trash-2';
   import Loader2 from '@lucide/svelte/icons/loader-2';
-  import CheckCircle from '@lucide/svelte/icons/check-circle-2';
 </script>
 
 <!-- Always set explicit dimensions with Tailwind classes -->
-<Plus class="h-4 w-4" />
-<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+<Plus class="size-4" />
+<Loader2 class="size-4 animate-spin text-muted-foreground" />
 ```
 
----
+Decorative icons next to a visible label get `aria-hidden="true"`; an icon-only
+control needs an accessible name (`aria-label` or visually hidden text).
 
-## 3. Standard Composite Components (`$lib/components/shared/`)
+### Composites (`$lib/components/`)
 
-### (1) `PageHeader.svelte`
-Standard header section with page title, description, and action button slots.
-```svelte
-<script lang="ts">
-  import type { Snippet } from 'svelte';
+Keep app-wide composites (page header, empty state, status badge, loading indicator)
+in the app. Build them from primitives and tokens; give each one required visible
+text where it conveys state, for example:
 
-  interface Props {
-    title: string;
-    description?: string;
-    actions?: Snippet;
-  }
-
-  let { title, description, actions }: Props = $props();
-</script>
-
-<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-5">
-  <div>
-    <h1 class="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
-    {#if description}
-      <p class="text-sm text-muted-foreground">{description}</p>
-    {/if}
-  </div>
-  {#if actions}
-    <div class="flex items-center gap-2">
-      {@render actions()}
-    </div>
-  {/if}
-</div>
-```
-
-### (2) `EmptyState.svelte`
-Centered placeholder when no data exists.
 ```svelte
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -89,58 +67,88 @@ Centered placeholder when no data exists.
   let { title, description, action }: Props = $props();
 </script>
 
-<div class="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center animate-in fade-in-50">
-  <div class="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-    <Inbox class="h-6 w-6 text-muted-foreground" />
+<div class="flex min-h-80 flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+  <div class="flex size-12 items-center justify-center rounded-full bg-muted">
+    <Inbox class="size-6 text-muted-foreground" aria-hidden="true" />
   </div>
   <h3 class="mt-4 text-base font-semibold text-foreground">{title}</h3>
   <p class="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
   {#if action}
-    <div class="mt-4">
-      {@render action()}
-    </div>
+    <div class="mt-4">{@render action()}</div>
   {/if}
 </div>
 ```
 
 ---
 
-## 4. Semantic Color Tokens (Strict Rule)
+## 3. Semantic Color Tokens
 
-**NEVER use hardcoded hex values** (e.g. `text-[#333]`, `bg-[#f8f9fa]`) or the raw
-Tailwind palette (`text-emerald-700`) for meaning. Always use Tailwind semantic variables
-defined in `layout.css`:
+Components use **roles**, never colors. Define each role as a CSS custom property in
+the app stylesheet for light (`:root`) and dark (`.dark`) themes:
 
-- Backgrounds: `bg-background`, `bg-card`, `bg-muted`, `bg-accent`
-- Text: `text-foreground`, `text-card-foreground`, `text-muted-foreground`
-- Borders: `border-border`, `border-input`
-- Primary/Destructive: `bg-primary text-primary-foreground`, `bg-destructive text-destructive-foreground`
-- Status roles: `success`, `warning`, `info`, `destructive` describe an outcome;
-  `attention` means the person must act or decide. Use each as a fill with its
-  `-foreground` pair, or as text on its own tint (`border-success/30 bg-success/15
-  text-success`). Pair status color with a label or icon; color never carries it alone.
+| Role | Use |
+|---|---|
+| `background` / `foreground` | Page surface and body text |
+| `card`, `popover` (+ `-foreground`) | Raised surfaces and their text |
+| `muted` / `muted-foreground` | Subdued surfaces; secondary text |
+| `accent` / `accent-foreground` | Hover and selected surfaces |
+| `primary`, `secondary` (+ `-foreground`) | Main and secondary actions |
+| `destructive` / `destructive-foreground` | Irreversible or failed outcomes |
+| `success`, `warning`, `info` (+ `-foreground`) | Outcome status |
+| `attention` / `attention-foreground` | The person must act or decide |
+| `border`, `input`, `ring` | Separators, field outlines, focus ring |
 
-### ui-base tokens
+Each token holds a complete CSS color in any format (`oklch()`, `hsl()`, hex,
+`color-mix()`). Map roles to Tailwind v4 with `var()` inside `@theme inline`, never as
+`hsl(var(--x))` channel fragments:
 
-With `@app-common/ui-base`, import its `styles` export (token values) and, unless the
-project keeps its own mapping, its `theme` export (Tailwind v4 `@theme inline`) after
-`tailwindcss`; add `@source` for `node_modules/@app-common/ui-base/dist`.
+```css
+@import 'tailwindcss';
 
-- Each token holds a complete CSS color (`--primary: hsl(0 0% 9%)`). Map it as
-  `--color-primary: var(--primary)`, never `hsl(var(--primary))`.
-- Defaults live in `@layer base`; override any subset with unlayered `:root` / `.dark`
-  rules in any color format. Keep overridden status roles at WCAG AA both as text on
-  their 15% tint and under their `-foreground`.
-- A custom mapping must include every color the components use, status roles included.
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.21 0 0);
+  --success: oklch(0.45 0.11 155);
+  --success-foreground: oklch(0.98 0 0);
+  /* ...every role above, then the same set under .dark */
+}
 
-### ui-base feedback and button APIs
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  /* ...one --color-<role> entry per role */
+}
+```
 
-- `StatusBadge`: `variant` (`default`, `outline`, `info`, `success`, `warning`,
-  `attention`, `destructive`; type `StatusBadgeVariant`), required visible `label`, and
-  `icon` (default `true`; status variants show a distinct `aria-hidden` shape).
-- `LoadingSpinner`: `size` (`sm`, `md`, `lg`) and `label` for the `role="status"`
-  announcement (default `Loading...`; pass a localized string). It stops rotating under
-  reduced motion.
-- `Button`: spaces icon and label (`gap-2`, `gap-1.5` for `sm`) and sizes icons without
-  their own `size-*` class (`size-4`, `size-3.5` for `sm`); add `size-*` to an icon only
-  to override.
+Rules:
+
+- **No raw palette for meaning**: no hex/arbitrary values (`text-[#333]`) and no
+  Tailwind palette classes (`text-emerald-700`, `bg-red-50`) to express state or
+  hierarchy. Add or adjust a role instead.
+- **Status pairs**: use a status role as a fill with its `-foreground` text
+  (`bg-success text-success-foreground`), or as text and icon on its own tint
+  (`border-success/30 bg-success/15 text-success`). Pick role values that pass the
+  contrast floors in both uses and both themes.
+- **Status is never color-only**: pair it with a visible label, and preferably a
+  distinct icon shape per status, so it survives color-vision deficiency, grayscale
+  and forced-colors modes.
+- The mapping covers every role the components use; a missing role silently falls
+  back to nothing.
+
+---
+
+## 4. Contrast
+
+Floors (WCAG 2.2 AA), in light and dark themes:
+
+- **4.5:1** for text, including muted text and status text on its tint.
+- **3:1** for UI component boundaries and states that identify a control (input
+  borders, focus ring, toggles, icon-only buttons) and for meaningful graphics.
+
+Add an automated contrast test that resolves each foreground/background token pair
+(including `success` on its 15% tint over `background`, and every `-foreground` on
+its fill) from the stylesheet and fails below the floor. Run it with the other web
+checks, so a palette change cannot silently regress readability. Large text may use
+the 3:1 large-text threshold only where the design actually renders it large.

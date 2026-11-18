@@ -35,9 +35,8 @@ and relevant tests before finishing code changes; add behavior tests when needed
 | app-common devkit bundle (skill, rules, playbook, guidance) | `just sync-agents`, then `just rules-check`; change canonical bundle sources, never generated receipts or projected skills |
 | PostgreSQL locking/outbox | `just test-pg` (Docker required; SQLite does not verify row locking) |
 | External storage contracts | `just test-docker` (Docker required) |
-| UI library | `just check-ui`, `just build-ui` after `just init-ui` |
-| Shared ESLint policy | `just test-eslint` |
-| Frontend API generator | `just init-api-codegen`, `just test-api-codegen` |
+| Shared ESLint policy | `just test-eslint` after `just init-api-codegen` |
+| API codegen template (`templates/api-codegen`) | `just init-api-codegen`, `just test-api-codegen` |
 
 `just lint` runs Ruff and `devkit rules check`, which includes the app-common
 architecture rules (`RULE-app-*`) and Markdown link checks. The verification recipes

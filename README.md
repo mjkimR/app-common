@@ -1,8 +1,9 @@
 # app-common
 
-Independent Python foundation packages, adapters, prebuilt services, a Svelte UI
-library, and developer tools. Python packages share a `uv` workspace; the UI and
-frontend development tooling have their own npm lifecycle.
+Independent Python foundation packages, adapters, prebuilt services, developer tools,
+and frontend tooling. Python packages share a `uv` workspace; the frontend tooling has
+its own npm lifecycle. app-common ships no UI component library: applications own their
+UI primitives (shadcn-svelte style copy-in) and follow the consumer UI guides.
 
 ## Packages
 
@@ -21,10 +22,17 @@ Each package README covers its installation, public API, and usage.
 | Prebuilt | [app-prebuilt-outbox](packages/prebuilt/app-prebuilt-outbox/README.md) | Transactional event capture and delivery. |
 | Prebuilt | [app-prebuilt-search](packages/prebuilt/app-prebuilt-search/README.md) | Semantic search and explicit incremental indexing. |
 | Transport | [app-mcp](packages/transports/app-mcp/README.md) | MCP tool registry, authorization, and error translation. |
-| UI | [app-ui-base](packages/ui/app-ui-base/README.md) | Svelte 5 components, state, and Tailwind tokens. |
 | Tooling | [app-tools](tools/app-tools/README.md) | The `devkit app` commands (guides, updates, scaffolding, local linking) and the `app-common` devkit bundle (skill, architecture rules, onboarding playbook). |
 | Tooling | [@app-common/eslint-config](tools/app-tools/src/app_tools/bundle/skills/app-common/references/ui/structure.md) | Shared frontend size policy, distributed by the root npm package. |
-| Tooling | [@app-common/api-codegen](packages/ui/app-ui-api-codegen/README.md) | Tag-based OpenAPI declarations, shared schema types and contract freshness checks. |
+
+## Templates
+
+Templates are copied into a project once and owned by it from then on; they are not
+installed, pinned or upgraded.
+
+| Template | Purpose |
+| --- | --- |
+| [api-codegen](templates/api-codegen/README.md) | Tag-based OpenAPI declarations, shared schema types and contract freshness checks for a frontend. Copy into e.g. `web/scripts/api-codegen/`. |
 
 ## Installation
 
@@ -126,15 +134,13 @@ source, run `just sync-agents` to redeploy it before running checks.
 just lint
 just check
 just test            # SQLite; no Docker required
-just init-ui
-just check-ui
-just build-ui
 ```
 
 `just test-pg` verifies PostgreSQL locking; `just test-docker` runs container-backed
-contracts. Both need Docker. `just test-eslint` verifies the shared frontend preset.
-`just init-api-codegen` installs the API generator; `just test-api-codegen` runs
-its lint, type checks and generation/CLI tests.
+contracts. Both need Docker. `just init-api-codegen` installs the root npm lint tooling
+and the API codegen template's dependencies; `just test-eslint` then verifies the shared
+frontend preset and `just test-api-codegen` runs the template's lint, type check and
+generation/CLI tests.
 SQLite package suites run in separate processes, up to four at a time. Use
 `TEST_JOBS=1 just test` for serial execution; PostgreSQL, Docker, and coverage runs
 remain serial. All selected packages finish before a failing exit status is returned.
@@ -145,8 +151,9 @@ that contain the given paths. Contribution rules and test selection are in [AGEN
 ## Releases
 
 Packages are Git dependencies, not PyPI releases. Use one repository version across
-all package `pyproject.toml` files, root/UI/tooling npm manifests and locks, the guide
-catalog and both bundle manifests (`bundle.toml`). After updating versions, run
+all package `pyproject.toml` files, the root npm manifest and lock, the guide catalog and
+both bundle manifests (`bundle.toml`). Templates carry no version: their copies record
+the source commit instead. After updating versions, run
 `just sync-agents`, tag and push `vX.Y.Z`; CI creates the GitHub Release only after lint,
 type checks, and all three Python test legs pass. Consumers pin a commit rather than
 `main`. Moving the devkit pins (`devkit-agt`, `devkit-dist` and `devkit-advisory`, always

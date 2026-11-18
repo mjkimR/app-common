@@ -4,24 +4,33 @@ This architecture enforces **zero type hallucination**. Frontend types are direc
 
 ---
 
-## 1. Tag-based OpenAPI generator (`@app-common/api-codegen`)
+## 1. Tag-based OpenAPI generator (copied template)
 
-Use the standalone frontend development package `@app-common/api-codegen`. It
-builds `openapi-typescript` declarations by operation tag, extracts shared schema
-references into `common.d.ts`, and exports aggregate `paths`, `components` and `operations` from
-`generated/index.d.ts`. Keep schema export in the consumer project: its script
-knows how to compose the FastAPI application without starting a server.
+The generator is a copy-and-own template, not a package: app-common keeps it tested at
+`templates/api-codegen/` and a project copies it once at initial setup. It builds
+`openapi-typescript` declarations by operation tag, extracts shared schema references
+into `common.d.ts`, and exports aggregate `paths`, `components` and `operations` from
+`generated/index.d.ts`. Keep schema export in the consumer project: its script knows
+how to compose the FastAPI application without starting a server.
 
-Install an npm artifact built from a pushed app-common commit as a dev dependency,
-as with `@app-common/ui-base`; record the artifact's source SHA and commit the
-consumer lockfile. npm Git dependencies install the root ESLint package, not the
-nested API generator. Never point consumer manifests at a sibling checkout.
+Setup, from a checkout of a pushed app-common commit (the template README has details):
 
-Run inside the frontend directory after exporting the backend schema:
+1. Copy `templates/api-codegen/src/`, `tests/` and `tsconfig.json` into
+   `web/scripts/api-codegen/`, keeping the `src/` and `tests/` split.
+2. Replace `<commit>` in each copied file's header with that commit:
+   `// Copied from app-common <commit> templates/api-codegen; owned and customized by this project.`
+3. Add `openapi-typescript`, `typescript` and `@types/node` as dev dependencies and
+   commit the lockfile. The sources run under Node 22.18+ type stripping; no build step.
+4. Wire `gen:api` (and a `--check` variant) plus the copied tests into the project's
+   scripts and CI.
+
+The project owns the copy: customize it in place, never install, vendor or link it,
+and never point manifests at a sibling checkout. To adopt a later template fix, port
+it by hand and update the header's commit.
 
 ```sh
-npx --no-install app-common-gen-api --input /path/to/openapi.json --output src/lib/api/generated
-npx --no-install app-common-gen-api --input /path/to/openapi.json --output src/lib/api/generated --check
+node scripts/api-codegen/src/cli.ts --input /path/to/openapi.json --output src/lib/api/generated
+node scripts/api-codegen/src/cli.ts --input /path/to/openapi.json --output src/lib/api/generated --check
 ```
 
 An HTTP(S) OpenAPI URL is also supported, but local export makes CI independent of
@@ -52,17 +61,15 @@ Existing project exporters can retain Python/uv invocation, temporary directorie
 and cleanup, replacing only the generation/check stage:
 
 ```javascript
-import { generateContract, writeContract } from '@app-common/api-codegen';
+import { generateContract, writeContract } from './api-codegen/src/index.ts';
 
 const files = await generateContract(document);
 writeContract(files, targetDir, { check: process.argv.includes('--check') });
 ```
 
-Connect generation and `--check` to the project's existing commands and CI.
-The aggregate also exports `operations`; domain files export their own subset.
 When migrating the default openapi-typescript policy, pass
 `--default-non-nullable` (JS: `{ defaultNonNullable: true }`) to retain required
-default-valued fields. This package otherwise defaults to `false`.
+default-valued fields. The template otherwise defaults to `false`.
 
 ---
 
@@ -145,9 +152,10 @@ const { error } = await apiClient.DELETE('/api/v1/projects/{id}', {
 
 ### Refresh cancellation and polling
 
-Use `LatestRequest` and `startPolling` from `@app-common/ui-base/async` for client
-refreshes. `LatestRequest.run(read, signal?)` aborts the previous request and discards
-late results; cancellation returns `undefined` and other errors propagate.
-`startPolling(read, interval)` waits for completion before scheduling the next read
-and returns cleanup that aborts the pending request. Handle errors in the poll
-callback and return cleanup from the owning effect. Neither helper owns UI state.
+Keep small async helpers in the app (for example `src/lib/async.ts`); app-common does
+not supply them. A refresh helper aborts the previous request and discards late
+results; cancellation resolves to `undefined` and other errors propagate. A polling
+helper waits for a read to complete before scheduling the next one and returns
+cleanup that aborts the pending request. Handle errors in the poll callback, return
+the cleanup from the owning `$effect`, and keep UI state in the feature class, not
+in the helpers.

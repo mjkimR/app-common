@@ -135,32 +135,18 @@ test-docker +paths="":
 test-cov module="all":
     @COVERAGE=1 DOCKER=1 bash ./scripts/run-tests.sh sqlite {{ module }}
 
-# Initialize UI package dependencies
-init-ui:
-    npm ci
-    npm install --prefix packages/ui/app-ui-base
-
-# Enforce file-size limits and type check UI package
-check-ui:
-    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-base run lint
-    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-base run check
-
 # Verify the shared frontend file-size preset
 test-eslint:
     uv run --no-active --no-sync devkit run -- npm run check
     uv run --no-active --no-sync devkit run -- npm test
 
-# Build UI package into dist/
-build-ui:
-    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-base run build
-
-# Initialize standalone frontend API generation tooling
+# Install the root lint tooling and the API codegen template's verification dependencies
 init-api-codegen:
     npm ci
-    npm ci --prefix packages/ui/app-ui-api-codegen
+    npm ci --prefix templates/api-codegen
 
-# Lint, type check and test shared tag-based API generation
+# Lint, type check and test the copy-and-own API codegen template (templates/api-codegen)
 test-api-codegen:
-    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-api-codegen run lint
-    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-api-codegen run check
-    uv run --no-active --no-sync devkit run -- npm --prefix packages/ui/app-ui-api-codegen test
+    uv run --no-active --no-sync devkit run -- npm --prefix templates/api-codegen run lint
+    uv run --no-active --no-sync devkit run -- npm --prefix templates/api-codegen run check
+    uv run --no-active --no-sync devkit run -- npm --prefix templates/api-codegen test

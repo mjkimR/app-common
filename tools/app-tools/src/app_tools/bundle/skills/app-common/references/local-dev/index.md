@@ -2,7 +2,7 @@
 
 Modifying `app-common` packages locally from downstream consumer repositories using `devkit app dev`.
 
-When developing in a downstream consumer project and needing to modify `app-common` packages (`app-layer-base`, adapters, UI, etc.) simultaneously, follow this workflow.
+When developing in a downstream consumer project and needing to modify `app-common` Python packages (`app-layer-base`, adapters, app-tools, etc.) simultaneously, follow this workflow. Frontend code is not linked: `@app-common/eslint-config` is pinned by Git commit, and templates such as `templates/api-codegen` are copied into the project and owned there.
 
 > [!IMPORTANT]
 > **Never edit `pyproject.toml` or `package.json` to point to local file paths.**
@@ -22,8 +22,8 @@ uv run devkit app dev link --target-path ../app-common
 ```
 
 - **Exploration range**: Automatically discovers `app-common` at `-1 to +1 depth` (same level `../app-common`, sibling folders `../*/`, child `./app-common`, grandparent `../../app-common`).
-- **Backup**: Automatically renames installed directories in `.venv/lib/python*/site-packages/` and `node_modules/` to `*.bak`.
-- **Symlink**: Creates symlinks to the local `app-common` source directories (`src/<pkg>` or `packages/ui/<pkg>`).
+- **Backup**: Automatically renames installed directories in `.venv/lib/python*/site-packages/` to `*.bak`.
+- **Symlink**: Creates symlinks to the local `app-common` source directories (`src/<pkg>`).
 - **UV Lock Protection**: Preserves `.dist-info` metadata so `uv run` will not trigger an automatic re-sync or overwrite your symlinks.
 - **Bundle source**: linking `app_tools` makes the checkout's app-common skill and rules the ones devkit deploys. The command warns (`APP_DEV_BUNDLE_SOURCE_CHANGED`); run `uv run devkit sync` to deploy them, and again after `unlink`. Do not commit the `.devkit/installation.json` such a sync writes.
 

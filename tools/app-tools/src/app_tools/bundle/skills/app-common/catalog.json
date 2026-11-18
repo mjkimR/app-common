@@ -118,44 +118,43 @@
     "ui/api": {
       "path": "references/ui/api.md",
       "packages": [
-        "@app-common/ui-base"
+        "@app-common/eslint-config"
       ]
     },
     "ui/structure": {
       "path": "references/ui/structure.md",
       "packages": [
-        "@app-common/ui-base",
         "@app-common/eslint-config"
       ]
     },
     "ui/checklist": {
       "path": "references/ui/checklist.md",
       "packages": [
-        "@app-common/ui-base"
+        "@app-common/eslint-config"
       ]
     },
     "ui/components": {
       "path": "references/ui/components.md",
       "packages": [
-        "@app-common/ui-base"
+        "@app-common/eslint-config"
       ]
     },
     "ui": {
       "path": "references/ui/index.md",
       "packages": [
-        "@app-common/ui-base"
+        "@app-common/eslint-config"
       ]
     },
     "ui/runes": {
       "path": "references/ui/runes.md",
       "packages": [
-        "@app-common/ui-base"
+        "@app-common/eslint-config"
       ]
     },
     "ui/setup": {
       "path": "references/ui/setup.md",
       "packages": [
-        "@app-common/ui-base"
+        "@app-common/eslint-config"
       ]
     },
     "local-dev": {

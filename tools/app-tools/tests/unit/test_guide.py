@@ -103,11 +103,24 @@ dev = ["app-testing-base", {include-group = "lint"}]
         (folder / "pyproject.toml").write_text(f'[project]\ndependencies = ["{name}"]\n')
     web = tmp_path / "web"
     web.mkdir()
-    (web / "package.json").write_text(json.dumps({"dependencies": {"@app-common/ui-base": "0.1.0"}}))
+    pin = "git+https://github.com/mjkimR/app-common.git#0123abc"
+    (web / "package.json").write_text(json.dumps({"devDependencies": {"@app-common/eslint-config": pin}}))
     names = topics(tmp_path)
-    assert {"backend", "testing", "ui"} <= set(names)
+    assert {"backend", "testing", "ui", "ui/setup", "ui/structure"} <= set(names)
     assert "storage" not in names
     assert "ui" not in topics(tmp_path / "packages/api")
+
+
+def test_installed_frontend_preset_selects_ui_topics(tmp_path: Path):
+    (tmp_path / "pyproject.toml").write_text("[project]\ndependencies = []\n")
+    installed = tmp_path / "web/node_modules/@app-common/eslint-config"
+    installed.mkdir(parents=True)
+    (installed / "package.json").write_text(json.dumps({"name": "@app-common/eslint-config", "version": "0.1.0"}))
+    result = guide("list", "--project", str(tmp_path), "--format", "json")
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.stdout)
+    assert report["packages"]["installed"] == {"@app-common/eslint-config": "0.1.0"}
+    assert "ui" in [topic["topic"] for topic in report["topics"]]
 
 
 def test_malformed_manifest_is_actionable(tmp_path: Path):

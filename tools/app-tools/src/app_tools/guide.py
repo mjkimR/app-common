@@ -20,7 +20,6 @@ from app_tools.manifests import (
 SKILL = Path(__file__).resolve().parent / "bundle" / "skills" / "app-common"
 CHECKOUT_SKILL = Path("tools/app-tools/src/app_tools/bundle/skills/app-common")
 RELEASE_REF = re.compile(r"v?\d+\.\d+\.\d+")
-UI_PACKAGE = "@app-common/ui-base"
 
 
 @dataclass(frozen=True)
@@ -136,11 +135,13 @@ def inspect_project(root: Path, known: set[str]) -> ProjectState:
         name = dependency_name(dist.metadata.get("Name", ""))
         if name in known:
             installed[name] = dist.version
+    npm_packages = sorted(name for name in known if name.startswith("@"))
     for folder in roots:
         for node_path in (folder / "node_modules", folder / "web/node_modules"):
-            node = read_manifest(node_path / UI_PACKAGE / "package.json")
-            if node:
-                installed[UI_PACKAGE] = node.get("version", "unknown")
+            for name in npm_packages:
+                node = read_manifest(node_path / name / "package.json")
+                if node:
+                    installed[name] = node.get("version", "unknown")
     return ProjectState(declared, locked, installed, sorted(refs))
 
 

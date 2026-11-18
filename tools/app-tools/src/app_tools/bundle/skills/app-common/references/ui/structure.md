@@ -34,7 +34,7 @@ From the consumer's web directory, install a pushed commit or immutable release 
 npm install --save-dev '@app-common/eslint-config@git+https://github.com/mjkimR/app-common.git#<pushed-ref>'
 ```
 
-The root npm package contains the preset, not the UI library. Keep ESLint, Svelte,
+The root npm package contains only the preset. Keep ESLint, Svelte,
 and TypeScript installed as peers and commit the manifest and lockfile. Compose
 with existing flat configs; retain parser options needed by other Svelte rules:
 
@@ -55,5 +55,5 @@ export default [
 
 Paths are relative to the web-root ESLint config. Exception paths are literal,
 including SvelteKit `[id]` and `(group)` segments. Normal `npm run lint` must run
-ESLint; app-common's `just check-ui` and consumer recipes call that script. If adding a separate structure check,
+ESLint; consumer recipes call that script. If adding a separate structure check,
 share its config with normal lint rather than duplicating exceptions.

@@ -16,7 +16,7 @@ from app_tools.manifests import declared_requirements, dependency_name, project_
 from app_tools.update import apm_superseded
 
 BUNDLE = "app-common"
-TOOLING_PACKAGES = {"app-tools", "@app-common/ui-base"}  # packages that raise no devkit.advisory errors
+TOOLING_PACKAGES = {"app-tools"}  # packages that raise no devkit.advisory errors
 
 
 @dataclass(frozen=True)
